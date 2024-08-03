@@ -1,0 +1,107 @@
+TARGET=run
+
+SDLInclude=C:\CppLibs\SDL\SDL2\include
+SDLLib=C:\CppLibs\SDL\SDL2\lib\x64
+
+USE_SDLIMAGE = 0
+
+# SDL_Image is not required for the engine runtime; It's only used for
+# converting PNG and JPEG images into SoftwareTextures and generating palettes.
+# Keeping dependencies to a minimum is always nice, so just set USE_SDLIMAGE to 0 to not
+# compile or link SDL_image. All SDL_image related symbols in the source code are automatically disabled
+# when passing the USE_SDLIMG=0 preprocessor macro, so it's completely safe.
+
+!IF $(USE_SDLIMAGE) == 1
+
+SDLIMGIncludePath=-I C:\CppLibs\SDL\SDL2\SDL2_image\SDL2_image-2.6.2\include
+SDLIMGLibPath=-LIBPATH:C:\CppLibs\SDL\SDL2\SDL2_image\SDL2_image-2.6.2\lib\x64
+SDLIMGLibFile=SDL2_image.lib
+
+!ELSE
+
+SDLIMGInclude=
+SDLIMGLib=
+SDLIMGLibFile=
+
+!ENDIF
+
+
+
+CONFIG = X64
+
+
+CFLAGS = -D WINDOWS -D USE_SDLIMG=$(USE_SDLIMAGE) -I $(SDLInclude) $(SDLIMGIncludePath)
+DEBUG_CFLAGS = -D WINDOWS -D USE_SDLIMG=$(USE_SDLIMAGE) -D DEBUG=1 -I $(SDLInclude) $(SDLIMGIncludePath)
+
+LINKERFLAGS = shell32.lib SDL2.lib SDL2main.lib $(SDLIMGLibFile) -link -LIBPATH:$(SDLLib) $(SDLIMGLibPath) -SUBSYSTEM:CONSOLE -MACHINE:$(CONFIG)
+DEBUG_LINKERFLAGS = shell32.lib SDL2.lib SDL2main.lib $(SDLIMGLibFile) -link -LIBPATH:$(SDLLib) $(SDLIMGLibPath) -DEBUG -ASSEMBLYDEBUG -SUBSYSTEM:CONSOLE -MACHINE:$(CONFIG)
+
+
+
+
+
+
+CC = cl -nologo
+SRCDIR = src/
+
+all: release debug
+
+
+release: main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj
+	$(CC) main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj -Fe"$(TARGET).exe" $(LINKERFLAGS) 
+
+debug: main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj
+	$(CC) main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj -Fe"$(TARGET)_debug.exe" $(DEBUG_LINKERFLAGS) 
+
+
+
+
+# RELEASE DEPENDENCIES GO HERE
+main.obj: $(SRCDIR)main.cpp
+	$(CC) -c $(SRCDIR)main.cpp -Fo"main.obj" $(CFLAGS)
+
+global_defs.obj: $(SRCDIR)global_defs.cpp $(SRCDIR)global.hpp
+	$(CC) -c $(SRCDIR)global_defs.cpp -Fo"global_defs.obj" $(CFLAGS)
+
+core.obj: $(SRCDIR)core.hpp $(SRCDIR)core.cpp
+	$(CC) -c $(SRCDIR)core.cpp -Fo"core.obj" $(CFLAGS)
+
+position.obj: $(SRCDIR)position.hpp $(SRCDIR)position.cpp
+	$(CC) -c $(SRCDIR)position.cpp -Fo"position.obj" $(CFLAGS)
+
+palette.obj: $(SRCDIR)palette.hpp $(SRCDIR)palette.cpp
+	$(CC) -c $(SRCDIR)palette.cpp -Fo"palette.obj" $(CFLAGS)
+
+rawsurface.obj: $(SRCDIR)rawsurface.hpp $(SRCDIR)rawsurface.cpp
+	$(CC) -c $(SRCDIR)rawsurface.cpp -Fo"rawsurface.obj" $(CFLAGS)
+
+softwaretexture.obj: $(SRCDIR)softwaretexture.hpp $(SRCDIR)softwaretexture.cpp
+	$(CC) -c $(SRCDIR)softwaretexture.cpp -Fo"softwaretexture.obj" $(CFLAGS)
+
+
+#DEBUG DEPENDENCIES GO HERE
+main_d.obj: $(SRCDIR)main.cpp
+	$(CC) -c $(SRCDIR)main.cpp -Fo"main_d.obj" $(DEBUG_CFLAGS)
+
+global_defs_d.obj: $(SRCDIR)global_defs.cpp $(SRCDIR)global.hpp
+	$(CC) -c $(SRCDIR)global_defs.cpp -Fo"global_defs_d.obj" $(DEBUG_CFLAGS)
+
+core_d.obj: $(SRCDIR)core.hpp $(SRCDIR)core.cpp
+	$(CC) -c $(SRCDIR)core.cpp -Fo"core_d.obj" $(DEBUG_CFLAGS)
+
+position_d.obj: $(SRCDIR)position.hpp $(SRCDIR)position.cpp
+	$(CC) -c $(SRCDIR)position.cpp -Fo"position_d.obj" $(DEBUG_CFLAGS)
+
+palette_d.obj: $(SRCDIR)palette.hpp $(SRCDIR)palette.cpp
+	$(CC) -c $(SRCDIR)palette.cpp -Fo"palette_d.obj" $(DEBUG_CFLAGS)
+
+rawsurface_d.obj: $(SRCDIR)rawsurface.hpp $(SRCDIR)rawsurface.cpp
+	$(CC) -c $(SRCDIR)rawsurface.cpp -Fo"rawsurface_d.obj" $(DEBUG_CFLAGS)
+
+softwaretexture_d.obj: $(SRCDIR)softwaretexture.hpp $(SRCDIR)softwaretexture.cpp
+	$(CC) -c $(SRCDIR)softwaretexture.cpp -Fo"softwaretexture_d.obj" $(DEBUG_CFLAGS)
+
+
+
+clean:
+	del *.obj
