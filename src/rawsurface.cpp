@@ -8,7 +8,7 @@ nthp::texture::rawSurface::rawSurface(uint32_t x, uint32_t y) {
                 FATAL_PRINT(nthp::FATAL_ERROR::SDL_Failure, SDL_GetError());
         }
 
-        PRINT_DEBUG("Successfully created rawSurface at [%p]", surface);
+        PRINT_DEBUG("Successfully created rawSurface at [%p]\n", surface);
 }
 
 // Sets a pixel on the surface to a color. Uses pixel binary position.

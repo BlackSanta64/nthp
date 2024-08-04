@@ -3,15 +3,12 @@
 
 
 nthp::texture::Palette::Palette() {
-        colorSet = nullptr;
-        colorSetSize = 0;
+        memset(colorSet, 0, nthp::texture::PaletteFileSize);
 }
 
 
 nthp::texture::Palette::Palette(const char* filename) {
         PRINT_DEBUG("Creating new Palette at [%p]...\n", this);
-        colorSet = nullptr;
-        colorSetSize = 0;
 
         this->importPaletteFromFile(filename);
 
@@ -25,25 +22,15 @@ void nthp::texture::Palette::importPaletteFromFile(const char* filename) {
 
         if(file.fail()) {
                 PRINT_DEBUG("Failed to create palette; file [%s] not found.\n", filename);
-                colorSet = nullptr;
-                colorSetSize = 0;
 
                 return;
-        }
-
-        if(colorSetSize == 0) {
-                // We use malloc here because we're cool as fuck.
-                colorSet = (nthp::texture::Pixel*)malloc(nthp::texture::PaletteFileSize);
-                colorSetSize = 255;
-                memset(colorSet, 0, colorSetSize);
-        
         }
 
         if(colorSet == NULL) {
                 FATAL_PRINT(nthp::FATAL_ERROR::Memory_Fault, "Unable to allocate memory for palette object.\n");
         }
 
-        file.read((char*)colorSet, nthp::texture::PaletteFileSize);
+        file.read((char*)colorSet, nthp::texture::PaletteFileByteSize);
         
 
         file.close();
@@ -61,8 +48,8 @@ void nthp::texture::Palette::exportPaletteToFile(const char* filename) {
                 return;
         }
 
-        if(colorSetSize > 0)
-                file.write((char*)colorSet, colorSetSize);
+
+        file.write((char*)colorSet, nthp::texture::PaletteFileByteSize);
 
         file.close();
 
@@ -71,22 +58,15 @@ void nthp::texture::Palette::exportPaletteToFile(const char* filename) {
 }
 
 void nthp::texture::Palette::createEmptyPalette() {
-        if(colorSetSize > 0)
-                memset(colorSet, '\000', colorSetSize);
-        else {
-                colorSetSize = 255;
-                colorSet = (nthp::texture::Pixel*)malloc(colorSetSize);
-                memset(colorSet, '\000', colorSetSize);
-        }
+
+        memset(colorSet, 0, nthp::texture::PaletteFileByteSize);
 }
 
 
 
 nthp::texture::Palette::~Palette() {
         PRINT_DEBUG("Destroying Palette [%p]...\t", this); 
- 
-        if(colorSetSize > 0)
-                free(colorSet);
+
 
         PRINT_DEBUG("done.\n");
 }

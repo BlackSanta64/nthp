@@ -6,11 +6,19 @@
     #include <SDL_image.h>
 #endif
 
+
+
 #include <iostream>
 #include <string>
+#include <stdlib.h>
+#include <cstdarg>
 #include <vector>
 #include <fstream>
 #include "fixed.hpp"
+
+
+
+
 
 // Use DEBUG_PRINT as a regular printf wrapper. It gets substituted out
 // if unless DEBUG is defined 

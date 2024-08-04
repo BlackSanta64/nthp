@@ -30,13 +30,30 @@ void hEvents(SDL_Event* events) {
 }
 
 
+void createSTSquare() {
+        std::fstream file("test.st", std::ios::out | std::ios::binary);
+        nthp::texture::SoftwareTexture::software_texture_header header;
+        header.signature = nthp::texture::STheaderSignature;
+
+        header.x = 3;
+        header.y = 3;
+
+        uint8_t pixels[9] = {
+                0, 0, 0,
+                0, 1, 0,
+                0, 0, 0
+        };
+
+        file.write((char*)&header, sizeof(header));
+        file.write((char*)pixels, 9);
+        file.close();
+}
 
 
 
 
 
 int main(int argv, char** argc) {
-
 
         mouseRay.x1 = 0;
         mouseRay.y1 = 0;
@@ -52,16 +69,12 @@ int main(int argv, char** argc) {
 
         printf("xScale = %lf\nyScale = %lf\n", nthp::fixedToDouble(core.p_coreDisplay.scaleFactor.x), nthp::fixedToDouble(core.p_coreDisplay.scaleFactor.y));
 
-        {
-        nthp::texture::Palette newPalette;
-        newPalette.createEmptyPalette();
+        nthp::texture::Palette newPalette("palette.pal");
+        nthp::texture::SoftwareTexture square("test.st", newPalette, core.getRenderer());
 
-        newPalette.colorSet[0] = {230, 50, 50, 255}; // RED
-        newPalette.colorSet[1] = {255, 255, 255, 0}; // TRANSPARENT
+        SDL_Rect testsrcRect = {0,0,3,3};
+        SDL_Rect testdstRect = {100, 100, 30, 30};
 
-
-        newPalette.exportPaletteToFile("palette.pal");
-        }
 
         while(core.isRunning()) {
 
@@ -83,7 +96,7 @@ int main(int argv, char** argc) {
 
                 SDL_RenderDrawLine(core.getRenderer(), nthp::fixedToInt(mouseRay.x1), nthp::fixedToInt(mouseRay.y1), nthp::fixedToInt(mouseRay.x2), nthp::fixedToInt(mouseRay.y2));
                 SDL_RenderDrawLine(core.getRenderer(), nthp::fixedToInt(testRay.x1), nthp::fixedToInt(testRay.y1), nthp::fixedToInt(testRay.x2), nthp::fixedToInt(testRay.y2));
-                
+                SDL_RenderCopy(core.getRenderer(), square.getTexture(), &testsrcRect, &testdstRect);
 
                 core.display();
                 SDL_SetRenderDrawColor(core.getRenderer(), 144, 144, 144, SDL_ALPHA_OPAQUE);

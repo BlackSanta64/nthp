@@ -6,7 +6,6 @@
 namespace nthp {
         namespace texture {
 
-                constexpr auto d = 4;
                 typedef uint32_t pixel_t;
 
                 struct Pixel {
@@ -15,8 +14,8 @@ namespace nthp {
                         nthp::texture::pixel_t B : 8;
                         nthp::texture::pixel_t A : 8;
                 };
-                constexpr auto PaletteFileSize = sizeof(Pixel) * 255;
-
+                constexpr auto PaletteFileSize = 255;
+                constexpr auto PaletteFileByteSize = 255 * sizeof(nthp::texture::Pixel);
 
 
                 // A palette object used to generate softwareTextures. An array of 253 32-bit colors, with shifting operators.
@@ -33,9 +32,9 @@ namespace nthp {
                         
 
                         ~Palette();
-                        Pixel* colorSet;
-                private:
-                        size_t colorSetSize;
+                        Pixel colorSet[nthp::texture::PaletteFileSize];
+  
+
                 };
 
 
