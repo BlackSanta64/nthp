@@ -9,8 +9,6 @@ namespace nthp {
                 nthp::fixed_t y;
         };
 
-
-
         extern nthp::vector<FIXED_TYPE> generatePixelPosition(nthp::worldPosition pos, nthp::RenderRuleSet* ruleset);
 
 }

@@ -40,6 +40,22 @@ void nthp::texture::rawSurface::setPixel(uint32_t x, uint32_t y, nthp::texture::
 }
 
 
+nthp::texture::Pixel nthp::texture::rawSurface::getPixel(size_t position) {
+        nthp::texture::Pixel pixel;
+        SDL_LockSurface(surface);
+
+        uint8_t* pixels = (uint8_t*)surface->pixels;
+
+        pixel.R = pixels[position * surface->format->BytesPerPixel];
+	pixel.G = pixels[position * surface->format->BytesPerPixel + 1];
+	pixel.B = pixels[position * surface->format->BytesPerPixel + 2];
+	pixel.A = pixels[position * surface->format->BytesPerPixel + 3];
+
+        SDL_UnlockSurface(surface);
+        
+        return pixel;
+}
+
 nthp::texture::rawSurface::~rawSurface() {
         SDL_FreeSurface(surface);
 }

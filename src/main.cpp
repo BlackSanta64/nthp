@@ -55,51 +55,55 @@ void createSTSquare() {
 
 int main(int argv, char** argc) {
 
-        mouseRay.x1 = 0;
-        mouseRay.y1 = 0;
-
-        int x = 5002;
-
-        nthp::ray testRay;
-        testRay.x1 = nthp::intToFixed(120);
-        testRay.y1 = nthp::intToFixed(x);
-
-        testRay.x2 = nthp::intToFixed(732);
-        testRay.y2 = nthp::intToFixed(633);
 
         printf("xScale = %lf\nyScale = %lf\n", nthp::fixedToDouble(core.p_coreDisplay.scaleFactor.x), nthp::fixedToDouble(core.p_coreDisplay.scaleFactor.y));
+        {
+                nthp::texture::Palette newPalette;
+                newPalette.colorSet[0] = nthp::texture::Pixel({0,0,0,255}); // Black Opaque
+                newPalette.colorSet[1] = nthp::texture::Pixel({255,255,255,255}); // White Opaque
+                newPalette.colorSet[2] = nthp::texture::Pixel({0,0,0,0}); // Transparent
+                newPalette.colorSet[3] = nthp::texture::Pixel({0,0,0,25}); // Transparent
+                newPalette.colorSet[4] = nthp::texture::Pixel({0,0,0,50}); // Transparent
+                newPalette.colorSet[5] = nthp::texture::Pixel({0,0,0,75}); // Transparent
+                newPalette.colorSet[6] = nthp::texture::Pixel({0,0,0,100}); // Transparent
+                newPalette.colorSet[7] = nthp::texture::Pixel({0,0,0,125}); // Transparent
+                newPalette.colorSet[8] = nthp::texture::Pixel({0,0,0,150}); // Transparent
+                newPalette.colorSet[9] = nthp::texture::Pixel({0,0,0,175}); // Transparent
+                newPalette.colorSet[10] = nthp::texture::Pixel({0,0,0,200}); // Transparent
+                newPalette.colorSet[11] = nthp::texture::Pixel({0,0,0,225}); // Transparent
 
-        nthp::texture::Palette newPalette("palette.pal");
-        nthp::texture::SoftwareTexture square("test.st", newPalette, core.getRenderer());
+                newPalette.exportPaletteToFile("newPalette.pal");
+        }
 
-        SDL_Rect testsrcRect = {0,0,3,3};
-        SDL_Rect testdstRect = {100, 100, 30, 30};
+        nthp::texture::Palette newPalette("newPalette.pal");
+        nthp::texture::SoftwareTexture square("player.st", newPalette, core.getRenderer());
+
+        nthp::texture::tools::generateSoftwareTextureFromImage("player.png", newPalette, "player.st");
+
+        SDL_Rect testsrcRect = {0,0,20,20};
+        SDL_Rect testdstRect = {0, 0, 800, 800};
+
+
+ //      nthp::texture::tools::generateSoftwareTextureFromImage("player.png", newPalette, "player.st");
+        nthp::rayCollision col;
 
 
         while(core.isRunning()) {
 
                 core.handleEvents(hEvents);
-                SDL_GetMouseState(&mousePos.x, &mousePos.y);
-                mouseRay.x2 = nthp::intToFixed(mousePos.x);
-                mouseRay.y2 = nthp::intToFixed(mousePos.y);
+               
 
         
-
-                if(nthp::rayColliding(mouseRay, testRay).isColliding) {
-                        SDL_SetRenderDrawColor(core.getRenderer(), 120, 255, 120, SDL_ALPHA_OPAQUE);
-                }
+              
 
              
 
                 core.clear();
-                SDL_SetRenderDrawColor(core.getRenderer(), 255, 100, 100, SDL_ALPHA_OPAQUE);
 
-                SDL_RenderDrawLine(core.getRenderer(), nthp::fixedToInt(mouseRay.x1), nthp::fixedToInt(mouseRay.y1), nthp::fixedToInt(mouseRay.x2), nthp::fixedToInt(mouseRay.y2));
-                SDL_RenderDrawLine(core.getRenderer(), nthp::fixedToInt(testRay.x1), nthp::fixedToInt(testRay.y1), nthp::fixedToInt(testRay.x2), nthp::fixedToInt(testRay.y2));
                 SDL_RenderCopy(core.getRenderer(), square.getTexture(), &testsrcRect, &testdstRect);
 
                 core.display();
-                SDL_SetRenderDrawColor(core.getRenderer(), 144, 144, 144, SDL_ALPHA_OPAQUE);
+
         }
 
 

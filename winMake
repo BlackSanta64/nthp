@@ -3,7 +3,7 @@ TARGET=run
 SDLInclude=C:\CppLibs\SDL\SDL2\include
 SDLLib=C:\CppLibs\SDL\SDL2\lib\x64
 
-USE_SDLIMAGE = 0
+USE_SDLIMAGE = 1
 
 # SDL_Image is not required for the engine runtime; It's only used for
 # converting PNG and JPEG images into SoftwareTextures and generating palettes.

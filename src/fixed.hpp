@@ -110,9 +110,9 @@ namespace nthp {
 
 #ifndef FAST_PRODUCT_RANGE
         // Defines the fast fixed-point product operation range. It cannot have a value
-        // over (FIXED_POINT_SCALE * 2). The lower the number, the less range the output can have,
+        // over (FIXED_POINT_SCALE / 2). The lower the number, the less range the output can have,
         // but the accuracy increases. The accuracy is automatically adjusted by the preprocessor
-        // on compile time. An invalid range (over SCALE * 2) will be overwritten for maximum range
+        // on compile time. An invalid range (over SCALE / 2) will be overwritten for maximum range
         // (and by extension minimal accuracy).
         #define FAST_PRODUCT_RANGE              (0)
 #endif

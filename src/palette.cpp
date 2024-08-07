@@ -3,12 +3,13 @@
 
 
 nthp::texture::Palette::Palette() {
-        memset(colorSet, 0, nthp::texture::PaletteFileSize);
+        memset(colorSet, 0, nthp::texture::PaletteFileByteSize);
 }
 
 
 nthp::texture::Palette::Palette(const char* filename) {
         PRINT_DEBUG("Creating new Palette at [%p]...\n", this);
+        memset(colorSet, 0, nthp::texture::PaletteFileByteSize);
 
         this->importPaletteFromFile(filename);
 
@@ -30,6 +31,7 @@ void nthp::texture::Palette::importPaletteFromFile(const char* filename) {
                 FATAL_PRINT(nthp::FATAL_ERROR::Memory_Fault, "Unable to allocate memory for palette object.\n");
         }
 
+        
         file.read((char*)colorSet, nthp::texture::PaletteFileByteSize);
         
 
@@ -57,8 +59,7 @@ void nthp::texture::Palette::exportPaletteToFile(const char* filename) {
 
 }
 
-void nthp::texture::Palette::createEmptyPalette() {
-
+void nthp::texture::Palette::clean(const nthp::texture::Pixel p) {
         memset(colorSet, 0, nthp::texture::PaletteFileByteSize);
 }
 
@@ -70,3 +71,7 @@ nthp::texture::Palette::~Palette() {
 
         PRINT_DEBUG("done.\n");
 }
+
+
+
+

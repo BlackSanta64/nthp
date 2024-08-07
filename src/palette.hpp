@@ -26,9 +26,8 @@ namespace nthp {
 
 
                         void importPaletteFromFile(const char* filename);
-                        void clean();
+                        void clean(nthp::texture::Pixel s);
                         void exportPaletteToFile(const char* outputFile);
-                        void createEmptyPalette();
                         
 
                         ~Palette();
@@ -37,7 +36,18 @@ namespace nthp {
 
                 };
 
+                namespace tools {
 
 
+                #if USE_SDLIMG == 1
+                        extern int generatePaletteFromImage(const char* inputImageFile, const char* outputFile);
+
+                        // Defined in softwaretexture.cpp
+                        extern int generateSoftwareTextureFromImage(const char* inputImageFile, const nthp::texture::Palette& palette, const char* outputFile);
+                #endif
+
+
+
+                }
         }
 }

@@ -1,4 +1,6 @@
 #include "softwaretexture.hpp"
+#define POKE printf("POKE\n");
+
 
 const uint8_t nthp::texture::STheaderSignature = 0b11011001;
 
@@ -20,9 +22,6 @@ nthp::texture::SoftwareTexture::SoftwareTexture(const char* filename, const nthp
 
         }
 }
-
-
-
 
 
 
@@ -92,7 +91,7 @@ void nthp::texture::SoftwareTexture::regenerateTexture(const nthp::texture::Pale
 
         texture = SDL_CreateTextureFromSurface(renderer, stSurface.getSurface());
 
-        PRINT_DEBUG("Regenerated texture [%p] with palette [%p].\n", this, palette);
+        PRINT_DEBUG("Regenerated texture [%p] with palette [%p].\n", this, &palette);
 }
 
 
@@ -107,3 +106,88 @@ nthp::texture::SoftwareTexture::~SoftwareTexture() {
 
         PRINT_DEBUG("done.\n");
 }
+
+
+
+
+
+// SDLIMAGE TOOLS GO HERE
+#if USE_SDLIMG == 1
+
+// Approximates a PNG or JPEG image as a softwareTexture given any palette. 
+int nthp::texture::tools::generateSoftwareTextureFromImage(const char* inputImageFile, const nthp::texture::Palette& palette, const char* outputFile) {
+        SDL_Surface* conv = NULL;
+        {
+                nthp::texture::rawSurface img(IMG_Load(inputImageFile));
+
+                if(img.getSurface() == NULL) {
+                        PRINT_DEBUG("Unable to generate softwareTexture from image; Unable to allocate.\n");
+                        PRINT_DEBUG("[%u] %s\n", SDL_GetTicks(), SDL_GetError());
+                        return -1;
+                }
+
+                conv = SDL_ConvertSurfaceFormat(img.getSurface(), SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGBA32, 0);
+                if(conv == NULL) {
+                        PRINT_DEBUG("Unable to generate softwareTexture from image; Unable to convert.\n");
+                        PRINT_DEBUG("[%u] %s\n", SDL_GetTicks(), SDL_GetError());
+                        return -2;
+                }
+        }
+        nthp::texture::rawSurface baseImage(conv);
+        nthp::texture::SoftwareTexture::software_texture_header header;
+
+        header.signature = nthp::texture::STheaderSignature;
+        header.x = baseImage.getSurface()->w;
+        header.y = baseImage.getSurface()->h;
+
+        size_t surfaceSize = baseImage.getSurface()->w * baseImage.getSurface()->h;
+        nthp::sArray<uint8_t> pixelData(surfaceSize);
+        
+        
+
+        struct pixelScore {
+                int score;
+        };
+
+        pixelScore scores[nthp::texture::PaletteFileSize];
+        uint8_t smallestElement = 0;    // This is a pointer.
+        
+        // Outer loop for cycling through baseImage pixels.
+        for(size_t i = 0; i < surfaceSize; ++i) {
+                
+
+                // This loop generates a score for each palette colour relative to a given pixel [i]. The palette colour with the lowest
+                // score has the least deviation from the original pixel, and is chosen to replace the original colour in the softwareTexture.
+                for(size_t j = 0; j < nthp::texture::PaletteFileSize; ++j) {
+                        scores[j].score = abs((int32_t)baseImage.getPixel(i).R - (int32_t)palette.colorSet[j].R) + 
+                                        abs((int32_t)baseImage.getPixel(i).G - (int32_t)palette.colorSet[j].G) +
+                                        abs((int32_t)baseImage.getPixel(i).B - (int32_t)palette.colorSet[j].B) +
+                                        abs((int32_t)baseImage.getPixel(i).A - (int32_t)palette.colorSet[j].A);
+                        
+                        
+                        if(scores[j].score < scores[smallestElement].score) smallestElement = j;
+                }
+                printf("[i=%llu] Red = %u; Green = %u; Blue = %u; Alpha = %u\nApprox. = %u\n", i, baseImage.getPixel(i).R, baseImage.getPixel(i).G, baseImage.getPixel(i).B, baseImage.getPixel(i).A, smallestElement);
+
+                // By this point, the smallest score is stored at index colorset[smallestElement].
+                pixelData[i] = smallestElement;
+                smallestElement = 0;
+
+        }
+  
+
+        std::fstream file(outputFile, std::ios::out | std::ios::binary);
+        if(file.fail()) {
+                PRINT_DEBUG("Unable to generate softwareTexture from image; File not accessible.\n");
+                return -3;
+        }
+
+        file.write((char*)&header, sizeof(header));
+        file.write((char*)pixelData.getData(), pixelData.getBinarySize());
+
+        file.close();
+
+        return 0;
+}
+
+#endif

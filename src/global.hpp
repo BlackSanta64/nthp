@@ -2,6 +2,7 @@
 
 #include <SDL.h>
 
+#define USE_SDLIMG 1
 #if USE_SDLIMG == 1
     #include <SDL_image.h>
 #endif
@@ -33,7 +34,8 @@
 namespace nthp {
         typedef enum {
                 SDL_Failure,
-                Memory_Fault
+                Memory_Fault,
+                sArray_Segfault
         } FATAL_ERROR;
 
         extern void THROW_FATAL(char errorcode, const char* fatal_message);
@@ -67,6 +69,30 @@ namespace nthp {
 
         extern volatile uint32_t deltaTime;
         extern volatile vect32 mousePosition; 
+
+
+        template<class T>
+        class sArray {
+        public:
+                sArray(size_t size) {
+                        array = new T[size];
+                        this->size = size;
+                }
+
+                T& operator[](size_t index) {
+                        if(index > size) FATAL_PRINT(nthp::FATAL_ERROR::sArray_Segfault, "Segmentation Fault in sArray.");
+                        return array[index];
+                }
+                inline const T* getData() { return array; }
+                inline size_t getSize() { return size; }
+
+                inline size_t getBinarySize() { return (size * sizeof(T)); }
+
+                ~sArray() { if(size > 0) delete[] array; }
+        private:
+                T* array;
+                size_t size;
+        };
 
 
 
