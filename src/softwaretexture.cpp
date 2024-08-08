@@ -13,7 +13,7 @@ nthp::texture::SoftwareTexture::SoftwareTexture() {
 
 
 
-nthp::texture::SoftwareTexture::SoftwareTexture(const char* filename, const nthp::texture::Palette& palette, SDL_Renderer* coreRenderer) {
+nthp::texture::SoftwareTexture::SoftwareTexture(const char* filename, nthp::texture::Palette* palette, SDL_Renderer* coreRenderer) {
         pixelData = nullptr;
         texture = nullptr;
         dataSize = 0;
@@ -29,7 +29,7 @@ nthp::texture::SoftwareTexture::SoftwareTexture(const char* filename, const nthp
 
 // Generates a texture from a valid ST file with the specified palette. Returns a 1 on failure. Safe to run
 // when a valid texture is already generated.
-int nthp::texture::SoftwareTexture::generateTexture(const char* filename, const nthp::texture::Palette& palette, SDL_Renderer* coreRenderer) {
+int nthp::texture::SoftwareTexture::generateTexture(const char* filename, nthp::texture::Palette* palette, SDL_Renderer* coreRenderer) {
         if(dataSize != 0) { SDL_DestroyTexture(texture); free(pixelData); dataSize = 0; }
         PRINT_DEBUG("Creating SoftwareTexture...\n");
         
@@ -56,20 +56,20 @@ int nthp::texture::SoftwareTexture::generateTexture(const char* filename, const 
         }
 
         dataSize = metadata.x * metadata.y;
-        pixelData = (decltype(pixelData))malloc(dataSize);
+        pixelData = (NTHPST_COLOR_WIDTH*)malloc(dataSize * sizeof(NTHPST_COLOR_WIDTH));
 
         if(pixelData == NULL) {
                 FATAL_PRINT(nthp::FATAL_ERROR::Memory_Fault, "Unable to allocate pixelData buffer.");
         }
 
-        file.read((char*)pixelData, dataSize);
+        file.read((char*)pixelData, (dataSize * sizeof(NTHPST_COLOR_WIDTH)));
         nthp::texture::rawSurface stSurface(metadata.x, metadata.y);
 
 
         // Loops through and generates the texture using the given palette.
-        for(size_t i = 0; i < dataSize; ++i)
-                stSurface.setPixel(i, palette.colorSet[pixelData[i]]);
-
+        for(size_t i = 0; i < dataSize; ++i) {
+                stSurface.setPixel(i, palette->pullColorSetWithAlpha(getPixelColor(pixelData[i]), getTrueAlpha(getPixelAlphaLevel(pixelData[i]))));
+        }
         texture = SDL_CreateTextureFromSurface(coreRenderer, stSurface.getSurface());
 
         return 0;
@@ -77,7 +77,7 @@ int nthp::texture::SoftwareTexture::generateTexture(const char* filename, const 
 
 
 // Uses saved pixeldata to redraw a texture with a different palette.
-void nthp::texture::SoftwareTexture::regenerateTexture(const nthp::texture::Palette& palette, SDL_Renderer* renderer) {
+void nthp::texture::SoftwareTexture::regenerateTexture(nthp::texture::Palette* palette, SDL_Renderer* renderer) {
         if(dataSize != 0) 
                 SDL_DestroyTexture(texture);
         else {
@@ -87,11 +87,11 @@ void nthp::texture::SoftwareTexture::regenerateTexture(const nthp::texture::Pale
         nthp::texture::rawSurface stSurface(metadata.x, metadata.y);
 
         for(size_t i = 0; i < dataSize; ++i)
-                stSurface.setPixel(i, palette.colorSet[pixelData[i]]);
+                stSurface.setPixel(i, palette->pullColorSetWithAlpha(getPixelColor(pixelData[i]), getTrueAlpha(getPixelAlphaLevel(pixelData[i]))));
 
         texture = SDL_CreateTextureFromSurface(renderer, stSurface.getSurface());
 
-        PRINT_DEBUG("Regenerated texture [%p] with palette [%p].\n", this, &palette);
+        PRINT_DEBUG("Regenerated texture [%p] with palette [%p].\n", this, palette);
 }
 
 
@@ -115,8 +115,12 @@ nthp::texture::SoftwareTexture::~SoftwareTexture() {
 #if USE_SDLIMG == 1
 
 // Approximates a PNG or JPEG image as a softwareTexture given any palette. 
-int nthp::texture::tools::generateSoftwareTextureFromImage(const char* inputImageFile, const nthp::texture::Palette& palette, const char* outputFile) {
+int nthp::texture::tools::generateSoftwareTextureFromImage(const char* inputImageFile, nthp::texture::Palette* palette, const char* outputFile) {
         SDL_Surface* conv = NULL;
+        if(palette == NULL) {
+                PRINT_DEBUG("[%u] Invalid palette for approximation.\n", SDL_GetTicks());
+                return -10;
+        }
         {
                 nthp::texture::rawSurface img(IMG_Load(inputImageFile));
 
@@ -141,7 +145,7 @@ int nthp::texture::tools::generateSoftwareTextureFromImage(const char* inputImag
         header.y = baseImage.getSurface()->h;
 
         size_t surfaceSize = baseImage.getSurface()->w * baseImage.getSurface()->h;
-        nthp::sArray<uint8_t> pixelData(surfaceSize);
+        nthp::sArray<NTHPST_COLOR_WIDTH> pixelData(surfaceSize);
         
         
 
@@ -150,7 +154,7 @@ int nthp::texture::tools::generateSoftwareTextureFromImage(const char* inputImag
         };
 
         pixelScore scores[nthp::texture::PaletteFileSize];
-        uint8_t smallestElement = 0;    // This is a pointer.
+        uint16_t smallestElement = 0;    // This is a pointer.
         
         // Outer loop for cycling through baseImage pixels.
         for(size_t i = 0; i < surfaceSize; ++i) {
@@ -159,18 +163,15 @@ int nthp::texture::tools::generateSoftwareTextureFromImage(const char* inputImag
                 // This loop generates a score for each palette colour relative to a given pixel [i]. The palette colour with the lowest
                 // score has the least deviation from the original pixel, and is chosen to replace the original colour in the softwareTexture.
                 for(size_t j = 0; j < nthp::texture::PaletteFileSize; ++j) {
-                        scores[j].score = abs((int32_t)baseImage.getPixel(i).R - (int32_t)palette.colorSet[j].R) + 
-                                        abs((int32_t)baseImage.getPixel(i).G - (int32_t)palette.colorSet[j].G) +
-                                        abs((int32_t)baseImage.getPixel(i).B - (int32_t)palette.colorSet[j].B) +
-                                        abs((int32_t)baseImage.getPixel(i).A - (int32_t)palette.colorSet[j].A);
-                        
+                        scores[j].score = abs((int32_t)baseImage.getPixel(i).R - (int32_t)palette->colorSet[j].R) + 
+                                        abs((int32_t)baseImage.getPixel(i).G - (int32_t)palette->colorSet[j].G) +
+                                        abs((int32_t)baseImage.getPixel(i).B - (int32_t)palette->colorSet[j].B);
                         
                         if(scores[j].score < scores[smallestElement].score) smallestElement = j;
                 }
-                printf("[i=%llu] Red = %u; Green = %u; Blue = %u; Alpha = %u\nApprox. = %u\n", i, baseImage.getPixel(i).R, baseImage.getPixel(i).G, baseImage.getPixel(i).B, baseImage.getPixel(i).A, smallestElement);
 
                 // By this point, the smallest score is stored at index colorset[smallestElement].
-                pixelData[i] = smallestElement;
+                pixelData[i] = (smallestElement << 4) | (baseImage.getPixel(i).A / nthp::texture::SoftwareTexture::alphaLevelSize);
                 smallestElement = 0;
 
         }

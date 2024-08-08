@@ -7,6 +7,8 @@ namespace nthp {
         namespace texture {
 
                 typedef uint32_t pixel_t;
+                typedef uint8_t pixel_w;
+                #define NTHPST_COLOR_WIDTH      uint16_t
 
                 struct Pixel {
                         nthp::texture::pixel_t R : 8;
@@ -14,8 +16,15 @@ namespace nthp {
                         nthp::texture::pixel_t B : 8;
                         nthp::texture::pixel_t A : 8;
                 };
-                constexpr auto PaletteFileSize = 255;
-                constexpr auto PaletteFileByteSize = 255 * sizeof(nthp::texture::Pixel);
+
+                // Structure for softwareTexture Palette.
+                struct STPixelBinary {
+                        nthp::texture::pixel_w R;
+                        nthp::texture::pixel_w G;
+                        nthp::texture::pixel_w B;
+                };
+                constexpr auto PaletteFileSize = (0b0000111111111111);
+                constexpr auto PaletteFileByteSize = PaletteFileSize * sizeof(nthp::texture::STPixelBinary);
 
 
                 // A palette object used to generate softwareTextures. An array of 253 32-bit colors, with shifting operators.
@@ -28,10 +37,15 @@ namespace nthp {
                         void importPaletteFromFile(const char* filename);
                         void clean(nthp::texture::Pixel s);
                         void exportPaletteToFile(const char* outputFile);
+
+                        nthp::texture::Pixel pullColorSetWithAlpha(size_t colorIndex, uint8_t alpha) {
+                                nthp::texture::Pixel pixel({colorSet[colorIndex].R, colorSet[colorIndex].G, colorSet[colorIndex].B, alpha});
+                                return pixel;
+                        }
                         
 
                         ~Palette();
-                        Pixel colorSet[nthp::texture::PaletteFileSize];
+                        STPixelBinary colorSet[nthp::texture::PaletteFileSize];
   
 
                 };
