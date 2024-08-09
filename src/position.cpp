@@ -7,3 +7,7 @@
 nthp::vector<FIXED_TYPE> nthp::generatePixelPosition(nthp::worldPosition pos, nthp::RenderRuleSet* ruleset) {
         return nthp::vector<FIXED_TYPE>(nthp::fixedToInt(nthp::f_fixedProduct(pos.x, ruleset->scaleFactor.x)), nthp::fixedToInt(nthp::f_fixedProduct(pos.y, ruleset->scaleFactor.y)));
 }
+
+nthp::vector<nthp::fixed_t> nthp::generateWorldPosition(nthp::vector<FIXED_TYPE> pos, nthp::RenderRuleSet* ruleset) {
+        return nthp::vector<FIXED_TYPE>((nthp::f_fixedQuotient(nthp::intToFixed(pos.x), ruleset->scaleFactor.x)), (nthp::f_fixedQuotient(nthp::intToFixed(pos.y), ruleset->scaleFactor.y)));
+}

@@ -1,3 +1,4 @@
+#pragma once
 #include "rawsurface.hpp"
 
 namespace nthp {
@@ -55,7 +56,10 @@ namespace nthp {
                 #endif
                 }
 
-
+                struct Frame {
+                        SDL_Texture*    texture;
+                        SDL_Rect        src;
+                };
 
 
                 

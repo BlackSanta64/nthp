@@ -15,8 +15,8 @@ nthp::RenderRuleSet::RenderRuleSet(FIXED_TYPE x, FIXED_TYPE y, FIXED_TYPE tx, FI
         tunitResolution_y = ty;
 
         cameraWorldPosition = cameraPosition;
-        scaleFactor.x = nthp::f_fixedQuotient(nthp::intToFixed(tunitResolution_x), nthp::intToFixed(pxlResolution_x));
-	scaleFactor.y = nthp::f_fixedQuotient(nthp::intToFixed(tunitResolution_y), nthp::intToFixed(pxlResolution_y));
+        scaleFactor.x = nthp::f_fixedQuotient(nthp::intToFixed(pxlResolution_x), nthp::intToFixed(tunitResolution_x));
+	scaleFactor.y = nthp::f_fixedQuotient(nthp::intToFixed(pxlResolution_y), nthp::intToFixed(tunitResolution_y));
 }
 
 void nthp::RenderRuleSet::updateRuleset(const nthp::RenderRuleSet& newSet) {
@@ -25,8 +25,8 @@ void nthp::RenderRuleSet::updateRuleset(const nthp::RenderRuleSet& newSet) {
         tunitResolution_x = newSet.tunitResolution_x;
         tunitResolution_y = newSet.tunitResolution_y;
 
-	scaleFactor.x = nthp::f_fixedQuotient(nthp::intToFixed(tunitResolution_x), nthp::intToFixed(pxlResolution_x));
-	scaleFactor.y = nthp::f_fixedQuotient(nthp::intToFixed(tunitResolution_y), nthp::intToFixed(pxlResolution_y));
+	scaleFactor.x = nthp::f_fixedQuotient(nthp::intToFixed(pxlResolution_x), nthp::intToFixed(tunitResolution_x));
+	scaleFactor.y = nthp::f_fixedQuotient(nthp::intToFixed(pxlResolution_y), nthp::intToFixed(tunitResolution_y));
 }
 
 
@@ -118,7 +118,9 @@ void nthp::EngineCore::stop() {
 }
 
 
-
+void nthp::EngineCore::render(nthp::RenderPacket packet) {
+        SDL_RenderCopy(renderer, packet.texture, packet.srcRect, &packet.dstRect);
+}
 
 
 

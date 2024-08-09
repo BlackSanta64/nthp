@@ -2,7 +2,6 @@
 
 #include <SDL.h>
 
-#define USE_SDLIMG 1
 #if USE_SDLIMG == 1
     #include <SDL_image.h>
 #endif
@@ -54,7 +53,9 @@ namespace nthp {
                 
                 vector<T> operator+(vector<T> a) { return vector<T>(x + a.x, y + a.y); }
                 vector<T> operator-(vector<T> a) { return vector<T>(x - a.x, y - a.y); }
-                
+                void operator+=(vector<T> a) { x += a.x; y += a.y; }
+                void operator-=(vector<T> a) { x -= a.x; y -= a.y; }
+
                 T x;
                 T y;
         };

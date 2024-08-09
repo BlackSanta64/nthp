@@ -5,24 +5,32 @@
 #include "position.hpp"
 #include "palette.hpp"
 #include "softwaretexture.hpp"
+#include "e_entity.hpp"
 
 
-nthp::ray mouseRay;
 nthp::vect32 mousePos;
 
+bool increase = false, decrease = false;
 
 nthp::EngineCore core(nthp::RenderRuleSet(800, 800, 1000, 1000, nthp::vectFixed(0,0)), "Testing Window", false, false);
+nthp::entity::gEntity test;
 
 void hEvents(SDL_Event* events) {
         switch(events->type) {
-        case SDL_MOUSEBUTTONDOWN:
-                if(events->button.button == SDL_BUTTON_LEFT) {
-
+        case SDL_KEYDOWN:
+                if(events->key.keysym.sym == SDLK_UP) {
+                        increase = true;
+                }
+                if(events->key.keysym.sym == SDLK_DOWN) {
+                        decrease = true;
                 }
                 break;
-        case SDL_KEYDOWN:
-                if(events->key.keysym.sym == SDLK_ESCAPE) {
-                        core.stop();
+        case SDL_KEYUP:
+                if(events->key.keysym.sym == SDLK_UP) {
+                        increase = false;
+                }
+                if(events->key.keysym.sym == SDLK_DOWN) {
+                        decrease = false;
                 }
                 break;
         }
@@ -60,21 +68,33 @@ int main(int argv, char** argc) {
 
         nthp::texture::SoftwareTexture texture("player.st", &pal, core.getRenderer());
 
+        
+        nthp::texture::Frame frames;
+        frames.src = {0,0,20,20};
+        frames.texture = texture.getTexture();
 
-
-        SDL_Rect src = {0,0,20,20};
-        SDL_Rect dst = {100,100,200,200};
+        test.importFrameData(&frames, 1, false);
+        test.setRenderSize(nthp::vectFixed(nthp::intToFixed(20), nthp::intToFixed(20)));
+        test.setCurrentFrame(0);
 
 
         while(core.isRunning()) {
+                SDL_Delay(8);
 
                 core.handleEvents(hEvents);
+                SDL_GetMouseState(&mousePos.x, &mousePos.y);
                
+               test.setPosition(nthp::generateWorldPosition(nthp::vect32(mousePos.x, mousePos.y), &core.p_coreDisplay));
+
+                if(increase)
+                        test.setRenderSize(nthp::vectFixed(test.getRenderSize().x + nthp::intToFixed(5), test.getRenderSize().y + nthp::intToFixed(5)));
+
+                if(decrease)
+                        test.setRenderSize(nthp::vectFixed(test.getRenderSize().x - nthp::intToFixed(5), test.getRenderSize().y - nthp::intToFixed(5)));
 
                 core.clear();
 
-                if(SDL_RenderCopy(core.getRenderer(), texture.getTexture(), &src, &dst) < 0)
-                        printf("%s\n", SDL_GetError());
+                core.render(test.getUpdateRenderPacket(&core.p_coreDisplay));
 
                 core.display();
 

@@ -8,10 +8,11 @@ namespace nthp {
         struct RenderPacket {
                 SDL_Texture* texture;
                 SDL_Rect* srcRect;
-                SDL_Rect* dstRect;
+                SDL_Rect dstRect;
         };
-        #define Generate_RenderPacket(texture, srceRect, destRect) RenderPacket({texture, srcRect, dstRect})
-
+        static nthp::RenderPacket generateRenderPacket(SDL_Texture* texture, SDL_Rect* srcRect, SDL_Rect dst) {
+                return {texture, srcRect, dst};
+        }
 
         struct RenderRuleSet {
         public:

@@ -3,7 +3,7 @@ TARGET=run
 SDLInclude=C:\CppLibs\SDL\SDL2\include
 SDLLib=C:\CppLibs\SDL\SDL2\lib\x64
 
-USE_SDLIMAGE = 1
+USE_SDLIMAGE = 0
 
 # SDL_Image is not required for the engine runtime; It's only used for
 # converting PNG and JPEG images into SoftwareTextures and generating palettes.
@@ -47,11 +47,11 @@ SRCDIR = src/
 all: release debug
 
 
-release: main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj
-	$(CC) main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj -Fe"$(TARGET).exe" $(LINKERFLAGS) 
+release: main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj
+	$(CC) main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj -Fe"$(TARGET).exe" $(LINKERFLAGS) 
 
-debug: main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj
-	$(CC) main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj -Fe"$(TARGET)_debug.exe" $(DEBUG_LINKERFLAGS) 
+debug: main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj
+	$(CC) main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj -Fe"$(TARGET)_debug.exe" $(DEBUG_LINKERFLAGS) 
 
 
 
@@ -78,6 +78,8 @@ rawsurface.obj: $(SRCDIR)rawsurface.hpp $(SRCDIR)rawsurface.cpp
 softwaretexture.obj: $(SRCDIR)softwaretexture.hpp $(SRCDIR)softwaretexture.cpp
 	$(CC) -c $(SRCDIR)softwaretexture.cpp -Fo"softwaretexture.obj" $(CFLAGS)
 
+e_entity.obj: $(SRCDIR)e_entity.hpp $(SRCDIR)e_entity.cpp $(SRCDIR)e_collision.hpp
+	$(CC) -c $(SRCDIR)e_entity.cpp -Fo"e_entity.obj" $(CFLAGS)
 
 #DEBUG DEPENDENCIES GO HERE
 main_d.obj: $(SRCDIR)main.cpp
@@ -101,6 +103,8 @@ rawsurface_d.obj: $(SRCDIR)rawsurface.hpp $(SRCDIR)rawsurface.cpp
 softwaretexture_d.obj: $(SRCDIR)softwaretexture.hpp $(SRCDIR)softwaretexture.cpp
 	$(CC) -c $(SRCDIR)softwaretexture.cpp -Fo"softwaretexture_d.obj" $(DEBUG_CFLAGS)
 
+e_entity_d.obj: $(SRCDIR)e_entity.hpp $(SRCDIR)e_entity.cpp $(SRCDIR)e_collision.hpp
+	$(CC) -c $(SRCDIR)e_entity.cpp -Fo"e_entity_d.obj" $(DEBUG_CFLAGS)
 
 
 clean:
