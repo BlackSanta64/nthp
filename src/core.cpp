@@ -59,11 +59,13 @@ nthp::EngineCore::EngineCore(nthp::RenderRuleSet settings, const char* title, bo
         if(window == NULL) {
                 FATAL_PRINT(nthp::FATAL_ERROR::SDL_Failure, SDL_GetError());
         }
+	SDL_GetWindowSize(window, &p_coreDisplay.pxlResolution_x, &p_coreDisplay.pxlResolution_y);
 
         if(softwareRendering)
                 renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
         else
                 renderer = SDL_CreateRenderer(window, -1, 0);
+
 
         if(renderer == NULL) {
                 FATAL_PRINT(nthp::FATAL_ERROR::SDL_Failure, SDL_GetError());

@@ -1,6 +1,12 @@
 #pragma once
+#define LINUX
+#ifdef LINUX
+	#include <SDL2/SDL.h>
+#endif
 
-#include <SDL.h>
+#ifdef WINDOWS
+	#include <SDL.h>
+#endif
 
 #if USE_SDLIMG == 1
     #include <SDL_image.h>
@@ -11,6 +17,7 @@
 #include <iostream>
 #include <string>
 #include <stdlib.h>
+#include <stdint.h>
 #include <cstdarg>
 #include <vector>
 #include <fstream>
@@ -63,8 +70,8 @@ namespace nthp {
         typedef vector<int32_t> vect32;
         typedef vector<int64_t> vect64;
 
-        typedef vector<float_t> vectf32;
-        typedef vector<double_t> vectf64;
+        typedef vector<float> vectf32;
+        typedef vector<double> vectf64;
 
         typedef vector<fixed_t> vectFixed;
 

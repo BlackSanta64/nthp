@@ -12,7 +12,7 @@ nthp::vect32 mousePos;
 
 bool increase = false, decrease = false;
 
-nthp::EngineCore core(nthp::RenderRuleSet(800, 800, 1000, 1000, nthp::vectFixed(0,0)), "Testing Window", false, false);
+nthp::EngineCore core(nthp::RenderRuleSet(1920, 1080, 1000, 1000, nthp::vectFixed(0,0)), "Testing Window", true, false);
 nthp::entity::gEntity test;
 
 void hEvents(SDL_Event* events) {
@@ -24,6 +24,9 @@ void hEvents(SDL_Event* events) {
                 if(events->key.keysym.sym == SDLK_DOWN) {
                         decrease = true;
                 }
+		if(events->key.keysym.sym == SDLK_TAB) {
+			core.stop();
+		}
                 break;
         case SDL_KEYUP:
                 if(events->key.keysym.sym == SDLK_UP) {
@@ -74,25 +77,16 @@ int main(int argv, char** argc) {
         frames.texture = texture.getTexture();
 
         test.importFrameData(&frames, 1, false);
-        test.setRenderSize(nthp::vectFixed(nthp::intToFixed(20), nthp::intToFixed(20)));
+        test.setRenderSize(nthp::vectFixed(nthp::intToFixed(200), nthp::intToFixed(200)));
         test.setCurrentFrame(0);
 
 
         while(core.isRunning()) {
-                SDL_Delay(8);
 
                 core.handleEvents(hEvents);
-                SDL_GetMouseState(&mousePos.x, &mousePos.y);
-               
-               test.setPosition(nthp::generateWorldPosition(nthp::vect32(mousePos.x, mousePos.y), &core.p_coreDisplay));
+           
 
-                if(increase)
-                        test.setRenderSize(nthp::vectFixed(test.getRenderSize().x + nthp::intToFixed(5), test.getRenderSize().y + nthp::intToFixed(5)));
-
-                if(decrease)
-                        test.setRenderSize(nthp::vectFixed(test.getRenderSize().x - nthp::intToFixed(5), test.getRenderSize().y - nthp::intToFixed(5)));
-
-                core.clear();
+		core.clear();
 
                 core.render(test.getUpdateRenderPacket(&core.p_coreDisplay));
 
