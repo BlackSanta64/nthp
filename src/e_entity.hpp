@@ -26,6 +26,9 @@ namespace nthp {
                 void setCurrentFrame(size_t cf);
                 inline size_t getCurrentFrame() { return currentFrame; }
 
+		inline nthp::entity::cRect getHitbox() { return hitbox; }
+		void setHtiboxSize(nthp::vectFixed newSize);
+
 
                 ~gEntity();
         protected:

@@ -9,7 +9,7 @@ SRCDIR = src/
 # To use a custom installation/build of SDL2, the whole buildsystem has to be update.
 
 
-USE_SDLIMAGE = 1
+USE_SDLIMAGE = 0
 
 
 ifeq ($(USE_SDLIMAGE), 1)
@@ -30,12 +30,12 @@ DEBUG_CFLAGS = -g -lSDL2 $(SDL_imageLibInclude) -D LINUX -D DEBUG -DUSE_SDLIMG=$
 all: release debug
 
 
-release: main.o global_defs.o core.o position.o palette.o rawsurface.o softwaretexture.o e_entity.o
-	$(CC) main.o global_defs.o core.o position.o palette.o rawsurface.o softwaretexture.o e_entity.o $(CFLAGS) -o $(TARGET)
+release: main.o global_defs.o core.o position.o palette.o rawsurface.o softwaretexture.o e_entity.o e_collision.o
+	$(CC) main.o global_defs.o core.o position.o palette.o rawsurface.o softwaretexture.o e_entity.o e_collision.o $(CFLAGS) -o $(TARGET)
 
 
-debug: main_d.o global_defs_d.o core_d.o position_d.o palette_d.o rawsurface_d.o softwaretexture_d.o e_entity_d.o
-	$(CC) main_d.o global_defs_d.o core_d.o position_d.o palette_d.o rawsurface_d.o softwaretexture_d.o e_entity_d.o $(DEBUG_CFLAGS) -o $(TARGET)_debug
+debug: main_d.o global_defs_d.o core_d.o position_d.o palette_d.o rawsurface_d.o softwaretexture_d.o e_entity_d.o e_collision_d.o
+	$(CC) main_d.o global_defs_d.o core_d.o position_d.o palette_d.o rawsurface_d.o softwaretexture_d.o e_entity_d.o e_collision_d.o $(DEBUG_CFLAGS) -o $(TARGET)_debug
 
 
 # RELEASE DEPENDENCIES GO HERE VVV
@@ -65,6 +65,10 @@ softwaretexture.o: $(SRCDIR)softwaretexture.cpp $(SRCDIR)softwaretexture.hpp
 
 e_entity.o: $(SRCDIR)e_entity.cpp $(SRCDIR)e_entity.hpp
 	$(CC) $(CFLAGS) -c $(SRCDIR)e_entity.cpp -o e_entity.o
+
+
+e_collision.o: $(SRCDIR)e_collision.hpp $(SRCDIR)e_collision.cpp
+	$(CC) $(CFLAGS) -c $(SRCDIR)e_collision.cpp -o e_collision.o
 
 # DEBUG DEPENDENCIES GO HERE VVV
 
@@ -97,6 +101,9 @@ softwaretexture_d.o: $(SRCDIR)softwaretexture.cpp $(SRCDIR)softwaretexture.hpp
 e_entity_d.o: $(SRCDIR)e_entity.cpp $(SRCDIR)e_entity.hpp
 	$(CC) $(DEBUG_CFLAGS) -c $(SRCDIR)e_entity.cpp -o e_entity_d.o
 
+
+e_collision_d.o: $(SRCDIR)e_collision.hpp $(SRCDIR)e_collision.cpp
+	$(CC) $(CFLAGS) -c $(SRCDIR)e_collision.cpp -o e_collision_d.o
 
 
 

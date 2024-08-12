@@ -90,6 +90,8 @@ namespace nthp {
                 constexpr decltype(FIXED_MAX) FIXED_DECIMAL_MASK = (FIXED_MAX >> (FIXED_POINT_WIDTH - FIXED_POINT_SCALE));
                 constexpr decltype(FIXED_MAX) FIXED_INTEGER_MASK = (~FIXED_DECIMAL_MASK);
 
+
+
                 // The Epsilon of a fixed-point number (in this case the whole system) represents the smallest
                 // possible unit that can be accurately represented by the number. Incrementing a fixed_t will result in an
                 // increase of the fixed representation by EPSILON.

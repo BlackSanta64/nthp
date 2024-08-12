@@ -55,15 +55,26 @@ void nthp::entity::gEntity::importFrameData(nthp::texture::Frame* data, size_t s
 
 void nthp::entity::gEntity::setPosition(nthp::vectFixed newPos) {
         wPosition = newPos;
+	hitbox.x = wPosition.x;
+	hitbox.y = wPosition.y;
 }
 
 void nthp::entity::gEntity::move(nthp::vectFixed offset) {
         wPosition += offset;
+	hitbox.x = wPosition.x;
+	hitbox.y = wPosition.y;
 }
 
 void nthp::entity::gEntity::setCurrentFrame(size_t cf) {
         currentFrame = cf;
 }
+
+
+void nthp::entity::gEntity::setHtiboxSize(nthp::vectFixed newSize) {
+	hitbox.w = newSize.x;
+	hitbox.h = newSize.y;
+}
+
 
 nthp::entity::gEntity::~gEntity() {
         if(frameDataNative) {

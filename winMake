@@ -47,11 +47,11 @@ SRCDIR = src/
 all: release debug
 
 
-release: main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj
-	$(CC) main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj -Fe"$(TARGET).exe" $(LINKERFLAGS) 
+release: main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj e_collision.obj
+	$(CC) main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj e_collision.obj -Fe"$(TARGET).exe" $(LINKERFLAGS) 
 
-debug: main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj
-	$(CC) main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj -Fe"$(TARGET)_debug.exe" $(DEBUG_LINKERFLAGS) 
+debug: main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj e_collision_d.obj
+	$(CC) main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj e_collision_d.obj -Fe"$(TARGET)_debug.exe" $(DEBUG_LINKERFLAGS) 
 
 
 
@@ -81,6 +81,11 @@ softwaretexture.obj: $(SRCDIR)softwaretexture.hpp $(SRCDIR)softwaretexture.cpp
 e_entity.obj: $(SRCDIR)e_entity.hpp $(SRCDIR)e_entity.cpp $(SRCDIR)e_collision.hpp
 	$(CC) -c $(SRCDIR)e_entity.cpp -Fo"e_entity.obj" $(CFLAGS)
 
+
+e_collision.obj: $(SRCDIR)e_collision.hpp $(SRCDIR)e_collision.cpp
+	$(CC) -c $(SRCDIR)e_collision.cpp -Fo"e_collision.obj" $(CFLAGS)
+
+
 #DEBUG DEPENDENCIES GO HERE
 main_d.obj: $(SRCDIR)main.cpp
 	$(CC) -c $(SRCDIR)main.cpp -Fo"main_d.obj" $(DEBUG_CFLAGS)
@@ -105,6 +110,11 @@ softwaretexture_d.obj: $(SRCDIR)softwaretexture.hpp $(SRCDIR)softwaretexture.cpp
 
 e_entity_d.obj: $(SRCDIR)e_entity.hpp $(SRCDIR)e_entity.cpp $(SRCDIR)e_collision.hpp
 	$(CC) -c $(SRCDIR)e_entity.cpp -Fo"e_entity_d.obj" $(DEBUG_CFLAGS)
+
+
+e_collision_d.obj: $(SRCDIR)e_collision.hpp $(SRCDIR)e_collision.cpp
+	$(CC) -c $(SRCDIR)e_collision.cpp -Fo"e_collision_d.obj" $(DEBUG_CFLAGS)
+
 
 
 clean:

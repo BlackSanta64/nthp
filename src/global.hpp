@@ -1,5 +1,5 @@
 #pragma once
-#define LINUX
+
 #ifdef LINUX
 	#include <SDL2/SDL.h>
 #endif

@@ -1,3 +1,4 @@
+#define LINUX
 
 #include "global.hpp"
 #include "core.hpp"
@@ -10,33 +11,19 @@
 
 nthp::vect32 mousePos;
 
-bool increase = false, decrease = false;
 
-nthp::EngineCore core(nthp::RenderRuleSet(960, 540, 2000, 2000, nthp::vectFixed(0,0)), "Testing Window", true, false);
-nthp::entity::gEntity test;
+nthp::EngineCore core(nthp::RenderRuleSet(960, 540, 2000, 2000, nthp::vectFixed(0,0)), "Testing Window", false, false);
 
 void hEvents(SDL_Event* events) {
         switch(events->type) {
-        case SDL_KEYDOWN:
-                if(events->key.keysym.sym == SDLK_UP) {
-                        increase = true;
-                }
-                if(events->key.keysym.sym == SDLK_DOWN) {
-                        decrease = true;
-                }
+        case SDL_KEYDOWN: 
 		if(events->key.keysym.sym == SDLK_TAB) {
 			core.stop();
 		}
                 break;
-        case SDL_KEYUP:
-                if(events->key.keysym.sym == SDLK_UP) {
-                        increase = false;
-                }
-                if(events->key.keysym.sym == SDLK_DOWN) {
-                        decrease = false;
-                }
-                break;
-        }
+	default:
+		break;
+	}
 }
 
 
@@ -68,31 +55,47 @@ int main(int argv, char** argc) {
       
         nthp::texture::Palette pal("palette.pal");
 
-	
+      	nthp::texture::SoftwareTexture texture("wall.st", &pal, core.getRenderer());
+	nthp::entity::gEntity test, test2;
 
-//	nthp::texture::tools::generateSoftwareTextureFromImage("wall.png", &pal, "wall.st");
-        nthp::texture::SoftwareTexture texture("wall.st", &pal, core.getRenderer());
-
-
-        
+       
         nthp::texture::Frame frames;
         frames.src = {0,0,100,76};
         frames.texture = texture.getTexture();
 
         test.importFrameData(&frames, 1, false);
         test.setRenderSize(nthp::vectFixed(nthp::intToFixed(200), nthp::intToFixed(200)));
+	test.setHtiboxSize(nthp::vectFixed(nthp::intToFixed(200), nthp::intToFixed(200)));
         test.setCurrentFrame(0);
 
+	test2.importFrameData(&frames, 1, false);
+	test2.setRenderSize(nthp::vectFixed(nthp::intToFixed(300), nthp::intToFixed(300)));
+	test2.setHtiboxSize(nthp::vectFixed(nthp::intToFixed(300), nthp::intToFixed(300)));
+	test2.setCurrentFrame(0);
+
+	test2.setPosition(nthp::vectFixed(nthp::intToFixed(1000), nthp::intToFixed(1000)));
+
+	printf("%lf, %lf\n", nthp::fixedToDouble(core.p_coreDisplay.scaleFactor.x), nthp::fixedToDouble(core.p_coreDisplay.scaleFactor.y));
+
         while(core.isRunning()) {
+		SDL_Delay(10);
+
 
                 core.handleEvents(hEvents);
-           
+		SDL_GetMouseState(&mousePos.x, &mousePos.y);
+
+		test.setPosition(nthp::generateWorldPosition(nthp::vect64(mousePos.x, mousePos.y), &core.p_coreDisplay));
+		if(nthp::entity::checkRectCollision(test.getHitbox(), test2.getHitbox())) {
+			SDL_SetRenderDrawColor(core.getRenderer(), 100, 255, 50, 255);
+		}
+
 
 		core.clear();
-
                 core.render(test.getUpdateRenderPacket(&core.p_coreDisplay));
-
+		core.render(test2.getUpdateRenderPacket(&core.p_coreDisplay));
                 core.display();
+		
+		SDL_SetRenderDrawColor(core.getRenderer(), 144, 144, 144, 255);
 
         }
 

@@ -4,12 +4,12 @@
 namespace nthp {
         namespace entity {
                 struct cRect {
-                        nthp::vectFixed x;
-                        nthp::vectFixed y;
-                        nthp::vectFixed w;
-                        nthp::vectFixed h;
+                        nthp::fixed_t x;
+                        nthp::fixed_t y;
+                        nthp::fixed_t w;
+                        nthp::fixed_t h;
                 };
 
-                extern bool checkRectCollision(const cRect& a, const cRect& b);
+                extern bool checkRectCollision(cRect a,cRect b);
         }
 }
