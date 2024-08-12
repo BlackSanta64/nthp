@@ -12,7 +12,7 @@ nthp::vect32 mousePos;
 
 bool increase = false, decrease = false;
 
-nthp::EngineCore core(nthp::RenderRuleSet(1920, 1080, 1000, 1000, nthp::vectFixed(0,0)), "Testing Window", true, false);
+nthp::EngineCore core(nthp::RenderRuleSet(960, 540, 2000, 2000, nthp::vectFixed(0,0)), "Testing Window", true, false);
 nthp::entity::gEntity test;
 
 void hEvents(SDL_Event* events) {
@@ -68,18 +68,20 @@ int main(int argv, char** argc) {
       
         nthp::texture::Palette pal("palette.pal");
 
+	
 
-        nthp::texture::SoftwareTexture texture("player.st", &pal, core.getRenderer());
+//	nthp::texture::tools::generateSoftwareTextureFromImage("wall.png", &pal, "wall.st");
+        nthp::texture::SoftwareTexture texture("wall.st", &pal, core.getRenderer());
+
 
         
         nthp::texture::Frame frames;
-        frames.src = {0,0,20,20};
+        frames.src = {0,0,100,76};
         frames.texture = texture.getTexture();
 
         test.importFrameData(&frames, 1, false);
         test.setRenderSize(nthp::vectFixed(nthp::intToFixed(200), nthp::intToFixed(200)));
         test.setCurrentFrame(0);
-
 
         while(core.isRunning()) {
 

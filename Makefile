@@ -9,7 +9,7 @@ SRCDIR = src/
 # To use a custom installation/build of SDL2, the whole buildsystem has to be update.
 
 
-USE_SDLIMAGE = 0
+USE_SDLIMAGE = 1
 
 
 ifeq ($(USE_SDLIMAGE), 1)

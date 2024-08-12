@@ -15,8 +15,15 @@ nthp::RenderRuleSet::RenderRuleSet(FIXED_TYPE x, FIXED_TYPE y, FIXED_TYPE tx, FI
         tunitResolution_y = ty;
 
         cameraWorldPosition = cameraPosition;
-        scaleFactor.x = nthp::f_fixedQuotient(nthp::intToFixed(pxlResolution_x), nthp::intToFixed(tunitResolution_x));
-	scaleFactor.y = nthp::f_fixedQuotient(nthp::intToFixed(pxlResolution_y), nthp::intToFixed(tunitResolution_y));
+
+
+	float xs, ys;
+	xs = (float)pxlResolution_x / (float)tunitResolution_x;
+	ys = (float)pxlResolution_y / (float)tunitResolution_y;
+
+
+	scaleFactor.x = nthp::doubleToFixed(xs);
+	scaleFactor.y = nthp::doubleToFixed(ys);
 }
 
 void nthp::RenderRuleSet::updateRuleset(const nthp::RenderRuleSet& newSet) {
@@ -25,8 +32,15 @@ void nthp::RenderRuleSet::updateRuleset(const nthp::RenderRuleSet& newSet) {
         tunitResolution_x = newSet.tunitResolution_x;
         tunitResolution_y = newSet.tunitResolution_y;
 
-	scaleFactor.x = nthp::f_fixedQuotient(nthp::intToFixed(pxlResolution_x), nthp::intToFixed(tunitResolution_x));
-	scaleFactor.y = nthp::f_fixedQuotient(nthp::intToFixed(pxlResolution_y), nthp::intToFixed(tunitResolution_y));
+	float xs, ys;
+	xs = (float)pxlResolution_x / (float)tunitResolution_x;
+	ys = (float)pxlResolution_y / (float)tunitResolution_y;
+
+
+
+	scaleFactor.x = nthp::doubleToFixed(xs);
+	scaleFactor.y = nthp::doubleToFixed(ys);
+
 }
 
 
@@ -59,8 +73,7 @@ nthp::EngineCore::EngineCore(nthp::RenderRuleSet settings, const char* title, bo
         if(window == NULL) {
                 FATAL_PRINT(nthp::FATAL_ERROR::SDL_Failure, SDL_GetError());
         }
-	SDL_GetWindowSize(window, &p_coreDisplay.pxlResolution_x, &p_coreDisplay.pxlResolution_y);
-
+	
         if(softwareRendering)
                 renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
         else
@@ -75,7 +88,15 @@ nthp::EngineCore::EngineCore(nthp::RenderRuleSet settings, const char* title, bo
 
         SDL_SetRenderDrawColor(renderer, 144, 144, 144, SDL_ALPHA_OPAQUE);
         running = true;
-
+	
+	// This ensures the correct render resolution context when calculating scale factors.
+	// If the requested resolution is too small (or too large), SDL will correct the resolution to
+	// match the aspect ratio of the display and capabilities of the graphics card.
+	{
+		int w, h;
+		SDL_GetRendererOutputSize(renderer, &w, &h);
+		p_coreDisplay.updateRuleset(nthp::RenderRuleSet(w, h, settings.tunitResolution_x, settings.tunitResolution_y, settings.cameraWorldPosition));
+	}
         PRINT_DEBUG("done.\n\n");
 }
 

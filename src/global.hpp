@@ -9,7 +9,13 @@
 #endif
 
 #if USE_SDLIMG == 1
-    #include <SDL_image.h>
+#ifdef WINDOWS
+    	#include <SDL_image.h>
+#endif
+#ifdef LINUX
+	#include <SDL2/SDL_image.h>
+#endif
+
 #endif
 
 
