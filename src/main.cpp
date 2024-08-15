@@ -1,4 +1,6 @@
 #define LINUX
+#define USE_SDLIMG 1
+
 
 #include "global.hpp"
 #include "core.hpp"
@@ -51,21 +53,22 @@ void createSTSquare() {
 
 
 int main(int argv, char** argc) {
+     
+        nthp::texture::Palette pal("genericPalette.pal");
 
-      
-        nthp::texture::Palette pal("palette.pal");
 
       	nthp::texture::SoftwareTexture texture("wall.st", &pal, core.getRenderer());
 	nthp::entity::gEntity test, test2;
 
-       
         nthp::texture::Frame frames;
         frames.src = {0,0,100,76};
         frames.texture = texture.getTexture();
 
         test.importFrameData(&frames, 1, false);
         test.setRenderSize(nthp::vectFixed(nthp::intToFixed(200), nthp::intToFixed(200)));
-	test.setHtiboxSize(nthp::vectFixed(nthp::intToFixed(200), nthp::intToFixed(200)));
+	test.setHtiboxSize(nthp::vectFixed(nthp::intToFixed(180), nthp::intToFixed(180)));
+	test.setHitboxOffset(nthp::vectFixed(nthp::intToFixed(10), nthp::intToFixed(10)));
+
         test.setCurrentFrame(0);
 
 	test2.importFrameData(&frames, 1, false);
@@ -75,13 +78,12 @@ int main(int argv, char** argc) {
 
 	test2.setPosition(nthp::vectFixed(nthp::intToFixed(1000), nthp::intToFixed(1000)));
 
-	printf("%lf, %lf\n", nthp::fixedToDouble(core.p_coreDisplay.scaleFactor.x), nthp::fixedToDouble(core.p_coreDisplay.scaleFactor.y));
-
         while(core.isRunning()) {
 		SDL_Delay(10);
 
 
                 core.handleEvents(hEvents);
+		
 		SDL_GetMouseState(&mousePos.x, &mousePos.y);
 
 		test.setPosition(nthp::generateWorldPosition(nthp::vect64(mousePos.x, mousePos.y), &core.p_coreDisplay));

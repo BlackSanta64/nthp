@@ -23,8 +23,8 @@ namespace nthp {
                         nthp::texture::pixel_w G;
                         nthp::texture::pixel_w B;
                 };
-                constexpr auto PaletteFileSize = (0b0000111111111111);
-                constexpr auto PaletteFileByteSize = PaletteFileSize * sizeof(nthp::texture::STPixelBinary);
+                constexpr uint16_t PaletteFileSize = (0b0000111111111111);
+                constexpr size_t PaletteFileByteSize = PaletteFileSize * sizeof(nthp::texture::STPixelBinary);
 
 
                 // A palette object used to generate softwareTextures. An array of 253 32-bit colors, with shifting operators.

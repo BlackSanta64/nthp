@@ -29,10 +29,14 @@ namespace nthp {
 		inline nthp::entity::cRect getHitbox() { return hitbox; }
 		void setHtiboxSize(nthp::vectFixed newSize);
 
+		void setHitboxOffset(nthp::vectFixed offset);
+		inline nthp::vectFixed getHitboxOffset() { return hbOffset; }
+
 
                 ~gEntity();
         protected:
-                nthp::texture::Frame* frameData;
+                
+		nthp::texture::Frame* frameData;
                 size_t frameSize;
                 bool frameDataNative;
                 
@@ -41,8 +45,7 @@ namespace nthp {
 
                 nthp::worldPosition wPosition;
                 nthp::entity::cRect hitbox;
-
-
+		nthp::vectFixed hbOffset;
         };
 
         }

@@ -18,7 +18,7 @@ namespace nthp {
 #ifndef FIXED_POINT_SCALE
 
                 // The fixed-point scale factor as a whole-number power of 2
-#define         FIXED_POINT_SCALE       10
+#define         FIXED_POINT_SCALE       12
 
 
 #endif
@@ -116,7 +116,7 @@ namespace nthp {
         // but the accuracy increases. The accuracy is automatically adjusted by the preprocessor
         // on compile time. An invalid range (over SCALE / 2) will be overwritten for maximum range
         // (and by extension minimal accuracy).
-        #define FAST_PRODUCT_RANGE              (0)
+        #define FAST_PRODUCT_RANGE              (1)
 #endif
 
 
@@ -126,7 +126,7 @@ namespace nthp {
         // but the accuracy increases. The accuracy is automatically adjusted by the preprocessor
         // on compile time. An invalid range (over FIXED_POINT_SCALE) will be overwritten for maximum range
         // (and by extension minimal accuracy).
-        #define FAST_QUOTIENT_RANGE             (0)
+        #define FAST_QUOTIENT_RANGE             (2)
 
 #endif
 

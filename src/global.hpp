@@ -27,6 +27,7 @@
 #include <cstdarg>
 #include <vector>
 #include <fstream>
+#include <stdio.h>
 #include "fixed.hpp"
 
 
@@ -36,11 +37,10 @@
 // Use DEBUG_PRINT as a regular printf wrapper. It gets substituted out
 // if unless DEBUG is defined 
 #ifdef DEBUG
-        #define PRINT_DEBUG(...)        printf(__VA_ARGS__)
+	extern FILE* NTHP_debug_output;
+	extern void PRINT_DEBUG(const char* format, ...);
 #else
-        #define DEBUG                   0
         #define PRINT_DEBUG(...) 
-
 #endif
 
 namespace nthp {
