@@ -67,7 +67,8 @@ nthp::EngineCore::EngineCore(nthp::RenderRuleSet settings, const char* title, bo
                 FATAL_PRINT(nthp::FATAL_ERROR::SDL_Failure, SDL_GetError());
         }
 #endif
-        PRINT_DEBUG("done.\nSetting up window and renderer...\t");
+        NOVERB_PRINT_DEBUG("done.\n");
+        PRINT_DEBUG("Setting up window and renderer...\t");
 
         window = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, p_coreDisplay.pxlResolution_x, p_coreDisplay.pxlResolution_y, fullscreenFlag);
         if(window == NULL) {
@@ -83,8 +84,8 @@ nthp::EngineCore::EngineCore(nthp::RenderRuleSet settings, const char* title, bo
         if(renderer == NULL) {
                 FATAL_PRINT(nthp::FATAL_ERROR::SDL_Failure, SDL_GetError());
         }
-
-        PRINT_DEBUG("done.\nConfiguring defaults...\t");
+        NOVERB_PRINT_DEBUG("done.\n");
+        PRINT_DEBUG("Configuring defaults...\t");
 
         SDL_SetRenderDrawColor(renderer, 144, 144, 144, SDL_ALPHA_OPAQUE);
         running = true;
@@ -97,7 +98,7 @@ nthp::EngineCore::EngineCore(nthp::RenderRuleSet settings, const char* title, bo
 		SDL_GetRendererOutputSize(renderer, &w, &h);
 		p_coreDisplay.updateRuleset(nthp::RenderRuleSet(w, h, settings.tunitResolution_x, settings.tunitResolution_y, settings.cameraWorldPosition));
 	}
-        PRINT_DEBUG("done.\n\n");
+        NOVERB_PRINT_DEBUG("done.\n\n");
 }
 
 
@@ -159,5 +160,5 @@ nthp::EngineCore::~EngineCore() {
         IMG_Quit();
 #endif
 
-        PRINT_DEBUG("done.\n");
+        NOVERB_PRINT_DEBUG("done.\n");
 }

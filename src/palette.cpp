@@ -69,7 +69,7 @@ nthp::texture::Palette::~Palette() {
         PRINT_DEBUG("Destroying Palette [%p]...\t", this); 
 
 
-        PRINT_DEBUG("done.\n");
+        NOVERB_PRINT_DEBUG("done.\n");
 }
 
 

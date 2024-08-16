@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <cstdarg>
+#include <ctime>
 #include <vector>
 #include <fstream>
 #include <stdio.h>
@@ -38,16 +39,31 @@
 // if unless DEBUG is defined 
 #ifdef DEBUG
 	extern FILE* NTHP_debug_output;
-	extern void PRINT_DEBUG(const char* format, ...);
+	extern void PRINT_DEBUG                 (const char* format, ...);
+
+        #define NOVERB_PRINT_DEBUG(...)         fprintf(NTHP_debug_output, __VA_ARGS__)
+        #define GENERIC_PRINT(...)              printf(__VA_ARGS__)
+
 #else
-        #define PRINT_DEBUG(...) 
+        #define PRINT_DEBUG(...)
+        #define NOVERB_PRINT_DEBUG(...)
+        #define GENERIC_PRINT(...)
+
 #endif
+
+        // Must be executed first to ensure a valid file descriptor.
+        // Specifies a target for the debug output system. Default is 'stdout'
+        extern int NTHP_GEN_DEBUG_INIT(FILE* fdescriptor);
+
+        // Can be executed whenever; Ties up loose ends in the debugging system.
+        extern void NTHP_GEN_DEBUG_CLOSE(void);
 
 namespace nthp {
         typedef enum {
                 SDL_Failure,
                 Memory_Fault,
-                sArray_Segfault
+                sArray_Segfault,
+                CriticalFileFailure
         } FATAL_ERROR;
 
         extern void THROW_FATAL(char errorcode, const char* fatal_message);

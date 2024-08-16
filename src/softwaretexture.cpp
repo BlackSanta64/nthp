@@ -104,7 +104,7 @@ nthp::texture::SoftwareTexture::~SoftwareTexture() {
         if(dataSize > 0)
                 free(pixelData);
 
-        PRINT_DEBUG("done.\n");
+        NOVERB_PRINT_DEBUG("done.\n");
 }
 
 
