@@ -59,8 +59,34 @@ void nthp::texture::Palette::exportPaletteToFile(const char* filename) {
 
 }
 
-void nthp::texture::Palette::clean(const nthp::texture::Pixel p) {
+void nthp::texture::Palette::clean(const nthp::texture::STPixelBinary p) {
         memset(colorSet, 0, nthp::texture::PaletteFileByteSize);
+}
+
+void nthp::texture::Palette::whiteShift(int shiftLevel) {
+        for(int i = 0; i < nthp::texture::PaletteFileSize; ++i) {
+                colorSet[i].R += shiftLevel;
+                colorSet[i].G += shiftLevel;
+                colorSet[i].B += shiftLevel;
+        }
+}
+
+void nthp::texture::Palette::redShift(int shiftLevel) {
+        for(int i = 0; i < nthp::texture::PaletteFileSize; ++i) {
+                colorSet[i].R += shiftLevel;
+        }
+}
+
+void nthp::texture::Palette::greenShift(int shiftLevel) {
+        for(int i = 0; i < nthp::texture::PaletteFileSize; ++i) {
+                colorSet[i].G += shiftLevel;
+        }
+}
+
+void nthp::texture::Palette::blueShift(int shiftLevel) {
+        for(int i = 0; i < nthp::texture::PaletteFileSize; ++i) {
+                colorSet[i].B += shiftLevel;
+        }
 }
 
 

@@ -97,8 +97,17 @@ namespace nthp {
 
         typedef vector<fixed_t> vectFixed;
 
-        extern volatile uint32_t deltaTime;
-        extern volatile vect32 mousePosition; 
+        // The number of milliseconds the previous frame took to complete (logic and rendering)
+        extern fixed_t deltaTime;
+
+        // The maximum time a frame can take in milliseconds. Set to -1 to disable.
+        extern fixed_t frameDelay;
+
+        // The mouse's current WorldPosition (not pixel position, be careful) relative to the active window
+        extern vectFixed mousePosition;
+
+        // Sets the max framerate in FPS to nthp::frameDelay
+        inline void setMaxFPS(const FIXED_TYPE fps) { frameDelay = nthp::f_fixedQuotient(nthp::intToFixed(1000), nthp::intToFixed(fps)); }
 
 
         template<class T>

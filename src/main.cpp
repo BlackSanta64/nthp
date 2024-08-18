@@ -7,108 +7,119 @@
 #include "softwaretexture.hpp"
 #include "e_entity.hpp"
 
+bool u,d,l,r,inc,dec;
 
-nthp::vect32 mousePos;
-nthp::EngineCore* globalCore = nullptr;
+void hEvents(SDL_Event* event) {
+        switch(event->type) {
+                case SDL_KEYDOWN:
+                        if(event->key.keysym.sym == SDLK_UP)
+                                inc = true;
+                        if(event->key.keysym.sym == SDLK_DOWN)
+                                dec = true;       
+
+                        if(event->key.keysym.sym == SDLK_w) {
+                                u = true;
+                        }
+                        if(event->key.keysym.sym == SDLK_s) {
+                                d = true;
+                        }
+                        if(event->key.keysym.sym == SDLK_a) {
+                                l = true;
+                        }
+                        if(event->key.keysym.sym == SDLK_d) {
+                                r = true;
+                        }
+                        break;
+
+                case SDL_KEYUP:
+                        if(event->key.keysym.sym == SDLK_UP)
+                                inc = false;
+                        if(event->key.keysym.sym == SDLK_DOWN)
+                                dec = false;       
 
 
-
-void hEvents(SDL_Event* events) {
-        switch(events->type) {
-        case SDL_KEYDOWN: 
-		if(events->key.keysym.sym == SDLK_TAB) {
-			globalCore->stop();
-		}
-                break;
-	default:
-		break;
-	}
+                        if(event->key.keysym.sym == SDLK_w) {
+                                u = false;
+                        }
+                        if(event->key.keysym.sym == SDLK_s) {
+                                d = false;
+                        }
+                        if(event->key.keysym.sym == SDLK_a) {
+                                l = false;
+                        }
+                        if(event->key.keysym.sym == SDLK_d) {
+                                r = false;
+                        }
+                        break;
+        }
 }
-
-
-void createSTSquare() {
-        std::fstream file("test.st", std::ios::out | std::ios::binary);
-        nthp::texture::SoftwareTexture::software_texture_header header;
-        header.signature = nthp::texture::STheaderSignature;
-
-        header.x = 3;
-        header.y = 3;
-
-        NTHPST_COLOR_WIDTH pixels[9] = {
-                15, 15, 15,
-                15, 31, 15,
-                15, 15, 15
-        };
-
-        file.write((char*)&header, sizeof(header));
-        file.write((char*)pixels, sizeof(NTHPST_COLOR_WIDTH) * 9);
-        file.close();
-}
-
-
 
 
 
 int main(int argv, char** argc) {
 
-        NTHP_GEN_DEBUG_INIT(fopen("debugLog.log", "w+"));
+        NTHP_GEN_DEBUG_INIT(stdout);
         
-        { // The entire engine context.
+        { // The entire engine debug context.
+                
+
+                nthp::setMaxFPS(120);
+
+                nthp::EngineCore core(nthp::RenderRuleSet(800, 800, 500, 500, nthp::vectFixed(0,0)), "Testing Window", false, false);
+                auto frameStart = SDL_GetTicks();
 
 
-                nthp::EngineCore core(nthp::RenderRuleSet(960, 540, 2000, 2000, nthp::vectFixed(0,0)), "Testing Window", false, false);
-                globalCore = &core;
+                nthp::texture::SoftwareTexture playerTexture;
+                {
+                        nthp::texture::Palette pal("genericPalette.pal");
+                        playerTexture.generateTexture("player.st", &pal, core.getRenderer());
+                }
+                nthp::texture::Frame playerFrame;
+                playerFrame.texture = playerTexture.getTexture();
+                playerFrame.src = {0,0,20,20};
 
-                nthp::texture::Palette pal("genericPalette.pal");
-                pal.colorSet[nthp::texture::PaletteFileSize - 1].R = 255;
-                pal.colorSet[nthp::texture::PaletteFileSize - 1].G = 255;
-                pal.colorSet[nthp::texture::PaletteFileSize - 1].B = 255;
+                nthp::entity::gEntity player;
+                player.setRenderSize(nthp::vectFixed(nthp::intToFixed(10), nthp::intToFixed(10)));
+                player.importFrameData(&playerFrame, 1, false);
+                player.setCurrentFrame(0);
 
-                pal.exportPaletteToFile("genericPalette.pal");
+                nthp::fixed_t playerSpeed = nthp::intToFixed(2);
+                const nthp::fixed_t acc = nthp::doubleToFixed(0.03);
 
-      	        nthp::texture::SoftwareTexture texture("wall.st", &pal, core.getRenderer());
-	        nthp::entity::gEntity test, test2;
 
-                nthp::texture::Frame frames;
-                frames.src = {0,0,100,76};
-                frames.texture = texture.getTexture();
-
-                test.importFrameData(&frames, 1, false);
-                test.setRenderSize(nthp::vectFixed(nthp::intToFixed(200), nthp::intToFixed(200)));
-	        test.setHtiboxSize(nthp::vectFixed(nthp::intToFixed(180), nthp::intToFixed(180)));
-	        test.setHitboxOffset(nthp::vectFixed(nthp::intToFixed(10), nthp::intToFixed(10)));
-
-                test.setCurrentFrame(0);
-
-	        test2.importFrameData(&frames, 1, false);
-	        test2.setRenderSize(nthp::vectFixed(nthp::intToFixed(300), nthp::intToFixed(300)));
-	        test2.setHtiboxSize(nthp::vectFixed(nthp::intToFixed(300), nthp::intToFixed(300)));
-	        test2.setCurrentFrame(0);
-
-	        test2.setPosition(nthp::vectFixed(nthp::intToFixed(1000), nthp::intToFixed(1000)));
 
                 while(core.isRunning()) {
-		        SDL_Delay(10);
-
+                        frameStart = SDL_GetTicks();
 
                         core.handleEvents(hEvents);
 		
-		        SDL_GetMouseState(&mousePos.x, &mousePos.y);
+                        if(u)
+                                player.move(nthp::vectFixed(0, -playerSpeed));
+                        if(d)
+                                player.move(nthp::vectFixed(0, playerSpeed));
+                        if(l)
+                                player.move(nthp::vectFixed(-playerSpeed, 0));
+                        if(r)
+                                player.move(nthp::vectFixed(playerSpeed, 0));
 
-		        test.setPosition(nthp::generateWorldPosition(nthp::vect64(mousePos.x, mousePos.y), &core.p_coreDisplay));
-		        if(nthp::entity::checkRectCollision(test.getHitbox(), test2.getHitbox())) {
-		        	SDL_SetRenderDrawColor(core.getRenderer(), 100, 255, 50, 255);
-		        }
+                        if(inc)
+                                playerSpeed += acc;
+                        if(dec)
+                                playerSpeed -= acc;
+                        
 
 		        core.clear();
-                        core.render(test.getUpdateRenderPacket(&core.p_coreDisplay));
-		        core.render(test2.getUpdateRenderPacket(&core.p_coreDisplay));
+                        core.render(player.getUpdateRenderPacket(&core.p_coreDisplay));
                         core.display();
-		
-		        SDL_SetRenderDrawColor(core.getRenderer(), 144, 144, 144, 255);
 
+                        nthp::deltaTime = nthp::intToFixed(SDL_GetTicks() - frameStart);
+                       
+                        if(nthp::deltaTime < nthp::frameDelay) {
+                                SDL_Delay(nthp::fixedToInt(nthp::frameDelay - nthp::deltaTime));
+                                nthp::deltaTime = nthp::frameDelay;
+                        }
                 }
-        } // The entire engine context.
+        } 
 
 
         NTHP_GEN_DEBUG_CLOSE();

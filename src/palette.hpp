@@ -35,7 +35,7 @@ namespace nthp {
 
 
                         void importPaletteFromFile(const char* filename);
-                        void clean(nthp::texture::Pixel s);
+                        void clean(const nthp::texture::STPixelBinary p);
                         void exportPaletteToFile(const char* outputFile);
 
                         nthp::texture::Pixel pullColorSetWithAlpha(size_t colorIndex, uint8_t alpha) {
@@ -43,6 +43,17 @@ namespace nthp {
                                 return pixel;
                         }
                         
+                        // Increases/Decreases every palette color's entire pixel RGB value by 'shiftLevel'
+                        void whiteShift(int shiftLevel);
+
+                        // Increases/Decreases every palette color's red pixel value by 'shiftLevel'
+                        void redShift(int shiftLevel);
+
+                        // Increases/Decreases every palette color's green pixel value by 'shiftLevel'
+                        void greenShift(int shiftLevel);
+
+                        // Increases/Decreases every palette color's blue pixel value by 'shiftLevel'
+                        void blueShift(int shiftLevel);
 
                         ~Palette();
                         STPixelBinary colorSet[nthp::texture::PaletteFileSize];

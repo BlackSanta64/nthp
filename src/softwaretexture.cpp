@@ -1,5 +1,5 @@
 #include "softwaretexture.hpp"
-#define POKE printf("POKE\n");
+
 
 
 const uint8_t nthp::texture::STheaderSignature = 0b11011001;

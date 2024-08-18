@@ -4,8 +4,11 @@
 
 #include "global.hpp"
 
-volatile uint32_t nthp::deltaTime;
-volatile nthp::vect32 nthp::mousePosition;
+nthp::fixed_t nthp::deltaTime = 0;
+nthp::fixed_t nthp::frameDelay = 0;
+
+nthp::vectFixed nthp::mousePosition;
+
 
 FILE* NTHP_debug_output = stdout;
 
