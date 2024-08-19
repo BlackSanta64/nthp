@@ -33,21 +33,41 @@
 
 
 
-
+#ifndef SILENCE_DEBUG
 
 // Use DEBUG_PRINT as a regular printf wrapper. It gets substituted out
 // if unless DEBUG is defined 
-#ifdef DEBUG
-	extern FILE* NTHP_debug_output;
-	extern void PRINT_DEBUG                 (const char* format, ...);
+        #ifdef DEBUG
 
-        #define NOVERB_PRINT_DEBUG(...)         fprintf(NTHP_debug_output, __VA_ARGS__)
-        #define GENERIC_PRINT(...)              printf(__VA_ARGS__)
+	        extern FILE* NTHP_debug_output;
+	        extern void PRINT_DEBUG                 (const char* format, ...);
+                extern void PRINT_DEBUG_ERROR           (const char* format, ...);
+
+        
+                #define NOVERB_PRINT_DEBUG(...)         fprintf(NTHP_debug_output, __VA_ARGS__)
+                #define GENERIC_PRINT(...)              printf(__VA_ARGS__)
+
+                #else
+        // All arguments are substituted out when DEBUG is not defined.
+        // The debug build config defines DEBUG in all translation units, but all
+        // debug functions are valid in the release build, so debugging individual source
+        // files is possible if DEBUG is defined before any includes.
+
+                #define PRINT_DEBUG(...)
+                #define NOVERB_PRINT_DEBUG(...)
+                #define GENERIC_PRINT(...)
+                #define PRINT_DEBUG_ERROR(...)
+
+        #endif
+
+
 
 #else
+
         #define PRINT_DEBUG(...)
         #define NOVERB_PRINT_DEBUG(...)
         #define GENERIC_PRINT(...)
+        #define PRINT_DEBUG_ERROR(...)
 
 #endif
 
@@ -62,7 +82,6 @@ namespace nthp {
         typedef enum {
                 SDL_Failure,
                 Memory_Fault,
-                sArray_Segfault,
                 CriticalFileFailure
         } FATAL_ERROR;
 
@@ -119,7 +138,7 @@ namespace nthp {
                 }
 
                 T& operator[](size_t index) {
-                        if(index > size) FATAL_PRINT(nthp::FATAL_ERROR::sArray_Segfault, "Segmentation Fault in sArray.");
+                        if(index > size) PRINT_DEBUG_ERROR("Segmentation Fault in sArray.");
                         return array[index];
                 }
                 inline const T* getData() { return array; }

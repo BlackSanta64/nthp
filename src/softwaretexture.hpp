@@ -53,6 +53,11 @@ namespace nthp {
                 #if USE_SDLIMG == 1
                         extern int generatePaletteFromImage(const char* inputImageFile, const char* outputFile);
                         extern int generateSoftwareTextureFromImage(const char* inputImageFile, nthp::texture::Palette* palette, const char* outputFile);
+
+                #else
+                        #pragma message("WARNING: nthp::texture::tools utilities ignored; Dependency 'SDL_image' excluded.")
+                        #define generateSoftwareTextureFromImage(...)
+                        #define generatePaletteFromImage(...)
                 #endif
                 }
 

@@ -20,12 +20,24 @@ void nthp::THROW_FATAL(char errorcode, const char* fatal_message) {
 
 
 void PRINT_DEBUG(const char* format, ...) {
-
 	va_list ap;
 	
 	va_start(ap, format);
 
 	fprintf(NTHP_debug_output, "[%u] DEBUG: ", SDL_GetTicks());	
+	vfprintf(NTHP_debug_output, format, ap);
+
+
+	va_end(ap);
+}
+
+void PRINT_DEBUG_ERROR(const char* format, ...) {
+
+	va_list ap;
+	
+	va_start(ap, format);
+
+	fprintf(NTHP_debug_output, "[%u] ERROR: ", SDL_GetTicks());	
 	vfprintf(NTHP_debug_output, format, ap);
 
 
@@ -66,4 +78,3 @@ void NTHP_GEN_DEBUG_CLOSE(void) {
                 fclose(NTHP_debug_output);
         }
 }
-

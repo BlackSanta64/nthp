@@ -22,7 +22,7 @@ void nthp::texture::Palette::importPaletteFromFile(const char* filename) {
         file.open(filename, std::ios::in | std::ios::binary);
 
         if(file.fail()) {
-                PRINT_DEBUG("Failed to create palette; file [%s] not found.\n", filename);
+                PRINT_DEBUG_ERROR("Failed to create palette; file [%s] not found.\n", filename);
 
                 return;
         }
@@ -46,7 +46,7 @@ void nthp::texture::Palette::exportPaletteToFile(const char* filename) {
         file.open(filename, std::ios::out | std::ios::binary);
 
         if(file.fail()) {
-                PRINT_DEBUG("Failed to export palette data to file; Unable to open target file.\n");
+                PRINT_DEBUG_ERROR("Failed to export palette data to file; Unable to open target file.\n");
                 return;
         }
 

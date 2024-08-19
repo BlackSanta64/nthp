@@ -92,7 +92,8 @@ nthp::EngineCore::EngineCore(nthp::RenderRuleSet settings, const char* title, bo
 	
 	// This ensures the correct render resolution context when calculating scale factors.
 	// If the requested resolution is too small (or too large), SDL will correct the resolution to
-	// match the aspect ratio of the display and capabilities of the graphics card.
+	// match the aspect ratio of the display and capabilities of the graphics card. Querying for them
+        // might seem redundant, but trust bro.
 	{
 		int w, h;
 		SDL_GetRendererOutputSize(renderer, &w, &h);

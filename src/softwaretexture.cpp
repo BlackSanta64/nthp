@@ -89,6 +89,7 @@ void nthp::texture::SoftwareTexture::regenerateTexture(nthp::texture::Palette* p
         for(size_t i = 0; i < dataSize; ++i)
                 stSurface.setPixel(i, palette->pullColorSetWithAlpha(getPixelColor(pixelData[i]), getTrueAlpha(getPixelAlphaLevel(pixelData[i]))));
 
+
         texture = SDL_CreateTextureFromSurface(renderer, stSurface.getSurface());
 
         PRINT_DEBUG("Regenerated texture [%p] with palette [%p].\n", this, palette);
@@ -156,6 +157,9 @@ int nthp::texture::tools::generateSoftwareTextureFromImage(const char* inputImag
         pixelScore scores[nthp::texture::PaletteFileSize];
         uint16_t smallestElement = 0;    // This is a pointer.
         
+        NOVERB_PRINT_DEBUG("\tGENERATING NEW ST TEXTURE FROM FILE %s...\n", inputImageFile);
+        double progress = 0;
+
         // Outer loop for cycling through baseImage pixels.
         for(size_t i = 0; i < surfaceSize; ++i) {
                 
@@ -173,7 +177,8 @@ int nthp::texture::tools::generateSoftwareTextureFromImage(const char* inputImag
                 // By this point, the smallest score is stored at index colorset[smallestElement].
                 pixelData[i] = (smallestElement << 4) | (baseImage.getPixel(i).A / nthp::texture::SoftwareTexture::alphaLevelSize);
                 smallestElement = 0;
-
+                progress = ((double)i / (double)surfaceSize) * (double)100;
+                NOVERB_PRINT_DEBUG("Progress: [%lf%%]...\n", progress);
         }
   
 
@@ -187,6 +192,7 @@ int nthp::texture::tools::generateSoftwareTextureFromImage(const char* inputImag
         file.write((char*)pixelData.getData(), pixelData.getBinarySize());
 
         file.close();
+        NOVERB_PRINT_DEBUG("\tDone. Output target [%s].\n", outputFile);
 
         return 0;
 }
