@@ -6,7 +6,7 @@ SRCDIR = src/
 # The linux buildsystem relies on a standard installation of SDL2 and SDL2_image
 # (should it be used), with whatever default directories come with, as decided
 # by the package manager. This buildsystem has no flexibility in regards to library paths.
-# To use a custom installation/build of SDL2, the whole buildsystem has to be update.
+# To use a custom installation/build of SDL2, the whole buildsystem has to be updated.
 
 
 USE_SDLIMAGE = 1
@@ -30,12 +30,12 @@ DEBUG_CFLAGS = -g -lSDL2 $(SDL_imageLibInclude) -D LINUX -D DEBUG -DUSE_SDLIMG=$
 all: release debug
 
 
-release: main.o global_defs.o core.o position.o palette.o rawsurface.o softwaretexture.o e_entity.o e_collision.o
-	$(CC) main.o global_defs.o core.o position.o palette.o rawsurface.o softwaretexture.o e_entity.o e_collision.o $(CFLAGS) -o $(TARGET)
+release: main.o global_defs.o core.o position.o palette.o rawsurface.o softwaretexture.o e_entity.o e_collision.o a_sound.o
+	$(CC) main.o global_defs.o core.o position.o palette.o rawsurface.o softwaretexture.o e_entity.o e_collision.o a_sound.o $(CFLAGS) -o $(TARGET)
 
 
-debug: main_d.o global_defs_d.o core_d.o position_d.o palette_d.o rawsurface_d.o softwaretexture_d.o e_entity_d.o e_collision_d.o
-	$(CC) main_d.o global_defs_d.o core_d.o position_d.o palette_d.o rawsurface_d.o softwaretexture_d.o e_entity_d.o e_collision_d.o $(DEBUG_CFLAGS) -o $(TARGET)_debug
+debug: main_d.o global_defs_d.o core_d.o position_d.o palette_d.o rawsurface_d.o softwaretexture_d.o e_entity_d.o e_collision_d.o a_sound_d.o
+	$(CC) main_d.o global_defs_d.o core_d.o position_d.o palette_d.o rawsurface_d.o softwaretexture_d.o e_entity_d.o e_collision_d.o a_sound_d.o $(DEBUG_CFLAGS) -o $(TARGET)_debug
 
 
 # RELEASE DEPENDENCIES GO HERE VVV
@@ -70,6 +70,12 @@ e_entity.o: $(SRCDIR)e_entity.cpp $(SRCDIR)e_entity.hpp
 e_collision.o: $(SRCDIR)e_collision.hpp $(SRCDIR)e_collision.cpp
 	$(CC) $(CFLAGS) -c $(SRCDIR)e_collision.cpp -o e_collision.o
 
+a_sound.o: $(SRCDIR)a_sound.hpp $(SRCDIR)a_sound.cpp
+	$(CC) $(CFLAGS) -c $(SRCDIR)a_sound.cpp -o a_sound.o
+
+a_device.o: $(SRCDIR)a_device.hpp $(SRCDIR)a_device.cpp
+	$(CC) $(CFLAGS) -c $(SRCDIR)a_device.cpp -o a_device.o
+
 # DEBUG DEPENDENCIES GO HERE VVV
 
 
@@ -103,10 +109,15 @@ e_entity_d.o: $(SRCDIR)e_entity.cpp $(SRCDIR)e_entity.hpp
 
 
 e_collision_d.o: $(SRCDIR)e_collision.hpp $(SRCDIR)e_collision.cpp
-	$(CC) $(CFLAGS) -c $(SRCDIR)e_collision.cpp -o e_collision_d.o
+	$(CC) $(DEBUG_CFLAGS) -c $(SRCDIR)e_collision.cpp -o e_collision_d.o
 
 
+a_sound_d.o: $(SRCDIR)a_sound.hpp $(SRCDIR)a_sound.cpp
+	$(CC) $(DEBUG_CFLAGS) -c $(SRCDIR)a_sound.cpp -o a_sound_d.o
 
+
+a_device_d.o: $(SRCDIR)a_device.hpp $(SRCDIR)a_device.cpp
+	$(CC) $(DEBUG_CFLAGS) -c $(SRCDIR)a_device.cpp -o a_device_d.o
 
 
 

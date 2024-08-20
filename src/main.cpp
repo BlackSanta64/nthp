@@ -57,7 +57,7 @@ void hEvents(SDL_Event* event) {
 
 int main(int argv, char** argc) {
 
-        NTHP_GEN_DEBUG_INIT(stdout);
+        NTHP_GEN_DEBUG_INIT(fopen("debug.log", "w+"));
         
         { // The entire engine debug context.
                 
@@ -86,18 +86,7 @@ int main(int argv, char** argc) {
 
                         core.handleEvents(hEvents);
 
-                        if(inc) {
-                                pal.whiteShift(5);
-                                tux.regenerateTexture(&pal, core.getRenderer());
-                                tuxFrame.texture = tux.getTexture();
-                        }
-                        if(dec) {
-                                pal.whiteShift(-5);
-                                tux.regenerateTexture(&pal, core.getRenderer());
-                                tuxFrame.texture = tux.getTexture();
-                        }
-                                
-                     
+                    
 
 		        core.clear();
                         core.render(e_tux.getUpdateRenderPacket(&core.p_coreDisplay));

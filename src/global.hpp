@@ -132,6 +132,7 @@ namespace nthp {
         template<class T>
         class sArray {
         public:
+		sArray() { array = nullptr; size = 0; }
                 sArray(size_t size) {
                         array = new T[size];
                         this->size = size;
@@ -143,6 +144,9 @@ namespace nthp {
                 }
                 inline const T* getData() { return array; }
                 inline size_t getSize() { return size; }
+
+		void alloc(size_t t_size) { array = new T[t_size]; this->size = t_size; }
+		void dealloc() { delete[] array; size = 0; }
 
                 inline size_t getBinarySize() { return (size * sizeof(T)); }
 

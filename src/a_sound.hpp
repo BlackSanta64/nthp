@@ -11,14 +11,15 @@ namespace nthp {
                 
                 class Sound {
                 public:
+			Sound() { audioBuffer = nullptr; waveLength = 0; }
                         Sound(const char* wavFile);
+						
 
                         ~Sound();
-                private:
-                        SDL_AudioDeviceID audioDevice;
+
 
                         SDL_AudioSpec audioSpec;
-                        uint8_t* audioStart;
+                        uint8_t* audioBuffer;
                         uint32_t waveLength;
                 };
         }

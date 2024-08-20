@@ -41,7 +41,7 @@ namespace nthp {
 // 32-bits if no width is defined.
 #if FIXED_POINT_WIDTH == 64
                                 #define FIXED_TYPE               int64_t
-                                #define UPCAST_TYPE              NULL
+                                #define UPCAST_TYPE              ____NOTYPE
                                 namespace fixedTypeConstants { constexpr uint64_t FIXED_MAX = UINT64_MAX; }
  #else
         #if FIXED_POINT_WIDTH == 32

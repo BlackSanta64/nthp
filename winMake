@@ -47,11 +47,11 @@ SRCDIR = src/
 all: release debug
 
 
-release: main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj e_collision.obj
-	$(CC) main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj e_collision.obj -Fe"$(TARGET).exe" $(LINKERFLAGS) 
+release: main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj e_collision.obj a_sound.obj a_device.obj
+	$(CC) main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj e_collision.obj a_sound.obj a_device.obj Fe"$(TARGET).exe" $(LINKERFLAGS) 
 
-debug: main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj e_collision_d.obj
-	$(CC) main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj e_collision_d.obj -Fe"$(TARGET)_debug.exe" $(DEBUG_LINKERFLAGS) 
+debug: main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj e_collision_d.obj a_sound_d.obj a_device_d.obj
+	$(CC) main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj e_collision_d.obj a_sound_d.obj a_device_d.obj -Fe"$(TARGET)_debug.exe" $(DEBUG_LINKERFLAGS) 
 
 
 
@@ -85,6 +85,12 @@ e_entity.obj: $(SRCDIR)e_entity.hpp $(SRCDIR)e_entity.cpp $(SRCDIR)e_collision.h
 e_collision.obj: $(SRCDIR)e_collision.hpp $(SRCDIR)e_collision.cpp
 	$(CC) -c $(SRCDIR)e_collision.cpp -Fo"e_collision.obj" $(CFLAGS)
 
+a_sound.obj: $(SRCDIR)a_sound.hpp $(SRCDIR)a_sound.cpp
+	$(CC) -c $(SRCDIR)a_sound.cpp -Fo"a_sound.obj" $(CFLAGS)
+
+a_device.obj: $(SRCDIR)a_device.hpp $(SRCDIR)a_device.cpp
+	$(CC) -c $(SRCDIR)a_device.cpp -Fo"a_device.obj" $(CFLAGS)
+
 
 #DEBUG DEPENDENCIES GO HERE
 main_d.obj: $(SRCDIR)main.cpp
@@ -114,6 +120,14 @@ e_entity_d.obj: $(SRCDIR)e_entity.hpp $(SRCDIR)e_entity.cpp $(SRCDIR)e_collision
 
 e_collision_d.obj: $(SRCDIR)e_collision.hpp $(SRCDIR)e_collision.cpp
 	$(CC) -c $(SRCDIR)e_collision.cpp -Fo"e_collision_d.obj" $(DEBUG_CFLAGS)
+
+
+a_sound_d.obj: $(SRCDIR)a_sound.hpp $(SRCDIR)a_sound.cpp
+	$(CC) -c $(SRCDIR)a_sound.cpp -Fo"a_sound_d.obj" $(DEBUG_CFLAGS)
+
+
+a_device_d.obj: $(SRCDIR)a_device.hpp $(SRCDIR)a_device.cpp
+	$(CC) -c $(SRCDIR)a_device.cpp -Fo"a_device_d.obj" $(DEBUG_FLAGS)
 
 
 
