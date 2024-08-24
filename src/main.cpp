@@ -5,6 +5,8 @@
 #include "palette.hpp"
 #include "softwaretexture.hpp"
 #include "e_entity.hpp"
+#include "st_compress.hpp"
+
 
 bool u,d,l,r,inc,dec;
 
@@ -63,17 +65,19 @@ int main(int argv, char** argc) {
                 
                 nthp::setMaxFPS(120);
 
-                nthp::EngineCore core(nthp::RenderRuleSet(800, 800, 500, 500, nthp::vectFixed(0,0)), "Testing Window", false, false);
+                nthp::EngineCore core(nthp::RenderRuleSet(760, 910, 500, 500, nthp::vectFixed(0,0)), "Testing Window", false, false);
                 auto frameStart = SDL_GetTicks();
 
                 nthp::texture::Palette pal("genericPalette.pal");
                 nthp::texture::SoftwareTexture tux("tux.st", &pal, core.getRenderer());
 
+                nthp::texture::compression::compressSoftwareTextureFile("tux.st", "c_tux.cst");
+
                 PRINT_DEBUG("Generated TUX.ST.\n");
 
                 nthp::texture::Frame tuxFrame;
                 tuxFrame.texture = tux.getTexture();
-                tuxFrame.src = {0, 0, 764, 910};
+                tuxFrame.src = {0, 0, 1000, 1000};
 
                 nthp::entity::gEntity e_tux;
                 e_tux.importFrameData(&tuxFrame, 1, false);
@@ -86,7 +90,15 @@ int main(int argv, char** argc) {
 
                         core.handleEvents(hEvents);
 
-                    
+                        if(u)
+                                tuxFrame.src.y -= 5;
+                        if(d)
+                                tuxFrame.src.y += 5;                    
+                        if(l)
+                                tuxFrame.src.x -= 5;
+                        if(r)
+                                tuxFrame.src.x += 5;  
+
 
 		        core.clear();
                         core.render(e_tux.getUpdateRenderPacket(&core.p_coreDisplay));

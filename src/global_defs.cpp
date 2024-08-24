@@ -44,6 +44,19 @@ void PRINT_DEBUG_ERROR(const char* format, ...) {
 	va_end(ap);
 }
 
+void PRINT_DEBUG_WARNING(const char* format, ...) {
+
+	va_list ap;
+	
+	va_start(ap, format);
+
+	fprintf(NTHP_debug_output, "[%u] WARNING: ", SDL_GetTicks());	
+	vfprintf(NTHP_debug_output, format, ap);
+
+
+	va_end(ap);
+}
+
 
 int NTHP_GEN_DEBUG_INIT(FILE* fdescriptor) {
         if(fdescriptor == NULL) {

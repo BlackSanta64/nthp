@@ -8,7 +8,8 @@ namespace nthp {
                 public:
                         SoftwareTexture();
                         SoftwareTexture(const char* filename, nthp::texture::Palette* palette, SDL_Renderer* coreRenderer);
-                        SoftwareTexture(SDL_Surface* surface, nthp::texture::Palette* palette, SDL_Renderer* renderer);
+                        SoftwareTexture(const char* filename);
+
 
                         int generateTexture(const char* filename, nthp::texture::Palette* palette, SDL_Renderer* coreRenderer);
                         inline SDL_Texture* getTexture() { return texture; }
@@ -27,8 +28,10 @@ namespace nthp {
                         
                         static constexpr NTHPST_COLOR_WIDTH alphaLevelSize = UINT8_MAX / NTHPST_ALPHAMASK; 
 
+                        NTHPST_COLOR_WIDTH* getPixelData() { return pixelData; }
+                        const size_t getPixelDataSize() { return dataSize; }
 
-
+                        void createEmptyTexture(const size_t dataSize);
                         ~SoftwareTexture();
                 private:
 
@@ -56,8 +59,6 @@ namespace nthp {
 
                 #else
                         #pragma message("WARNING: nthp::texture::tools utilities ignored; Dependency 'SDL_image' excluded.")
-                        #define generateSoftwareTextureFromImage(...)
-                        #define generatePaletteFromImage(...)
                 #endif
                 }
 

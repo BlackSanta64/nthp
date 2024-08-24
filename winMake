@@ -3,7 +3,7 @@ TARGET=run
 SDLInclude=C:\CppLibs\SDL\SDL2\include
 SDLLib=C:\CppLibs\SDL\SDL2\lib\x64
 
-USE_SDLIMAGE = 1
+USE_SDLIMAGE = 0
 
 # SDL_Image is not required for the engine runtime; It's only used for
 # converting PNG and JPEG images into SoftwareTextures and generating palettes.
@@ -47,11 +47,11 @@ SRCDIR = src/
 all: release debug
 
 
-release: main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj e_collision.obj a_sound.obj a_device.obj
-	$(CC) main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj e_collision.obj a_sound.obj a_device.obj Fe"$(TARGET).exe" $(LINKERFLAGS) 
+release: main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj e_collision.obj st_compress.obj
+	$(CC) main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj e_collision.obj st_compress.obj -Fe"$(TARGET).exe" $(LINKERFLAGS) 
 
-debug: main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj e_collision_d.obj a_sound_d.obj a_device_d.obj
-	$(CC) main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj e_collision_d.obj a_sound_d.obj a_device_d.obj -Fe"$(TARGET)_debug.exe" $(DEBUG_LINKERFLAGS) 
+debug: main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj e_collision_d.obj st_compress_d.obj
+	$(CC) main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj e_collision_d.obj st_compress_d.obj -Fe"$(TARGET)_debug.exe" $(DEBUG_LINKERFLAGS) 
 
 
 
@@ -85,11 +85,9 @@ e_entity.obj: $(SRCDIR)e_entity.hpp $(SRCDIR)e_entity.cpp $(SRCDIR)e_collision.h
 e_collision.obj: $(SRCDIR)e_collision.hpp $(SRCDIR)e_collision.cpp
 	$(CC) -c $(SRCDIR)e_collision.cpp -Fo"e_collision.obj" $(CFLAGS)
 
-a_sound.obj: $(SRCDIR)a_sound.hpp $(SRCDIR)a_sound.cpp
-	$(CC) -c $(SRCDIR)a_sound.cpp -Fo"a_sound.obj" $(CFLAGS)
+st_compress.obj: $(SRCDIR)st_compress.hpp $(SRCDIR)st_compress.cpp
+	$(CC) -c $(SRCDIR)st_compress.cpp -Fo"st_compress.obj" $(CFLAGS)
 
-a_device.obj: $(SRCDIR)a_device.hpp $(SRCDIR)a_device.cpp
-	$(CC) -c $(SRCDIR)a_device.cpp -Fo"a_device.obj" $(CFLAGS)
 
 
 #DEBUG DEPENDENCIES GO HERE
@@ -120,16 +118,9 @@ e_entity_d.obj: $(SRCDIR)e_entity.hpp $(SRCDIR)e_entity.cpp $(SRCDIR)e_collision
 
 e_collision_d.obj: $(SRCDIR)e_collision.hpp $(SRCDIR)e_collision.cpp
 	$(CC) -c $(SRCDIR)e_collision.cpp -Fo"e_collision_d.obj" $(DEBUG_CFLAGS)
-
-
-a_sound_d.obj: $(SRCDIR)a_sound.hpp $(SRCDIR)a_sound.cpp
-	$(CC) -c $(SRCDIR)a_sound.cpp -Fo"a_sound_d.obj" $(DEBUG_CFLAGS)
-
-
-a_device_d.obj: $(SRCDIR)a_device.hpp $(SRCDIR)a_device.cpp
-	$(CC) -c $(SRCDIR)a_device.cpp -Fo"a_device_d.obj" $(DEBUG_FLAGS)
-
-
+ 
+st_compress_d.obj: $(SRCDIR)st_compress.hpp $(SRCDIR)st_compress.cpp
+	$(CC) -c $(SRCDIR)st_compress.cpp -Fo"st_compress_d.obj" $(DEBUG_CFLAGS)
 
 clean:
-	del *.obj
+	del *.obj *.pdb *.ilk

@@ -19,7 +19,8 @@ nthp::texture::SoftwareTexture::SoftwareTexture(const char* filename, nthp::text
         dataSize = 0;
         
         if(this->generateTexture(filename, palette, coreRenderer)) {
-
+                PRINT_DEBUG_ERROR("Failed to generate SoftwareTexture.\n");
+                return;
         }
 }
 
@@ -37,7 +38,7 @@ int nthp::texture::SoftwareTexture::generateTexture(const char* filename, nthp::
         file.open(filename, std::ios::in | std::ios::binary);
 
         if(file.fail()) {
-                PRINT_DEBUG("Unable to create SoftwareTexture; file not found.\n");
+                PRINT_DEBUG_ERROR("Unable to create SoftwareTexture; file not found.\n");
                 pixelData = nullptr;
                 dataSize = 0;
 
@@ -48,7 +49,7 @@ int nthp::texture::SoftwareTexture::generateTexture(const char* filename, nthp::
         file.read((char*)&metadata, sizeof(metadata));
 
         if(metadata.signature != STheaderSignature) {
-                PRINT_DEBUG("Unable to create SoftwareTexture; Invalid file format.\n");
+                PRINT_DEBUG_ERROR("Unable to create SoftwareTexture; Invalid file format.\n");
                 pixelData = nullptr;
                 dataSize = 0;
 
@@ -63,14 +64,20 @@ int nthp::texture::SoftwareTexture::generateTexture(const char* filename, nthp::
         }
 
         file.read((char*)pixelData, (dataSize * sizeof(NTHPST_COLOR_WIDTH)));
-        nthp::texture::rawSurface stSurface(metadata.x, metadata.y);
+
+        if(palette != NULL) {
+                nthp::texture::rawSurface stSurface(metadata.x, metadata.y);
 
 
-        // Loops through and generates the texture using the given palette.
-        for(size_t i = 0; i < dataSize; ++i) {
-                stSurface.setPixel(i, palette->pullColorSetWithAlpha(getPixelColor(pixelData[i]), getTrueAlpha(getPixelAlphaLevel(pixelData[i]))));
+                // Loops through and generates the texture using the given palette.
+                for(size_t i = 0; i < dataSize; ++i) {
+                        stSurface.setPixel(i, palette->pullColorSetWithAlpha(getPixelColor(pixelData[i]), getTrueAlpha(getPixelAlphaLevel(pixelData[i]))));
+                }
+                texture = SDL_CreateTextureFromSurface(coreRenderer, stSurface.getSurface());
+                
+                return 0;
         }
-        texture = SDL_CreateTextureFromSurface(coreRenderer, stSurface.getSurface());
+        PRINT_DEBUG_WARNING("SoftwareTexture [%p] generated with NULL palette; Use 'regenerateTexture()' with a valid palette to compile into valid texture.\n", this);
 
         return 0;
 }
@@ -81,7 +88,7 @@ void nthp::texture::SoftwareTexture::regenerateTexture(nthp::texture::Palette* p
         if(dataSize != 0) 
                 SDL_DestroyTexture(texture);
         else {
-                PRINT_DEBUG("Unable to regenerate software texture [%p]; Texture not loaded.\n", this);
+                PRINT_DEBUG_ERROR("Unable to regenerate software texture [%p]; Texture not loaded.\n", this);
         }
 
         nthp::texture::rawSurface stSurface(metadata.x, metadata.y);
@@ -96,6 +103,10 @@ void nthp::texture::SoftwareTexture::regenerateTexture(nthp::texture::Palette* p
 }
 
 
+void nthp::texture::SoftwareTexture::createEmptyTexture(const size_t dataSize) {
+        pixelData = (NTHPST_COLOR_WIDTH*)malloc(dataSize * sizeof(NTHPST_COLOR_WIDTH));
+        memset(pixelData, 0, dataSize * sizeof(NTHPST_COLOR_WIDTH));
+}
 
 nthp::texture::SoftwareTexture::~SoftwareTexture() {
         PRINT_DEBUG("Destroying SoftwareTexture [%p]...\t", this);
