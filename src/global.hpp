@@ -34,20 +34,21 @@
 
 
 
-#ifndef SILENCE_DEBUG
 
 // Use DEBUG_PRINT as a regular printf wrapper. It gets substituted out
 // if unless DEBUG is defined 
         #ifdef DEBUG
 
 	        extern FILE* NTHP_debug_output;
-	        extern void PRINT_DEBUG                 (const char* format, ...);
+
+                #ifndef SUPRESS_DEBUG_OUTPUT
+	                extern void PRINT_DEBUG                 (const char* format, ...);
+                        #define NOVERB_PRINT_DEBUG(...)         fprintf(NTHP_debug_output, __VA_ARGS__)
+                        #define GENERIC_PRINT(...)              printf(__VA_ARGS__)
+                #endif
+
                 extern void PRINT_DEBUG_ERROR           (const char* format, ...);
                 extern void PRINT_DEBUG_WARNING         (const char* format, ...);
-
-        
-                #define NOVERB_PRINT_DEBUG(...)         fprintf(NTHP_debug_output, __VA_ARGS__)
-                #define GENERIC_PRINT(...)              printf(__VA_ARGS__)
 
                 #else
         // All arguments are substituted out when DEBUG is not defined.
@@ -63,16 +64,6 @@
 
         #endif
 
-
-
-#else
-
-        #define PRINT_DEBUG(...)
-        #define NOVERB_PRINT_DEBUG(...)
-        #define GENERIC_PRINT(...)
-        #define PRINT_DEBUG_ERROR(...)
-
-#endif
 
         // Must be executed first to ensure a valid file descriptor.
         // Specifies a target for the debug output system. Default is 'stdout'
@@ -145,8 +136,10 @@ namespace nthp {
                         if(index > size) PRINT_DEBUG_ERROR("Segmentation Fault in sArray.");
                         return array[index];
                 }
-                inline const T* getData() { return array; }
+                inline T* getData() { return array; }
                 inline size_t getSize() { return size; }
+
+                inline T*& getsArrayDataPointer() { return array; }
 
 		void alloc(size_t t_size) { array = new T[t_size]; this->size = t_size; }
 		void dealloc() { delete[] array; size = 0; }

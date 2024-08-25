@@ -1,9 +1,6 @@
 #include "softwaretexture.hpp"
 
 
-
-const uint8_t nthp::texture::STheaderSignature = 0b11011001;
-
 nthp::texture::SoftwareTexture::SoftwareTexture() {
         pixelData = nullptr;
         texture = nullptr;

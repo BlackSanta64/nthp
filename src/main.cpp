@@ -59,7 +59,7 @@ void hEvents(SDL_Event* event) {
 
 int main(int argv, char** argc) {
 
-        NTHP_GEN_DEBUG_INIT(fopen("debug.log", "w+"));
+        NTHP_GEN_DEBUG_INIT(stdout);
         
         { // The entire engine debug context.
                 
@@ -69,14 +69,16 @@ int main(int argv, char** argc) {
                 auto frameStart = SDL_GetTicks();
 
                 nthp::texture::Palette pal("genericPalette.pal");
-                nthp::texture::SoftwareTexture tux("tux.st", &pal, core.getRenderer());
+              //  nthp::texture::compression::compressSoftwareTextureFile("oscar.st", "oscar.cst");
+                
+               
+                auto tux = nthp::texture::compression::decompressTexture("tux.cst");
 
-                nthp::texture::compression::compressSoftwareTextureFile("tux.st", "c_tux.cst");
-
-                PRINT_DEBUG("Generated TUX.ST.\n");
+                tux->regenerateTexture(&pal, core.getRenderer());
+        
 
                 nthp::texture::Frame tuxFrame;
-                tuxFrame.texture = tux.getTexture();
+                tuxFrame.texture = tux->getTexture();
                 tuxFrame.src = {0, 0, 1000, 1000};
 
                 nthp::entity::gEntity e_tux;
@@ -111,6 +113,8 @@ int main(int argv, char** argc) {
                                 nthp::deltaTime = nthp::frameDelay;
                         }
                 }
+
+                delete tux;
         }
 
 

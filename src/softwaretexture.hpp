@@ -3,7 +3,9 @@
 
 namespace nthp {
         namespace texture {
-                extern const uint8_t STheaderSignature;
+                
+
+
                 class SoftwareTexture {
                 public:
                         SoftwareTexture();
@@ -16,7 +18,7 @@ namespace nthp {
 
                         void regenerateTexture(nthp::texture::Palette* palette, SDL_Renderer* renderer);
                         
-                        
+                        static const uint8_t STheaderSignature = 0b11011001;
                         struct software_texture_header {
                                 uint8_t signature;
                                 uint32_t x;
@@ -32,6 +34,9 @@ namespace nthp {
                         const size_t getPixelDataSize() { return dataSize; }
 
                         void createEmptyTexture(const size_t dataSize);
+                        const software_texture_header getMetaData() { return metadata; }
+                        inline void manual_metadata_override(const software_texture_header _ovr) { metadata = _ovr; dataSize = metadata.x * metadata.y; }
+
                         ~SoftwareTexture();
                 private:
 

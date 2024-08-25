@@ -9,11 +9,6 @@
 // that can be compressed into a single node.
 #define C_BLOCK_WIDTH   1
 
-// A compression node's datasize denomination; Each node contains this many bytes of
-// data.
-#define C_DATA_WIDTH    2
-
-
 
 
 namespace nthp {
@@ -43,39 +38,52 @@ namespace nthp {
         #endif
 #endif
 
-
-#if C_DATA_WIDTH == 1
-                                typedef uint8_t c_DataWidth;
-#else
-        #if C_DATA_WIDTH == 2
-                                typedef uint16_t c_DataWidth;
-        #else
-                #if C_DATA_WIDTH == 4
-                                typedef uint32_t c_DataWidth;
-                #else
-                        #if C_DATA_WIDTH == 8
-                                typedef uint64_t c_DataWidth;
-                        #else
-                                typedef uint8_t c_DataWidth;
-                        #endif
-                #endif
-        #endif
-#endif
+        typedef NTHPST_COLOR_WIDTH c_DataWidth;
 
        
                 struct Node {
+                        Node() { }
                         Node(c_BlockWidth w, c_DataWidth d) { blockSize = w; data = d; }
 
                         c_BlockWidth blockSize;
                         c_DataWidth data;
                 };
 
+                // The header in a decompressed softwareTexture and a compressed one is the same, but the signature
+                // value is different. That's why it's a typedef, not a whole other thing yo.
+                struct CST_header {
+                        uint8_t signature;
+                        uint32_t x;
+                        uint32_t y;
+                        uint64_t nodeCount;
+                };
+
+                static const uint8_t CSTHeaderSignature = 0b11101101;
+
+
+                // Does not deal in real softwareTexture files. When loading from a file, must use a compressed st file (.cst),
+                // not a raw softwareTexture (.st).
+                class CompressedSoftwareTexture {
+                public:
+                        CompressedSoftwareTexture();
+                        CompressedSoftwareTexture(const char* file);
+                        
+
+
+                        Node* nodes;
+                        CST_header metadata;
+                };
+
+
+
                 extern int compressSoftwareTextureFile(const char* inputFile, const char* output);
                 extern int compressSoftwareTexture(nthp::texture::SoftwareTexture* texture, const char* output);
 
                 extern nthp::texture::SoftwareTexture* decompressTexture(const char* file);
+                extern nthp::texture::SoftwareTexture* decompressTexture(CompressedSoftwareTexture* texture);
 
-        }
+
+                }
         }
 
 }

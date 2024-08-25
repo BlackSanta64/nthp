@@ -27,7 +27,6 @@ namespace nthp {
                 constexpr size_t PaletteFileByteSize = PaletteFileSize * sizeof(nthp::texture::STPixelBinary);
 
 
-                // A palette object used to generate softwareTextures. An array of 253 32-bit colors, with shifting operators.
                 class Palette {
                 public:
                         Palette();
@@ -60,19 +59,5 @@ namespace nthp {
   
 
                 };
-
-                namespace tools {
-
-
-                #if USE_SDLIMG == 1
-                        extern int generatePaletteFromImage(const char* inputImageFile, const char* outputFile);
-
-                        // Defined in softwaretexture.cpp
-                        extern int generateSoftwareTextureFromImage(const char* inputImageFile, const nthp::texture::Palette& palette, const char* outputFile);
-                #endif
-
-
-
-                }
         }
 }

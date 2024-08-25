@@ -30,12 +30,12 @@ DEBUG_CFLAGS = -g -lSDL2 $(SDL_imageLibInclude) -D LINUX -D DEBUG -DUSE_SDLIMG=$
 all: release debug
 
 
-release: main.o global_defs.o core.o position.o palette.o rawsurface.o softwaretexture.o e_entity.o e_collision.o a_sound.o
-	$(CC) main.o global_defs.o core.o position.o palette.o rawsurface.o softwaretexture.o e_entity.o e_collision.o a_sound.o $(CFLAGS) -o $(TARGET)
+release: main.o global_defs.o core.o position.o palette.o rawsurface.o softwaretexture.o e_entity.o e_collision.o st_compress.o
+	$(CC) main.o global_defs.o core.o position.o palette.o rawsurface.o softwaretexture.o e_entity.o e_collision.o st_compress.o $(CFLAGS) -o $(TARGET)
 
 
-debug: main_d.o global_defs_d.o core_d.o position_d.o palette_d.o rawsurface_d.o softwaretexture_d.o e_entity_d.o e_collision_d.o a_sound_d.o
-	$(CC) main_d.o global_defs_d.o core_d.o position_d.o palette_d.o rawsurface_d.o softwaretexture_d.o e_entity_d.o e_collision_d.o a_sound_d.o $(DEBUG_CFLAGS) -o $(TARGET)_debug
+debug: main_d.o global_defs_d.o core_d.o position_d.o palette_d.o rawsurface_d.o softwaretexture_d.o e_entity_d.o e_collision_d.o st_compress_d.o
+	$(CC) main_d.o global_defs_d.o core_d.o position_d.o palette_d.o rawsurface_d.o softwaretexture_d.o e_entity_d.o e_collision_d.o st_compress_d.o $(DEBUG_CFLAGS) -o $(TARGET)_debug
 
 
 # RELEASE DEPENDENCIES GO HERE VVV
@@ -70,11 +70,8 @@ e_entity.o: $(SRCDIR)e_entity.cpp $(SRCDIR)e_entity.hpp
 e_collision.o: $(SRCDIR)e_collision.hpp $(SRCDIR)e_collision.cpp
 	$(CC) $(CFLAGS) -c $(SRCDIR)e_collision.cpp -o e_collision.o
 
-a_sound.o: $(SRCDIR)a_sound.hpp $(SRCDIR)a_sound.cpp
-	$(CC) $(CFLAGS) -c $(SRCDIR)a_sound.cpp -o a_sound.o
-
-a_device.o: $(SRCDIR)a_device.hpp $(SRCDIR)a_device.cpp
-	$(CC) $(CFLAGS) -c $(SRCDIR)a_device.cpp -o a_device.o
+st_compress.o: $(SRCDIR)st_compress.cpp $(SRCDIR)st_compress.hpp
+	$(CC) $(CFLAGS) -c $(SRCDIR)st_compress.cpp -o st_compress.o
 
 # DEBUG DEPENDENCIES GO HERE VVV
 
@@ -97,7 +94,6 @@ position_d.o: $(SRCDIR)position.cpp $(SRCDIR)position.hpp
 palette_d.o: $(SRCDIR)palette.cpp $(SRCDIR)palette.hpp
 	$(CC) $(DEBUG_CFLAGS) -c $(SRCDIR)palette.cpp -o palette_d.o
 
-
 rawsurface_d.o: $(SRCDIR)rawsurface.cpp $(SRCDIR)rawsurface.hpp
 	$(CC) $(DEBUG_CFLAGS) -c $(SRCDIR)rawsurface.cpp -o rawsurface_d.o
 
@@ -111,14 +107,8 @@ e_entity_d.o: $(SRCDIR)e_entity.cpp $(SRCDIR)e_entity.hpp
 e_collision_d.o: $(SRCDIR)e_collision.hpp $(SRCDIR)e_collision.cpp
 	$(CC) $(DEBUG_CFLAGS) -c $(SRCDIR)e_collision.cpp -o e_collision_d.o
 
-
-a_sound_d.o: $(SRCDIR)a_sound.hpp $(SRCDIR)a_sound.cpp
-	$(CC) $(DEBUG_CFLAGS) -c $(SRCDIR)a_sound.cpp -o a_sound_d.o
-
-
-a_device_d.o: $(SRCDIR)a_device.hpp $(SRCDIR)a_device.cpp
-	$(CC) $(DEBUG_CFLAGS) -c $(SRCDIR)a_device.cpp -o a_device_d.o
-
+st_compress_d.o: $(SRCDIR)st_compress.cpp $(SRCDIR)st_compress.hpp
+	$(CC) $(DEBUG_CFLAGS) -c $(SRCDIR)st_compress.cpp -o st_compress_d.o
 
 
 clean:
