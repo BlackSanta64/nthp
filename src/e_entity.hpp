@@ -47,6 +47,7 @@ namespace nthp {
                 nthp::worldPosition wPosition;
                 nthp::entity::cRect hitbox;
 		nthp::vectFixed hbOffset;
+
         };
 
         }

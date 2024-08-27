@@ -34,17 +34,21 @@
 
 
 
-
 // Use DEBUG_PRINT as a regular printf wrapper. It gets substituted out
 // if unless DEBUG is defined 
         #ifdef DEBUG
 
 	        extern FILE* NTHP_debug_output;
 
-                #ifndef SUPRESS_DEBUG_OUTPUT
+                #ifndef SUPPRESS_DEBUG_OUTPUT
 	                extern void PRINT_DEBUG                 (const char* format, ...);
                         #define NOVERB_PRINT_DEBUG(...)         fprintf(NTHP_debug_output, __VA_ARGS__)
                         #define GENERIC_PRINT(...)              printf(__VA_ARGS__)
+
+                #else
+                        #define PRINT_DEBUG(...)
+                        #define NOVERB_PRINT_DEBUG(...)
+                        #define GENERIC_PRINT(...)
                 #endif
 
                 extern void PRINT_DEBUG_ERROR           (const char* format, ...);
@@ -81,6 +85,7 @@ namespace nthp {
 
         extern void THROW_FATAL(char errorcode, const char* fatal_message);
 
+        
         
         // Outputs a message and crashes the program. Use nthp::FATAL_ERROR values for
         // errorcode corresponding to the fatal fault.
@@ -123,6 +128,8 @@ namespace nthp {
         inline void setMaxFPS(const FIXED_TYPE fps) { frameDelay = nthp::f_fixedQuotient(nthp::intToFixed(1000), nthp::intToFixed(fps)); }
 
 
+        // Funny, lightweight (useless) dynamic storage class. This is genuinely
+        // more consistent than std::array no joke (not skill issue).
         template<class T>
         class sArray {
         public:
@@ -151,6 +158,7 @@ namespace nthp {
                 T* array;
                 size_t size;
         };
+
 
 
 

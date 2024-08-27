@@ -9,9 +9,11 @@ namespace nthp {
                 SDL_Texture* texture;
                 SDL_Rect* srcRect;
                 SDL_Rect dstRect;
+
+                enum C_OPERATE { VALID, INVALID } state;
         };
-        static nthp::RenderPacket generateRenderPacket(SDL_Texture* texture, SDL_Rect* srcRect, SDL_Rect dst) {
-                return {texture, srcRect, dst};
+        static nthp::RenderPacket generateRenderPacket(SDL_Texture* texture, SDL_Rect* srcRect, SDL_Rect dst, nthp::RenderPacket::C_OPERATE s) {
+                return {texture, srcRect, dst, s};
         }
 
         struct RenderRuleSet {

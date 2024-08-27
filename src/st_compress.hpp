@@ -63,27 +63,23 @@ namespace nthp {
 
                 // Does not deal in real softwareTexture files. When loading from a file, must use a compressed st file (.cst),
                 // not a raw softwareTexture (.st).
-                class CompressedSoftwareTexture {
-                public:
-                        CompressedSoftwareTexture();
-                        CompressedSoftwareTexture(const char* file);
-                        
-
-
-                        Node* nodes;
-                        CST_header metadata;
-                };
-
 
 
                 extern int compressSoftwareTextureFile(const char* inputFile, const char* output);
                 extern int compressSoftwareTexture(nthp::texture::SoftwareTexture* texture, const char* output);
 
-                extern nthp::texture::SoftwareTexture* decompressTexture(const char* file);
-                extern nthp::texture::SoftwareTexture* decompressTexture(CompressedSoftwareTexture* texture);
+                extern nthp::texture::SoftwareTexture* decompressTexture(const char* filename);
+
+
 
 
                 }
+                
+                // For convience. Checks the header of the given file to deduce if it's compressed or not,
+                // decompresses (or just loads as a texture directly), and generates a valid software texture.
+                // NOTE: Texture must be 'regenerated' with a palette to be valid for rendering. Works "out of the box"
+                //       with both compressed and decompressed textures.
+                extern nthp::texture::SoftwareTexture* auto_generateTexture(const char* filename);
         }
 
 }

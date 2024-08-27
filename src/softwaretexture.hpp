@@ -10,6 +10,9 @@ namespace nthp {
                 public:
                         SoftwareTexture();
                         SoftwareTexture(const char* filename, nthp::texture::Palette* palette, SDL_Renderer* coreRenderer);
+
+                        // Read ST data from a valid ST file. Does NOT generate a valid rendering texture as no palette is given.
+                        // Must use 'regenerateTexture()' with a palette to generate.
                         SoftwareTexture(const char* filename);
 
 

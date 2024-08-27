@@ -1,49 +1,6 @@
+#define SUPPRESS_DEBUG_OUTPUT
+
 #include "st_compress.hpp"
-
-
-
-
-nthp::texture::compression::CompressedSoftwareTexture::CompressedSoftwareTexture() {
-        nodes = NULL;
-        metadata.nodeCount = 0;
-}
-
-nthp::texture::compression::CompressedSoftwareTexture::CompressedSoftwareTexture(const char* filename) {
-        std::fstream file(filename, std::ios::in | std::ios::out);
-        if(file.fail()) {
-                PRINT_DEBUG_ERROR("Unable to load compressed softwareTexture [%s]; File not accessible.\n", filename);
-                nodes = NULL;
-                metadata.nodeCount = 0;
-                
-                return;
-        }
-        file.read((char*)&metadata, sizeof(metadata));
-        PRINT_DEBUG("MetaData ::\n\tx = %u\n\ty = %u\n\tNodeC = %llu\n", metadata.x, metadata.y, metadata.nodeCount);
-
-        const size_t readSize = sizeof(nthp::texture::compression::Node) * metadata.nodeCount;
-        nodes = (nthp::texture::compression::Node*)malloc(readSize);
-        PRINT_DEBUG("Read Size = %zu\n", readSize);
-
-        if(nodes == NULL) {
-                PRINT_DEBUG_ERROR("Critical: Unable to allocate Node data from cst [%s].\n", filename);
-                nodes = NULL;
-                metadata.nodeCount = 0;
-                return;
-        }
-
-        for(size_t i = 0; i < metadata.nodeCount; ++i) {
-                file.read((char*)(nodes + i), sizeof(nthp::texture::compression::Node));
-        }
-
-        file.close();
-
-}
-
-
-
-
-
-
 
 
 
@@ -122,6 +79,7 @@ int nthp::texture::compression::compressSoftwareTextureFile(const char* input, c
 
 nthp::texture::SoftwareTexture* nthp::texture::compression::decompressTexture(const char* filename) {
         std::fstream file(filename, std::ios::in | std::ios::binary);
+        PRINT_DEBUG("Attempting decompression of cst file [%s]...\n", filename);
 
         if(file.fail()) {
                 PRINT_DEBUG_ERROR("Unable to decompress texture [%s]; Unable to open file.\n", filename);
@@ -137,6 +95,7 @@ nthp::texture::SoftwareTexture* nthp::texture::compression::decompressTexture(co
         }
 
         const size_t pixelDataSize = header.x * header.y;
+        PRINT_DEBUG("Detected Header data; NodeCount = %llu\n", header.nodeCount);
 
         nthp::texture::SoftwareTexture* texture = new nthp::texture::SoftwareTexture;
         texture->createEmptyTexture(pixelDataSize);
@@ -153,11 +112,13 @@ nthp::texture::SoftwareTexture* nthp::texture::compression::decompressTexture(co
 
         for(size_t i = 0; i < header.nodeCount; ++i) {
                 file.read((char*)&currentNode, sizeof(currentNode));
+                PRINT_DEBUG("Expanding node [%zu] : s=%u d=%u...", i, currentNode.blockSize, currentNode.data);
 
                 for(c_BlockWidth nEI = 0; nEI < currentNode.blockSize; ++nEI) {
                         texture->getPixelData()[currentAbsolutePosition] = currentNode.data;
                         ++currentAbsolutePosition;
                 }
+                NOVERB_PRINT_DEBUG("\t\t\tDone.\n");
         }
 
         file.close();
@@ -168,30 +129,34 @@ nthp::texture::SoftwareTexture* nthp::texture::compression::decompressTexture(co
         return texture;
 }
 
-extern nthp::texture::SoftwareTexture* nthp::texture::compression::decompressTexture(nthp::texture::compression::CompressedSoftwareTexture* tex) {
-        const size_t pixelDataSize = tex->metadata.x * tex->metadata.y;
 
-        nthp::texture::SoftwareTexture* texture = new nthp::texture::SoftwareTexture;
-        texture->createEmptyTexture(pixelDataSize);
-        {
-                nthp::texture::SoftwareTexture::software_texture_header conv_header;
-                conv_header.signature = nthp::texture::SoftwareTexture::STheaderSignature;
-                conv_header.x = tex->metadata.x;
-                conv_header.y = tex->metadata.x;
-                texture->manual_metadata_override(conv_header);
+nthp::texture::SoftwareTexture* nthp::texture::auto_generateTexture(const char* filename) {
+        std::fstream file(filename, std::ios::in | std::ios::binary);
+
+        if(file.fail()) {
+                PRINT_DEBUG_ERROR("Unable to generate texture [%s]; File not accessible.\n", filename);
+                return NULL;
         }
 
-        nthp::texture::compression::Node currentNode;
-        size_t currentAbsolutePosition = 0;
+        nthp::texture::SoftwareTexture::software_texture_header header;
+        file.read((char*)&header, sizeof(header));
 
-        for(size_t i = 0; i < tex->metadata.nodeCount; ++i) {
-                currentNode = tex->nodes[i];
+        file.close();
 
-                for(c_BlockWidth nEI = 0; nEI < currentNode.blockSize; ++nEI) {
-                        texture->getPixelData()[currentAbsolutePosition] = currentNode.data;
-                        ++currentAbsolutePosition;
-                }
+        switch(header.signature) {
+                case nthp::texture::SoftwareTexture::STheaderSignature:
+                        
+                        return new nthp::texture::SoftwareTexture(filename);
+                        break;
+                
+                case nthp::texture::compression::CSTHeaderSignature:
+                        return nthp::texture::compression::decompressTexture(filename);
+                        break;
+
+
+                default:
+                        PRINT_DEBUG_ERROR("Unable to generate texture [%s]; Invalid file format.\n");
+                        return NULL;
+                        break;
         }
-
-        return texture;
 }

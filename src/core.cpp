@@ -144,7 +144,17 @@ void nthp::EngineCore::stop() {
 
 
 void nthp::EngineCore::render(nthp::RenderPacket packet) {
-        SDL_RenderCopy(renderer, packet.texture, packet.srcRect, &packet.dstRect);
+        switch(packet.state) {
+                case nthp::RenderPacket::C_OPERATE::VALID:
+                        SDL_RenderCopy(renderer, packet.texture, packet.srcRect, &packet.dstRect);
+                        break;
+
+                case nthp::RenderPacket::C_OPERATE::INVALID:
+                        PRINT_DEBUG_WARNING("Reading invalid render call. Ensure target texture is generated.\n");
+                        break;
+                default:
+                        break;
+        }
 }
 
 

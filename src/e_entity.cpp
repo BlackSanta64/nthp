@@ -12,22 +12,28 @@ nthp::entity::gEntity::gEntity() {
 
 const nthp::RenderPacket nthp::entity::gEntity::getUpdateRenderPacket(nthp::RenderRuleSet* context) {
         auto pxlPos = nthp::generatePixelPosition(wPosition, context);
-// TODO
+        nthp::RenderPacket::C_OPERATE state = nthp::RenderPacket::C_OPERATE::VALID;
+
+        if(frameData[currentFrame].texture == NULL)
+                state = nthp::RenderPacket::C_OPERATE::INVALID;
 
         return nthp::generateRenderPacket(frameData[currentFrame].texture, &frameData[currentFrame].src, 
                 {
                         (int)pxlPos.x, 
                         (int)pxlPos.y, 
                         (int)nthp::fixedToInt(nthp::f_fixedProduct(renderSize.x, context->scaleFactor.x)),
-                        (int)nthp::fixedToInt(nthp::f_fixedProduct(renderSize.y, context->scaleFactor.y))
-                });
+                        (int)nthp::fixedToInt(nthp::f_fixedProduct(renderSize.y, context->scaleFactor.y)),
+                }, state);
 }
 
 
 // Gets the entity RenderPacket
 const nthp::RenderPacket nthp::entity::gEntity::abs_getRenderPacket(nthp::RenderRuleSet* context) {
         auto pxlPos = nthp::generatePixelPosition(wPosition, context);
-        
+        nthp::RenderPacket::C_OPERATE state = nthp::RenderPacket::C_OPERATE::VALID;
+
+        if(frameData[currentFrame].texture == NULL)
+                state = nthp::RenderPacket::C_OPERATE::INVALID;
 
          return nthp::generateRenderPacket(frameData[currentFrame].texture, &frameData[currentFrame].src, 
                 {
@@ -35,7 +41,7 @@ const nthp::RenderPacket nthp::entity::gEntity::abs_getRenderPacket(nthp::Render
                         (int)pxlPos.y,
                         (int)nthp::fixedToInt(renderSize.x),
                         (int)nthp::fixedToInt(renderSize.y)
-                });
+                }, state);
 }
 
 
