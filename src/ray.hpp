@@ -17,7 +17,7 @@ namespace nthp {
         };
 
 
-        inline nthp::rayCollision rayColliding(nthp::ray a, nthp::ray b) {
+        inline nthp::rayCollision rayColliding(const nthp::ray a, const nthp::ray b) {
                 nthp::rayCollision col;
 
 		nthp::fixed_t uA = nthp::f_fixedQuotient((nthp::f_fixedProduct((b.x2 - b.x1) + 1, (a.y1 - b.y1) + 1) - nthp::f_fixedProduct((b.y2 - b.y1) + 1, (a.x1 - b.x1) + 1)), (nthp::f_fixedProduct((b.y2 - b.y1) + 1, (a.x2 - a.x1) + 1) - nthp::f_fixedProduct((b.x2 - b.x1) + 1, (a.y2 - a.y1) + 1)));

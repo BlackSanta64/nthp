@@ -47,11 +47,11 @@ SRCDIR = src/
 all: release debug
 
 
-release: main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj e_collision.obj st_compress.obj
-	$(CC) main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj e_collision.obj st_compress.obj -Fe"$(TARGET).exe" $(LINKERFLAGS) 
+release: main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj e_collision.obj st_compress.obj s_compiler.obj
+	$(CC) main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj e_collision.obj st_compress.obj s_compiler.obj -Fe"$(TARGET).exe" $(LINKERFLAGS) 
 
-debug: main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj e_collision_d.obj st_compress_d.obj
-	$(CC) main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj e_collision_d.obj st_compress_d.obj -Fe"$(TARGET)_debug.exe" $(DEBUG_LINKERFLAGS) 
+debug: main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj e_collision_d.obj st_compress_d.obj s_compiler_d.obj
+	$(CC) main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj e_collision_d.obj st_compress_d.obj s_compiler_d.obj -Fe"$(TARGET)_debug.exe" $(DEBUG_LINKERFLAGS) 
 
 
 
@@ -88,7 +88,8 @@ e_collision.obj: $(SRCDIR)e_collision.hpp $(SRCDIR)e_collision.cpp
 st_compress.obj: $(SRCDIR)st_compress.hpp $(SRCDIR)st_compress.cpp
 	$(CC) -c $(SRCDIR)st_compress.cpp -Fo"st_compress.obj" $(CFLAGS)
 
-
+s_compiler.obj: $(SRCDIR)s_compiler.hpp $(SRCDIR)s_compiler.cpp
+	$(CC) -c $(SRCDIR)s_compiler.cpp -Fo"s_compiler.obj" $(CFLAGS)
 
 #DEBUG DEPENDENCIES GO HERE
 main_d.obj: $(SRCDIR)main.cpp
@@ -121,6 +122,11 @@ e_collision_d.obj: $(SRCDIR)e_collision.hpp $(SRCDIR)e_collision.cpp
  
 st_compress_d.obj: $(SRCDIR)st_compress.hpp $(SRCDIR)st_compress.cpp
 	$(CC) -c $(SRCDIR)st_compress.cpp -Fo"st_compress_d.obj" $(DEBUG_CFLAGS)
+
+s_compiler_d.obj: $(SRCDIR)s_compiler.hpp $(SRCDIR)s_compiler.cpp
+	$(CC) -c $(SRCDIR)s_compiler.cpp -Fo"s_compiler_d.obj" $(DEBUG_CFLAGS)
+
+
 
 clean:
 	del *.obj *.pdb *.ilk
