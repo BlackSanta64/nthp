@@ -6,6 +6,7 @@
 #include "softwaretexture.hpp"
 #include "e_entity.hpp"
 #include "st_compress.hpp"
+#include "s_compiler.hpp"
 
 
 bool u,d,l,r,inc,dec;
@@ -68,22 +69,8 @@ int main(int argv, char** argc) {
                 nthp::EngineCore core(nthp::RenderRuleSet(760, 910, 500, 500, nthp::vectFixed(0,0)), "Testing Window", false, false);
                 auto frameStart = SDL_GetTicks();
 
-                nthp::texture::Palette pal("genericPalette.pal");
-                
-                nthp::texture::compression::compressSoftwareTextureFile("player.st", "player.cst");
-
-                auto tux = nthp::texture::auto_generateTexture("c_tux.cst");
-                tux->regenerateTexture(&pal, core.getRenderer());
-        
-
-                nthp::texture::Frame tuxFrame;
-                tuxFrame.texture = tux->getTexture();
-                tuxFrame.src = {0, 0, 764, 910};
-
-                nthp::entity::gEntity e_tux;
-                e_tux.importFrameData(&tuxFrame, 1, false);
-                e_tux.setRenderSize(nthp::vectFixed(nthp::intToFixed(500), nthp::intToFixed(500)));
-                e_tux.setPosition(nthp::vectFixed(0,0));
+                nthp::script::CompilerInstance comp;
+                comp.compileSourceFile("test.thp", "unused.txt");
 
                 
                 while(core.isRunning()) {
@@ -91,18 +78,9 @@ int main(int argv, char** argc) {
 
                         core.handleEvents(hEvents);
 
-                        if(u)
-                                tuxFrame.src.y -= 5;
-                        if(d)
-                                tuxFrame.src.y += 5;                    
-                        if(l)
-                                tuxFrame.src.x -= 5;
-                        if(r)
-                                tuxFrame.src.x += 5;  
-
 
 		        core.clear();
-                        core.render(e_tux.getUpdateRenderPacket(&core.p_coreDisplay));
+
                         core.display();
 
                         nthp::deltaTime = nthp::intToFixed(SDL_GetTicks() - frameStart);
@@ -113,7 +91,7 @@ int main(int argv, char** argc) {
                         }
                 }
 
-                delete tux;
+
         }
 
 

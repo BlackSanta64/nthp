@@ -85,7 +85,8 @@ namespace nthp {
 
         extern void THROW_FATAL(char errorcode, const char* fatal_message);
 
-        
+        #define NTHP_TRUE       1
+        #define NTHP_FALSE      0
         
         // Outputs a message and crashes the program. Use nthp::FATAL_ERROR values for
         // errorcode corresponding to the fatal fault.
@@ -129,7 +130,7 @@ namespace nthp {
 
 
         // Funny, lightweight (useless) dynamic storage class. This is genuinely
-        // more consistent than std::array no joke (not skill issue).
+        // more consistent than std::array no joke (not skill issue). The 
         template<class T>
         class sArray {
         public:

@@ -6,9 +6,11 @@
 
 #ifdef DEBUG 
 
-        extern void     PRINT_COMPILER              (const char* format, ...);
-        extern void     PRINT_COMPILER_ERROR        (const char* format, ...);
-        extern void     PRINT_COMPILER_WARNING      (const char* format, ...);
+        extern void     PRINT_COMPILER                  (const char* format, ...);
+        extern void     PRINT_COMPILER_ERROR            (const char* format, ...);
+        extern void     PRINT_COMPILER_WARNING          (const char* format, ...);
+
+        #define         NOVERB_PRINT_COMPILER(...)      fprintf(NTHP_debug_output, __VA_ARGS__)
 
 #else
         #define         PRINT_COMPILER          (...)
@@ -25,8 +27,7 @@
 namespace nthp { 
         namespace script {
 
-                #define DEFINE_COMPILATION_BEHAVIOUR(instruction) nthp::script::Node instruction ()
-
+                
 
                 class CompilerInstance {
                 public:
@@ -35,7 +36,7 @@ namespace nthp {
                 // Compiler-Only; Used by the compiler to track variables declared.
                 struct VAR_DEF {
                         std::string varName;
-                        size_t relativeIndex;
+                        uint32_t relativeIndex;
                 };
 
                 // Compiler-Only; Represents a macro-like substitution.
@@ -52,12 +53,12 @@ namespace nthp {
 
                 struct GOTO_DEF {
                         size_t goto_position;
-                        uint32_t label_position;
+                        uint32_t points_to;
                 };
 
                 struct LABEL_DEF {
                         uint32_t label_position;
-                        uint32_t labelValue;
+                        uint32_t ID;
                 };
 
                 inline nthp::script::Node* getCompiledNodes()   { return compiledNodes; }

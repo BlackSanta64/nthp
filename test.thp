@@ -1,0 +1,21 @@
+LABEL 1
+CONST l_niggas 5
+
+MACRO testMacro {
+        GOTO #l_niggas
+        GOTO #l_niggas
+        GOTO #l_niggas
+}
+
+VAR d_deltaTime
+ARRAY [4] movementKeys
+
+LABEL 1
+LABEL 1
+
+GOTO #l_niggas
+
+
+@testMacro
+
+EXIT

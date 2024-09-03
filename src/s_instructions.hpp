@@ -1,4 +1,5 @@
 #pragma once
+#include "s_node.hpp"
 
 namespace nthp { namespace script { namespace instructions {
 
@@ -22,6 +23,7 @@ namespace ID {
 
                 LABEL,
                 GOTO,
+                JUMP,
                 SUSPEND,
 
 
@@ -31,6 +33,7 @@ namespace ID {
                 SUB,
                 MUL,
                 DIV,
+
 
                 LOGIC_EQU,
                 LOGIC_NOT,
@@ -51,7 +54,7 @@ namespace ID {
 }
 
 #define GET_INSTRUCTION_ID(instruction) nthp::script::instructions::ID::instruction
-
+typedef uint32_t standard_VarRef_type;
 
 namespace Size {
 
@@ -61,15 +64,16 @@ namespace Size {
 
                 LABEL = sizeof(uint32_t),
                 GOTO = sizeof(uint32_t),
+                JUMP = sizeof(P_Reference<uint32_t>),
                 SUSPEND = 0,
 
-                INC = sizeof(nthp::script::stdVarWidth),
-                DEC = sizeof(nthp::script::stdVarWidth),
+                INC = sizeof(uint32_t),
+                DEC = sizeof(uint32_t),
 
-                ADD = sizeof(nthp::script::stdVarWidth) + sizeof(nthp::script::stdVarWidth) + sizeof(uint32_t),
-                SUB = sizeof(nthp::script::stdVarWidth) + sizeof(nthp::script::stdVarWidth) + sizeof(uint32_t),
-                MUL = sizeof(nthp::script::stdVarWidth) + sizeof(nthp::script::stdVarWidth) + sizeof(uint32_t),
-                DIV = sizeof(nthp::script::stdVarWidth) + sizeof(nthp::script::stdVarWidth) + sizeof(uint32_t)
+                ADD = sizeof(P_Reference<nthp::script::stdVarWidth>) + sizeof(P_Reference<nthp::script::stdVarWidth>) + sizeof(uint32_t),
+                SUB = sizeof(P_Reference<nthp::script::stdVarWidth>) + sizeof(P_Reference<nthp::script::stdVarWidth>) + sizeof(uint32_t),
+                MUL = sizeof(P_Reference<nthp::script::stdVarWidth>) + sizeof(P_Reference<nthp::script::stdVarWidth>) + sizeof(uint32_t),
+                DIV = sizeof(P_Reference<nthp::script::stdVarWidth>) + sizeof(P_Reference<nthp::script::stdVarWidth>) + sizeof(uint32_t)
 
 
 

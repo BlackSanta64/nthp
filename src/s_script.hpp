@@ -16,9 +16,12 @@ namespace script {
         private:
                 nthp::script::Node* nodeSet;
                 size_t nodeSetSize;
+                
 
                 nthp::fixed_t* varSet;
                 size_t varSetSize;
+
+
 
                 
         };
