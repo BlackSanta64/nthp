@@ -66,7 +66,7 @@ namespace nthp {
                         extern int generateSoftwareTextureFromImage(const char* inputImageFile, nthp::texture::Palette* palette, const char* outputFile);
 
                 #else
-                        #warning("WARNING: nthp::texture::tools utilities ignored; Dependency 'SDL_image' excluded.")
+                        #pragma warning("WARNING: nthp::texture::tools utilities ignored; Dependency 'SDL_image' excluded.")
                 #endif
                 }
 

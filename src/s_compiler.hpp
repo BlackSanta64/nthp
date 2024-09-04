@@ -13,10 +13,10 @@
         #define         NOVERB_PRINT_COMPILER(...)      fprintf(NTHP_debug_output, __VA_ARGS__)
 
 #else
-        #define         PRINT_COMPILER          (...)
-        #define         PRINT_COMPILER_ERROR    (...)
-        #define         PRINT_COMPILER_WARNING  (...)
-
+        #define         PRINT_COMPILER(...)
+        #define         PRINT_COMPILER_ERROR(...)
+        #define         PRINT_COMPILER_WARNING(...)
+        #define         NOVERB_PRINT_COMPILER(...)
 #endif
 
 

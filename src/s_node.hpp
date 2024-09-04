@@ -42,13 +42,14 @@ namespace script {
 
         typedef enum __P_REF_FLAGS_BITS {
                 IS_REFERENCE,
-                IS_GLOBAL
+                IS_GLOBAL,
+                IS_VALID
         } flagBits;
 
 
         #define PR_METADATA_SET(varRef, flag)           ((varRef.metadata) |= ( 1 <<( (int) flag )))
         #define PR_METADATA_CLEAR(varRef, flag)         ((varRef.metadata) &= ~( 1 <<( (int) flag )))
-        #define PR_METADATA_GET(varRef, flag)           ((ref.metadata >> ((int) flag )) & 1)
+        #define PR_METADATA_GET(varRef, flag)           ((varRef.metadata >> ((int) flag )) & 1)
 
 }
 }

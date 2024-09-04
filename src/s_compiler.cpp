@@ -41,7 +41,7 @@ void PRINT_COMPILER_ERROR(const char* format, ...) {
 	
 	va_start(ap, format);
 
-	fprintf(NTHP_debug_output, "[%u] COMPILER ERROR: ", SDL_GetTicks());	
+	fprintf(NTHP_debug_output, "[%u] ERROR: ", SDL_GetTicks());	
 	vfprintf(NTHP_debug_output, format, ap);
 
 
@@ -53,7 +53,7 @@ void PRINT_COMPILER_WARNING(const char* format, ...) {
 	
 	va_start(ap, format);
 
-	fprintf(NTHP_debug_output, "[%u] COMPILER WARNING: ", SDL_GetTicks());	
+	fprintf(NTHP_debug_output, "[%u] WARNING: ", SDL_GetTicks());	
 	vfprintf(NTHP_debug_output, format, ap);
 
 
@@ -128,10 +128,67 @@ int EvaluateSymbol(std::fstream& file, std::string& expression, std::vector<nthp
         return 0;
 }
 
-template<class T>
-nthp::script::P_Reference<T> EvaluateReference(std::string& expression) {
-        nthp::script::P_Reference<T> ref;
+
+// Substitues a VAR reference or parses numeral references (for compatibility)
+nthp::script::instructions::stdRef EvaluateReference(std::string expression, std::vector<nthp::script::CompilerInstance::VAR_DEF>& list) {
+        PRINT_COMPILER("Parsing Potential Reference (P_Ref) [%s]...\n", expression.c_str());
+        nthp::script::P_Reference<nthp::fixed_t> ref;
+        ref.metadata = 0;
+
+        if(expression[0] == '$') {
+                PR_METADATA_SET         (ref, nthp::script::flagBits::IS_REFERENCE);
+                PR_METADATA_CLEAR       (ref, nthp::script::flagBits::IS_GLOBAL);
+
+                expression.erase(expression.begin());
+        }
+        else {
+                if(expression[0] == '>') {
+                        PR_METADATA_SET (ref, nthp::script::flagBits::IS_REFERENCE);
+                        PR_METADATA_SET (ref, nthp::script::flagBits::IS_GLOBAL);
+
+                        expression.erase(expression.begin());
+                }
+        }
+
+        // Evaluate Var.
+        // If no VARNAME is referenced, assumes numeral reference type (instead of $VARNAME or >VARNAME, $2 or >2), or constant. Throws
+        // Invalid argument if otherwise.
+        if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {
+                for(size_t i = 0; i < list.size(); ++i) {
+                        if(expression == list[i].varName) {
+                                expression = std::to_string(list[i].relativeIndex);
+                        }
+                }
+        }
+
+
+
+
+        try {
+                double value = std::stod(expression);
+                ref.value = nthp::doubleToFixed(value);
+
+                // A reference cannot have a decimal value.
+                if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {
+                        if(nthp::getFixedDecimal(ref.value) > 0) {
+                                PRINT_COMPILER_WARNING("Reference [%s] is invalid; Decimal not permitted, discarding decimal.\n", expression.c_str());
+                        }
+
+                        ref.value = nthp::getFixedInteger(ref.value);
+                }
+                else {
+                        ref.value = nthp::doubleToFixed(value);
+                }
+        }
+        catch(std::invalid_argument) {
+                PRINT_COMPILER_ERROR("Unable to evaluate reference [%s]; Invalid Argument.\n", expression.c_str());
+                return ref;
+        }
+ 
+        PR_METADATA_SET(ref, nthp::script::flagBits::IS_VALID);
+        PRINT_COMPILER("Evaluated Reference [%s]: Value = %llu, IR = %u, IG = %u\n", expression.c_str(), ref.value, PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE), PR_METADATA_GET(ref, nthp::script::flagBits::IS_GLOBAL));
         
+        return ref; 
 }
 
 
@@ -238,32 +295,49 @@ DEFINE_COMPILATION_BEHAVIOUR(JUMP) {
         PRINT_COMPILER("Evaluating JUMP Node...\n");
 
         EVAL_SYMBOL();
-        nthp::script::P_Reference<uint32_t>* labelID = decltype(labelID)(nodeList[currentNode].access.data);
-        uint32_t static_label;
+        nthp::script::P_Reference<nthp::script::stdVarWidth>* labelID = decltype(labelID)(nodeList[currentNode].access.data);
+        auto static_label = EvaluateReference(fileRead, varList);
 
-        try {
-                static_label = std::stoul(fileRead);
-        }
-        catch(std::invalid_argument) {
-                PRINT_COMPILER_ERROR("Unable to evaluate numeral at [%zu]; Invalid Argument.\n", currentNode);
-                return 1; 
-        }
+        if(!PR_METADATA_GET(static_label, nthp::script::flagBits::IS_VALID)) return 1;
+      
+        *labelID = static_label;
+        PRINT_COMPILER("[%zu] JUMP Node evaluated: ID = %lld\n", currentNode, nthp::fixedToInt(labelID->value));
 
-        labelID->value = static_label;
-        PRINT_COMPILER("[%zu] JUMP Node evaluated: ID = %u\n", currentNode, *labelID);
+        return 0;
 }
 
 
 DEFINE_COMPILATION_BEHAVIOUR(ADD) {
         ADD_NODE(ADD);
+
         PRINT_COMPILER("Evaluating ADD Node...\n");
-        nthp::script::P_Reference<nthp::fixed_t>* operandA = decltype(operandA)(nodeList[currentNode].access.data);
-        nthp::script::P_Reference<nthp::fixed_t>* operandB = decltype(operandA)(nodeList[currentNode].access.data + sizeof(nthp::script::P_Reference<nthp::fixed_t>));
+        nthp::script::instructions::stdRef* operandA = decltype(operandA)(nodeList[currentNode].access.data);
+        nthp::script::instructions::stdRef* operandB = decltype(operandA)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef));
+        nthp::script::instructions::stdRef* output = decltype(operandA)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(nthp::script::instructions::stdRef));
 
         EVAL_SYMBOL();
-        
-        
+        auto static_op_A = EvaluateReference(fileRead, varList);
+        if(!PR_METADATA_GET(static_op_A, nthp::script::flagBits::IS_VALID)) return 1;
 
+        EVAL_SYMBOL();
+        auto static_op_B = EvaluateReference(fileRead, varList);
+        if(!PR_METADATA_GET(static_op_B, nthp::script::flagBits::IS_VALID)) return 1;
+
+        EVAL_SYMBOL();
+        auto static_output = EvaluateReference(fileRead, varList);
+        if(!PR_METADATA_GET(static_output, nthp::script::flagBits::IS_VALID)) return 1;
+
+        if(!PR_METADATA_GET(static_output, nthp::script::flagBits::IS_REFERENCE)) {
+                PRINT_COMPILER_ERROR("Final Operand of ADD (arg.ADD_OUTPUT) must be a reference.\n");
+                return 1;
+        }
+
+        *operandA = static_op_A;
+        *operandB = static_op_B;
+        *output = static_output;
+
+        PRINT_COMPILER("[%zu] ADD Node evaluated: OpA = %lf OpB = %lf Output = %lld\n", currentNode, nthp::fixedToDouble(static_op_A.value), nthp::fixedToDouble(static_op_B.value), nthp::fixedToInt(static_output.value));
+        return 0;
 }
 
 // COMPILER INSTANCE BEHAVIOUR GOES HERE                ||
@@ -367,6 +441,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* filename, cons
 
                 if(fileRead == "LABEL") COMPILE(LABEL);
                 if(fileRead == "GOTO")  COMPILE(GOTO);
+                if(fileRead == "ADD")   COMPILE(ADD);
                 
 
         }
@@ -391,7 +466,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* filename, cons
                         
                 }
                 if(labelIndex == labelList.size()) {
-                        PRINT_DEBUG_WARNING("Failed to link GOTO [%zu] to LABEL block. Broken GOTO created.", gotoIndex);
+                        PRINT_DEBUG_WARNING("Failed to link GOTO [%zu] to LABEL block. Broken GOTO created.\n", gotoList[gotoIndex].goto_position);
                         uint32_t* location = (decltype(location))nodeList[gotoList[gotoIndex].goto_position].access.data;
 
                         *location = gotoList[gotoIndex].goto_position;

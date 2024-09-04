@@ -8,10 +8,12 @@ MACRO testMacro {
 }
 
 VAR d_deltaTime
-ARRAY [4] movementKeys
+VAR genReg_1
+VAR genOutput
 
-LABEL 1
-LABEL 1
+
+ADD $5 2.56 $genOutput
+
 
 GOTO #l_niggas
 

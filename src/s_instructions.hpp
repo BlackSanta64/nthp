@@ -54,7 +54,7 @@ namespace ID {
 }
 
 #define GET_INSTRUCTION_ID(instruction) nthp::script::instructions::ID::instruction
-typedef uint32_t standard_VarRef_type;
+typedef P_Reference<nthp::script::stdVarWidth> stdRef;
 
 namespace Size {
 
@@ -64,16 +64,16 @@ namespace Size {
 
                 LABEL = sizeof(uint32_t),
                 GOTO = sizeof(uint32_t),
-                JUMP = sizeof(P_Reference<uint32_t>),
+                JUMP = sizeof(stdRef),
                 SUSPEND = 0,
 
                 INC = sizeof(uint32_t),
                 DEC = sizeof(uint32_t),
 
-                ADD = sizeof(P_Reference<nthp::script::stdVarWidth>) + sizeof(P_Reference<nthp::script::stdVarWidth>) + sizeof(uint32_t),
-                SUB = sizeof(P_Reference<nthp::script::stdVarWidth>) + sizeof(P_Reference<nthp::script::stdVarWidth>) + sizeof(uint32_t),
-                MUL = sizeof(P_Reference<nthp::script::stdVarWidth>) + sizeof(P_Reference<nthp::script::stdVarWidth>) + sizeof(uint32_t),
-                DIV = sizeof(P_Reference<nthp::script::stdVarWidth>) + sizeof(P_Reference<nthp::script::stdVarWidth>) + sizeof(uint32_t)
+                ADD = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
+                SUB = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
+                MUL = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
+                DIV = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t)
 
 
 
