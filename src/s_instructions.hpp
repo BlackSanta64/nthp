@@ -25,6 +25,8 @@ namespace ID {
                 GOTO,
                 JUMP,
                 SUSPEND,
+                RETURN,
+                GETINDEX,
 
 
                 INC,
@@ -41,12 +43,13 @@ namespace ID {
                 LOGIC_LST,
                 LOGIC_GRTE,
                 LOGIC_LSTE,
+                END,
 
 
 
                 SET,
                 CLEAR,
-
+                DEFINE,
 
 
                 numberOfInstructions
@@ -64,8 +67,10 @@ namespace Size {
 
                 LABEL = sizeof(uint32_t),
                 GOTO = sizeof(uint32_t),
-                JUMP = sizeof(stdRef),
+                JUMP = sizeof(uint32_t),
                 SUSPEND = 0,
+                RETURN = sizeof(stdRef),
+                GETINDEX = sizeof(uint32_t),
 
                 INC = sizeof(uint32_t),
                 DEC = sizeof(uint32_t),
@@ -73,9 +78,20 @@ namespace Size {
                 ADD = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
                 SUB = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
                 MUL = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
-                DIV = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t)
+                DIV = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
 
+                LOGIC_EQU = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
+                LOGIC_NOT = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
+                LOGIC_GRT = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
+                LOGIC_LST = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
+                LOGIC_GRTE = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
+                LOGIC_LSTE = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
 
+                END = 0,
+
+                SET = sizeof(uint32_t) + sizeof(stdRef),
+                CLEAR = 0,
+                DEFINE = sizeof(uint32_t)
 
         );
 }

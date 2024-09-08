@@ -1,23 +1,48 @@
-LABEL 1
-CONST l_niggas 5
+CONST START 10
+CONST FUNC_ADD20 20
 
-MACRO testMacro {
-        GOTO #l_niggas
-        GOTO #l_niggas
-        GOTO #l_niggas
+
+LABEL #START
+
+
+VAR mathReg1
+VAR mathReg2
+
+
+
+DEPEND $mathReg1
+DEPEND $returnRegister
+LABEL #FUNC_ADD20
+        ADD 20 $mathReg1 $mathReg1
+
+        RETURN $returnRegister
+
+
+
+MACRO f_add20 {
+        GETINDEX $returnRegister
+        ADD 2 $returnRegister $returnRegister
+        GOTO #FUNC_ADD20
 }
 
-VAR d_deltaTime
-VAR genReg_1
-VAR genOutput
 
 
-ADD $5 2.56 $genOutput
+
+MACRO add15Numbers {
+        ADD 5.53 $mathReg1 $mathReg2
+        ADD 2.2 $mathReg1 $mathReg2
+        INC $mathReg1
+        INC $mathReg1
+}
+
+@add15Numbers
+
+IF 10 NOT_ReAL 10
+
+END
 
 
-GOTO #l_niggas
 
 
-@testMacro
 
 EXIT

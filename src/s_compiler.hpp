@@ -22,8 +22,6 @@
 
 
 
-
-
 namespace nthp { 
         namespace script {
 
@@ -61,13 +59,20 @@ namespace nthp {
                         uint32_t ID;
                 };
 
+
                 inline nthp::script::Node* getCompiledNodes()   { return compiledNodes; }
                 inline const size_t getNodeSize()               { return nodeBlockSize; }
 
 
                 CompilerInstance()                              { compiledNodes = NULL; nodeBlockSize = 0; }
 
-                int compileSourceFile(const char* filename, const char* outputFile);
+                // Takes source script as input, writes compiled script to output.
+                // output file can be NULL, where the compiler won't write anything.
+                int compileSourceFile(const char* inputFile, const char* outputFile);
+                
+                // Writes stored Node data to the target output file.
+                // Is called by 'compileSourceFile' if the 'outputfile' is non-NULL.
+                int exportToFile(const char* outputFile);
 
                 private:
 

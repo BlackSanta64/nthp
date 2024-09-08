@@ -71,8 +71,6 @@ namespace nthp {
                 extern nthp::texture::SoftwareTexture* decompressTexture(const char* filename);
 
 
-
-
                 }
                 
                 // For convience. Checks the header of the given file to deduce if it's compressed or not,

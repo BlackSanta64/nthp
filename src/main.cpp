@@ -60,8 +60,8 @@ void hEvents(SDL_Event* event) {
 
 int main(int argv, char** argc) {
 
-                NTHP_GEN_DEBUG_INIT(stdout);
-       //       NTHP_GEN_DEBUG_INIT(fopen("debug.log", "w+"));
+       //         NTHP_GEN_DEBUG_INIT(stdout);
+              NTHP_GEN_DEBUG_INIT(fopen("debug.log", "w+"));
         
         { // The entire engine debug context.
                 
