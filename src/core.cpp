@@ -17,9 +17,9 @@ nthp::RenderRuleSet::RenderRuleSet(FIXED_TYPE x, FIXED_TYPE y, FIXED_TYPE tx, FI
         cameraWorldPosition = cameraPosition;
 
 
-	float xs, ys;
-	xs = (float)pxlResolution_x / (float)tunitResolution_x;
-	ys = (float)pxlResolution_y / (float)tunitResolution_y;
+	double xs, ys;
+	xs = (double)pxlResolution_x / (double)tunitResolution_x;
+	ys = (double)pxlResolution_y / (double)tunitResolution_y;
 
 
 	scaleFactor.x = nthp::doubleToFixed(xs);
@@ -57,7 +57,7 @@ nthp::EngineCore::EngineCore(nthp::RenderRuleSet settings, const char* title, bo
                 FATAL_PRINT(nthp::FATAL_ERROR::SDL_Failure, SDL_GetError());
         }
         if(fullscreen) {
-                fullscreenFlag = SDL_WINDOW_FULLSCREEN_DESKTOP;
+                fullscreenFlag = SDL_WINDOW_FULLSCREEN;
         }
 
 #if USE_SDLIMG == 1
@@ -74,7 +74,8 @@ nthp::EngineCore::EngineCore(nthp::RenderRuleSet settings, const char* title, bo
         if(window == NULL) {
                 FATAL_PRINT(nthp::FATAL_ERROR::SDL_Failure, SDL_GetError());
         }
-	
+
+
         if(softwareRendering)
                 renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
         else

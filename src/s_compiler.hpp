@@ -74,6 +74,8 @@ namespace nthp {
                 // Is called by 'compileSourceFile' if the 'outputfile' is non-NULL.
                 int exportToFile(const char* outputFile);
 
+
+                ~CompilerInstance();
                 private:
 
                         nthp::script::Node* compiledNodes;

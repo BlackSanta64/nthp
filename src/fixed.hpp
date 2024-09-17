@@ -16,12 +16,12 @@ namespace nthp {
         // God I love the preprocessor.
 
 #ifndef FIXED_POINT_SCALE
-
                 // The fixed-point scale factor as a whole-number power of 2
 #define         FIXED_POINT_SCALE       12
 
-
 #endif
+
+
 
 
 #ifndef FIXED_POINT_WIDTH
@@ -31,6 +31,7 @@ namespace nthp {
 #define         FIXED_POINT_WIDTH       64
 
 #endif
+
 
 
 
@@ -69,6 +70,8 @@ namespace nthp {
 #endif
 
 
+
+
 #if FIXED_POINT_SCALE > FIXED_POINT_WIDTH
         #undef FIXED_POINT_SCALE
         #define FIXED_POINT_SCALE       (FIXED_POINT_WIDTH / 2)
@@ -98,6 +101,7 @@ namespace nthp {
                 // If EPSILON = 0.000000533, then
                 // fixed_t++ = (fixed_t + 0.000000533)
                 constexpr double FIXED_EPSILON = nthp::fixedToDouble(1);
+                static const FIXED_TYPE sqrt_eval = (1 << (FIXED_POINT_SCALE / 2));
         }
 
 
@@ -116,7 +120,7 @@ namespace nthp {
         // but the accuracy increases. The accuracy is automatically adjusted by the preprocessor
         // on compile time. An invalid range (over SCALE / 2) will be overwritten for maximum range
         // (and by extension minimal accuracy).
-        #define FAST_PRODUCT_RANGE              (1)
+        #define FAST_PRODUCT_RANGE              (0)
 #endif
 
 
@@ -170,6 +174,7 @@ namespace nthp {
 
 
 
+
         // Fast fixed point operations. Accuracy and range can be adjusted by setting FAST_(PRODUCT/QUOTIENT)_ACCURACY.
         // These operations work with any width of fixed-point, but a tradeoff between accuracy and range must be made.
         // Although fast, these operations may not be the most reliable in all situations. If using a width under 64-bits,
@@ -187,6 +192,10 @@ namespace nthp {
 
         constexpr fixed_t unsafe_fixedQuotient(fixed_t a, fixed_t b)    { return (((a) << FIXED_POINT_SCALE) / b); }
 
+
+        // Iterative square root algorithm for fixed point numbers. A little slower than floating point square roots.
+        // Requires a conversion int->double to perform the square root. Use sparingly.
+        static inline const fixed_t f_sqrt(fixed_t a) { return (((fixed_t)sqrt(a)) * nthp::fixedTypeConstants::sqrt_eval); }
 
 
 #if FIXED_POINT_WIDTH < 64

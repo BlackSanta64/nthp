@@ -10,20 +10,20 @@ namespace script {
         public:
                 struct n_file_t {
                         uint8_t ID;
-                        uint32_t size;
+                        uint8_t size;
                 } 
 
                 file_p;
                 struct n_binary_t {
                         uint8_t ID;
-                        uint32_t size;
+                        uint8_t size;
                         char* data;
                 }
                 
                 access;
 
                 Node() { access = {0,0,NULL}; }
-                Node(uint8_t _ID, uint32_t dataSize) { access.ID = _ID; access.size = dataSize; }
+                Node(uint8_t _ID, uint8_t dataSize) { access.ID = _ID; access.size = dataSize; }
 
         };
 

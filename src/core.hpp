@@ -39,6 +39,7 @@ namespace nthp {
 
         class EngineCore {
         public:
+                EngineCore() { window = nullptr; renderer = nullptr; running = false; };
                 EngineCore(nthp::RenderRuleSet settings, const char* title, bool fullscreen, bool softwareRendering);
                 void render(nthp::RenderPacket packet);
 
@@ -48,6 +49,9 @@ namespace nthp {
                 void clear();
                 void display();
                 void stop();
+
+                void setWindowRenderSize(int x, int y);
+                void setVirtualRenderScale(float x, float y);
 
                 inline bool isRunning() { return running; }
 

@@ -47,11 +47,11 @@ SRCDIR = src/
 all: release debug
 
 
-release: main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj e_collision.obj st_compress.obj s_compiler.obj
-	$(CC) main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj e_collision.obj st_compress.obj s_compiler.obj -Fe"$(TARGET).exe" $(LINKERFLAGS) 
+release: main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj e_collision.obj st_compress.obj s_compiler.obj s_script.obj
+	$(CC) main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj e_collision.obj st_compress.obj s_compiler.obj s_script.obj -Fe"$(TARGET).exe" $(LINKERFLAGS) 
 
-debug: main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj e_collision_d.obj st_compress_d.obj s_compiler_d.obj
-	$(CC) main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj e_collision_d.obj st_compress_d.obj s_compiler_d.obj -Fe"$(TARGET)_debug.exe" $(DEBUG_LINKERFLAGS) 
+debug: main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj e_collision_d.obj st_compress_d.obj s_compiler_d.obj s_script_d.obj
+	$(CC) main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj e_collision_d.obj st_compress_d.obj s_compiler_d.obj s_script_d.obj -Fe"$(TARGET)_debug.exe" $(DEBUG_LINKERFLAGS) 
 
 
 
@@ -91,6 +91,9 @@ st_compress.obj: $(SRCDIR)st_compress.hpp $(SRCDIR)st_compress.cpp
 s_compiler.obj: $(SRCDIR)s_compiler.hpp $(SRCDIR)s_compiler.cpp
 	$(CC) -c $(SRCDIR)s_compiler.cpp -Fo"s_compiler.obj" $(CFLAGS)
 
+s_script.obj: $(SRCDIR)s_script.hpp $(SRCDIR)s_script.cpp
+	$(CC) -c $(SRCDIR)s_script.cpp -Fo"s_script.obj" $(CFLAGS)
+
 #DEBUG DEPENDENCIES GO HERE
 main_d.obj: $(SRCDIR)main.cpp
 	$(CC) -c $(SRCDIR)main.cpp -Fo"main_d.obj" $(DEBUG_CFLAGS)
@@ -125,6 +128,9 @@ st_compress_d.obj: $(SRCDIR)st_compress.hpp $(SRCDIR)st_compress.cpp
 
 s_compiler_d.obj: $(SRCDIR)s_compiler.hpp $(SRCDIR)s_compiler.cpp
 	$(CC) -c $(SRCDIR)s_compiler.cpp -Fo"s_compiler_d.obj" $(DEBUG_CFLAGS)
+
+s_script_d.obj: $(SRCDIR)s_script.hpp $(SRCDIR)s_script.cpp
+	$(CC) -c $(SRCDIR)s_script.cpp -Fo"s_script_d.obj" $(DEBUG_CFLAGS)
 
 
 

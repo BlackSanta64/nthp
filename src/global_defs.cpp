@@ -13,7 +13,7 @@ nthp::vectFixed nthp::mousePosition;
 FILE* NTHP_debug_output = stdout;
 
 void nthp::THROW_FATAL(char errorcode, const char* fatal_message) {
-        printf("[%u] FATAL: %s\n", SDL_GetTicks(), fatal_message);
+        printf("[t %u] FATAL: %s\n", SDL_GetTicks(), fatal_message);
 
         throw FATAL_ERROR(errorcode);
 }
@@ -24,7 +24,7 @@ void PRINT_DEBUG(const char* format, ...) {
 	
 	va_start(ap, format);
 
-	fprintf(NTHP_debug_output, "[%u] DEBUG: ", SDL_GetTicks());	
+	fprintf(NTHP_debug_output, "[t %u] DEBUG: ", SDL_GetTicks());	
 	vfprintf(NTHP_debug_output, format, ap);
 
 
@@ -37,7 +37,7 @@ void PRINT_DEBUG_ERROR(const char* format, ...) {
 	
 	va_start(ap, format);
 
-	fprintf(NTHP_debug_output, "[%u] ERROR: ", SDL_GetTicks());	
+	fprintf(NTHP_debug_output, "[t %u] ERROR: ", SDL_GetTicks());	
 	vfprintf(NTHP_debug_output, format, ap);
 
 
@@ -50,7 +50,7 @@ void PRINT_DEBUG_WARNING(const char* format, ...) {
 	
 	va_start(ap, format);
 
-	fprintf(NTHP_debug_output, "[%u] WARNING: ", SDL_GetTicks());	
+	fprintf(NTHP_debug_output, "[t %u] WARNING: ", SDL_GetTicks());	
 	vfprintf(NTHP_debug_output, format, ap);
 
 

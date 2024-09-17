@@ -10,6 +10,7 @@
 
 
 bool u,d,l,r,inc,dec;
+nthp::EngineCore* targetCore;
 
 void hEvents(SDL_Event* event) {
         switch(event->type) {
@@ -30,6 +31,9 @@ void hEvents(SDL_Event* event) {
                         }
                         if(event->key.keysym.sym == SDLK_d) {
                                 r = true;
+                        }
+                        if(event->key.keysym.sym == SDLK_TAB) {
+                                targetCore->stop();
                         }
                         break;
 
@@ -60,18 +64,24 @@ void hEvents(SDL_Event* event) {
 
 int main(int argv, char** argc) {
 
-       //         NTHP_GEN_DEBUG_INIT(stdout);
+    //          NTHP_GEN_DEBUG_INIT(stdout);
               NTHP_GEN_DEBUG_INIT(fopen("debug.log", "w+"));
         
         { // The entire engine debug context.
                 
                 nthp::setMaxFPS(120);
 
-                nthp::EngineCore core(nthp::RenderRuleSet(760, 910, 500, 500, nthp::vectFixed(0,0)), "Testing Window", false, false);
+                nthp::EngineCore core(nthp::RenderRuleSet(960, 540, 500, 500, nthp::vectFixed(0,0)), "Testing Window", false, false);
+                targetCore = &core;
                 auto frameStart = SDL_GetTicks();
 
                 nthp::script::CompilerInstance comp;
-                comp.compileSourceFile("test.thp", "unused.txt");
+                comp.compileSourceFile("test.thp", "test.thpcs");
+
+                nthp::script::Script test("test.thpcs");
+                test.execute();
+
+                printf("sqrt = %lf\n", nthp::fixedToDouble(test.getVar(4)));
 
                 
                 while(core.isRunning()) {
@@ -79,6 +89,7 @@ int main(int argv, char** argc) {
 
                         core.handleEvents(hEvents);
 
+                        test.execute();
 
 		        core.clear();
 
