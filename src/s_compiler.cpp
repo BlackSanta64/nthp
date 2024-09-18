@@ -715,7 +715,53 @@ DEFINE_COMPILATION_BEHAVIOUR(DEFINE) {
 }
 
 
+DEFINE_COMPILATION_BEHAVIOUR(TEXTURE_DEFINE) {
+	ADD_NODE(TEXTURE_DEFINE);
 
+	nthp::script::instructions::stdRef* size = (decltype(size))(nodeList[currentNode].access.data);
+	EVAL_SYMBOL(); // file
+
+	auto ref = EvaluateReference(fileRead, varList);
+	CHECK_REF(ref);
+
+	// Remove decimal, As it is defining a memory block. Redundant if it's a reference, but cheap so who cares.
+	ref.value = nthp::getFixedInteger(ref.value);
+	
+	*size = ref;
+	
+	return 0;	
+}
+
+DEFINE_COMPILATION_BEHAVIOUR(TEXTURE_CLEAR) {
+	ADD_NODE(TEXTURE_CLEAR);
+
+	return 0;
+}
+
+
+
+DEFINE_COMPILATION_BEHAVIOUR(TEXTURE_LOAD) {
+	
+	EVAL_SYMBOL(); // file
+
+	const char* textureFile = fileRead.c_str();
+	size_t length = fileRead.size();
+
+	if(length > UINT8_MAX - sizeof(nthp::script::instructions::stdRef)) {
+		PRINT_COMPILER_ERROR("File path name in TEXTURE_LOAD at [%zu] too large. Must be less than [%u] characters.", currentNode, UINT8_MAX - sizeof(nthp::script::instructions::stdRef));
+		return 1;
+	}
+	ADD_NODE(TEXTURE_LOAD);
+	nodeList[currentNode].access.size = sizeof(nthp::script::instructions::stdRef) + length;
+	nodeList[currentNode].access.data = (char*)malloc(nodeList[currentNode].access.size);
+
+	nthp::script::instructions::stdRef* output = (decltype(output))(nodeList[currentNode].access.data);
+
+	// Funny pointer stuff.	
+	memcpy(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef), textureFile, length);
+
+	return 0;
+}
 
 
 
@@ -952,6 +998,10 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                 CHECK_COMP(SET);
                 CHECK_COMP(CLEAR);
                 CHECK_COMP(DEFINE);
+
+		CHECK_COMP(TEXTURE_DEFINE);
+		CHECK_COMP(TEXTURE_CLEAR);
+		CHECK_COMP(TEXTURE_LOAD);
 
         }
 

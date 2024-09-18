@@ -40,7 +40,12 @@ namespace ID {
                 END,\
                 SET,\
                 CLEAR,\
-                DEFINE\
+                DEFINE,\
+		\
+		TEXTURE_DEFINE,\
+		TEXTURE_CLEAR,\
+		TEXTURE_LOAD,\
+		SET_ACTIVE_PALETTE\
         )
 
         INSTRUCTION_LIST( INSTRUCTION_TOKENS(), numberOfInstructions);
@@ -83,8 +88,13 @@ namespace Size {
 
                 SET = sizeof(uint32_t) + sizeof(nthp::script::stdVarWidth),
                 CLEAR = 0,
-                DEFINE = sizeof(uint32_t)
+                DEFINE = sizeof(uint32_t),
 
+		TEXTURE_DEFINE = sizeof(stdRef),
+		TEXTURE_CLEAR = 0,
+		TEXTURE_LOAD = 0, // not actually 0; dynamic with one stdRef.
+		
+		SET_ACTIVE_PALETTE = 0
         );
 }
 

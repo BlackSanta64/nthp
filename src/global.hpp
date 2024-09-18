@@ -25,6 +25,7 @@
 #include <string>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <cstdarg>
 #include <ctime>
 #include <vector>

@@ -35,6 +35,7 @@ namespace nthp {
 
                         NTHPST_COLOR_WIDTH* getPixelData() { return pixelData; }
                         const size_t getPixelDataSize() { return dataSize; }
+			
 
                         void createEmptyTexture(const size_t dataSize);
                         const software_texture_header getMetaData() { return metadata; }

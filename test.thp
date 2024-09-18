@@ -8,11 +8,11 @@ VAR value3
 VAR returnRegister
 VAR mathReg
 
-GOTO #l_include
-
-CALL test2.thp
-
-LABEL #l_include
+MACRO f_mainLoop {
+	NULL
+ 	NULL
+	NULL
+}
 
 
 SQRT 732.3451 $mathReg
@@ -23,8 +23,6 @@ LABEL #START
         SUSPEND
         GOTO #START
 
-
-@f_mul10
 
 
 EXIT

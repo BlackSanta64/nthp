@@ -159,7 +159,7 @@ int nthp::texture::tools::generateSoftwareTextureFromImage(const char* inputImag
         nthp::texture::rawSurface baseImage(conv);
         nthp::texture::SoftwareTexture::software_texture_header header;
 
-        header.signature = nthp::texture::STheaderSignature;
+        header.signature = nthp::texture::SoftwareTexture::STheaderSignature;
         header.x = baseImage.getSurface()->w;
         header.y = baseImage.getSurface()->h;
 

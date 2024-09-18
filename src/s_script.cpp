@@ -266,6 +266,38 @@ DEFINE_EXECUTION_BEHAVIOUR(DEFINE) {
 }
 
 
+DEFINE_EXECUTION_BEHAVIOUR(TEXTURE_DEFINE) {
+	stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+	
+	if(PR_METADATA_GET(size, nthp::script::flagBits::IS_REFERENCE)) { size.value = data->varSet[nthp::fixedToInt(size.value)]; }
+	
+	data->textureBlock = new nthp::texture::SoftwareTexture[nthp::fixedToInt(size.value)];
+	data->textureBlockSize = nthp::fixedToInt(size.value);
+
+	return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(TEXTURE_CLEAR) {
+	if(data->textureBlockSize > 0) 
+		delete[] data->textureBlock;	
+
+	return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(TEXTURE_LOAD) {
+	stdRef output = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+	const char* file = (data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+
+	if(nthp::fixedToInt(output.value) > data->textureBlockSize) {
+		PRINT_DEBUG_ERROR("Output index of LOAD_TEXTURE instuction out of bounds.\n");		
+		return 1;
+	}
+	
+	data->textureBlock[nthp::fixedToInt(output.value)].generateTexture(file, NULL, NULL);
+
+	return 0;
+}
+
 
 
 // Genius design; Automatically updates ID indecies and places functions accordingly. Just add/change stuff in 's_instructions.hpp'.
@@ -399,7 +431,7 @@ nthp::script::Script::~Script() {
                 delete[] data.textureBlock;
         if(data.frameBlockSize > 0)
                 delete[] data.frameBlock;
-        if(data.entityBlock > 0)
+        if(data.entityBlockSize > 0)
                 delete[] data.entityBlock;
 
         for(size_t i = 0; i < data.nodeSet.size(); ++i) {

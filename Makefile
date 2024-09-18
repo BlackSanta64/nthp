@@ -30,12 +30,12 @@ DEBUG_CFLAGS = -g -lSDL2 $(SDL_imageLibInclude) -D LINUX -D DEBUG -DUSE_SDLIMG=$
 all: release debug
 
 
-release: main.o global_defs.o core.o position.o palette.o rawsurface.o softwaretexture.o e_entity.o e_collision.o st_compress.o
-	$(CC) main.o global_defs.o core.o position.o palette.o rawsurface.o softwaretexture.o e_entity.o e_collision.o st_compress.o $(CFLAGS) -o $(TARGET)
+release: main.o global_defs.o core.o position.o palette.o rawsurface.o softwaretexture.o e_entity.o e_collision.o st_compress.o s_compiler.o s_script.o
+	$(CC) main.o global_defs.o core.o position.o palette.o rawsurface.o softwaretexture.o e_entity.o e_collision.o st_compress.o s_compiler.o s_script.o $(CFLAGS) -o $(TARGET)
 
 
-debug: main_d.o global_defs_d.o core_d.o position_d.o palette_d.o rawsurface_d.o softwaretexture_d.o e_entity_d.o e_collision_d.o st_compress_d.o
-	$(CC) main_d.o global_defs_d.o core_d.o position_d.o palette_d.o rawsurface_d.o softwaretexture_d.o e_entity_d.o e_collision_d.o st_compress_d.o $(DEBUG_CFLAGS) -o $(TARGET)_debug
+debug: main_d.o global_defs_d.o core_d.o position_d.o palette_d.o rawsurface_d.o softwaretexture_d.o e_entity_d.o e_collision_d.o st_compress_d.o s_compiler_d.o s_script_d.o
+	$(CC) main_d.o global_defs_d.o core_d.o position_d.o palette_d.o rawsurface_d.o softwaretexture_d.o e_entity_d.o e_collision_d.o st_compress_d.o s_compiler_d.o s_script_d.o $(DEBUG_CFLAGS) -o $(TARGET)_debug
 
 
 # RELEASE DEPENDENCIES GO HERE VVV
@@ -73,6 +73,15 @@ e_collision.o: $(SRCDIR)e_collision.hpp $(SRCDIR)e_collision.cpp
 st_compress.o: $(SRCDIR)st_compress.cpp $(SRCDIR)st_compress.hpp
 	$(CC) $(CFLAGS) -c $(SRCDIR)st_compress.cpp -o st_compress.o
 
+
+s_compiler.o: $(SRCDIR)s_compiler.hpp $(SRCDIR)s_compiler.cpp
+	$(CC) $(CFLAGS) -c $(SRCDIR)s_compiler.cpp -o s_compiler.o
+	
+
+s_script.o: $(SRCDIR)s_script.cpp $(SRCDIR)s_script.hpp
+	$(CC) $(CFLAGS) -c $(SRCDIR)s_script.cpp -o s_script.o
+
+
 # DEBUG DEPENDENCIES GO HERE VVV
 
 
@@ -109,6 +118,14 @@ e_collision_d.o: $(SRCDIR)e_collision.hpp $(SRCDIR)e_collision.cpp
 
 st_compress_d.o: $(SRCDIR)st_compress.cpp $(SRCDIR)st_compress.hpp
 	$(CC) $(DEBUG_CFLAGS) -c $(SRCDIR)st_compress.cpp -o st_compress_d.o
+
+
+s_compiler_d.o: $(SRCDIR)s_compiler.hpp $(SRCDIR)s_compiler.cpp
+	$(CC) $(DEBUG_CFLAGS) -c $(SRCDIR)s_compiler.cpp -o s_compiler_d.o
+	
+
+s_script_d.o: $(SRCDIR)s_script.cpp $(SRCDIR)s_script.hpp
+	$(CC) $(DEBUG_CFLAGS) -c $(SRCDIR)s_script.cpp -o s_script_d.o
 
 
 clean:
