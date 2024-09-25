@@ -97,7 +97,7 @@ nthp::texture::SoftwareTexture* nthp::texture::compression::decompressTexture(co
         const size_t pixelDataSize = header.x * header.y;
         PRINT_DEBUG("Detected Header data; NodeCount = %llu\n", header.nodeCount);
 
-        nthp::texture::SoftwareTexture* texture = new nthp::texture::SoftwareTexture;
+        nthp::texture::SoftwareTexture* texture = (nthp::texture::SoftwareTexture*)malloc(sizeof(nthp::texture::SoftwareTexture));
         texture->createEmptyTexture(pixelDataSize);
         {
                 nthp::texture::SoftwareTexture::software_texture_header conv_header;

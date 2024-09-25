@@ -4,7 +4,7 @@
 #include "s_instructions.hpp"
 #include "e_entity.hpp"
 #include "e_collision.hpp"
-#include "st_compress.hpp"
+#include "gtexture.hpp"
 
 namespace nthp { 
 namespace script {
@@ -21,6 +21,7 @@ namespace script {
                 int execute(uint32_t entryPoint);
 
                 inline nthp::script::stdVarWidth getVar(size_t index) { if(index < data.varSetSize) return data.varSet[index]; else return 0; }
+                
 
                 struct ScriptDataSet {
                         uint32_t localMemBudget;
@@ -40,7 +41,7 @@ namespace script {
                         /////////////////////////
 
 
-                        nthp::texture::SoftwareTexture* textureBlock;
+                        nthp::texture::gTexture* textureBlock;
                         size_t textureBlockSize;
 
                         nthp::entity::gEntity* entityBlock;
@@ -49,14 +50,20 @@ namespace script {
                         nthp::texture::Frame* frameBlock;
                         size_t frameBlockSize;
 
+                        nthp::texture::Palette activePalette;
+
                         bool isSuspended;
 
                 };
+
+                inline ScriptDataSet* getScriptData() { return &data; }
 
                 ~Script();
         private:
                 ScriptDataSet data;
         };
 
+
 }
+
 }

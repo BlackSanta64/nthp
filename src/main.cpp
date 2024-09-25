@@ -10,7 +10,7 @@
 
 
 bool u,d,l,r,inc,dec;
-nthp::EngineCore* targetCore;
+ nthp::EngineCore nthp::core;
 
 void hEvents(SDL_Event* event) {
         switch(event->type) {
@@ -33,7 +33,7 @@ void hEvents(SDL_Event* event) {
                                 r = true;
                         }
                         if(event->key.keysym.sym == SDLK_TAB) {
-                                targetCore->stop();
+                                nthp::core.stop();
                         }
                         break;
 
@@ -63,37 +63,75 @@ void hEvents(SDL_Event* event) {
 
 
 int main(int argv, char** argc) {
-
-    //          NTHP_GEN_DEBUG_INIT(stdout);
-              NTHP_GEN_DEBUG_INIT(fopen("debug.log", "w+"));
-        
+#ifdef DEBUG
+  //    NTHP_GEN_DEBUG_INIT(stdout);
+        NTHP_GEN_DEBUG_INIT(fopen("debug.log", "w+"));
+#endif
         { // The entire engine debug context.
                 
-                nthp::setMaxFPS(120);
+              
 
-                nthp::EngineCore core(nthp::RenderRuleSet(960, 540, 500, 500, nthp::vectFixed(0,0)), "Testing Window", false, false);
-                targetCore = &core;
+                uint16_t maxFPS = 120;
+                nthp::setMaxFPS(maxFPS);
                 auto frameStart = SDL_GetTicks();
+
+                nthp::entity::gEntity tux;
 
                 nthp::script::CompilerInstance comp;
                 comp.compileSourceFile("test.thp", "test.thpcs");
 
                 nthp::script::Script test("test.thpcs");
                 test.execute();
-
-                printf("sqrt = %lf\n", nthp::fixedToDouble(test.getVar(4)));
+                
 
                 
-                while(core.isRunning()) {
+
+        
+
+                tux.importFrameData(test.getScriptData()->frameBlock, 1, false);
+                tux.setCurrentFrame(0);
+                tux.setRenderSize(nthp::vectFixed(nthp::intToFixed(500), nthp::intToFixed(500)));
+                tux.setPosition(nthp::vectFixed(0,0));
+
+                printf("sf = %lf %lf\n", nthp::fixedToDouble(nthp::core.p_coreDisplay.scaleFactor.x), nthp::fixedToDouble(nthp::core.p_coreDisplay.scaleFactor.y));
+                const nthp::fixed_t cameraSpeed = nthp::doubleToFixed(0.5);
+
+                printf("val = %lf\n", nthp::fixedToDouble(test.getScriptData()->varSet[0]));
+
+                
+                while(nthp::core.isRunning()) {
                         frameStart = SDL_GetTicks();
 
-                        core.handleEvents(hEvents);
+                        nthp::core.handleEvents(hEvents);
+                        if(u) {
+                                nthp::core.p_coreDisplay.cameraWorldPosition.y += nthp::f_fixedProduct(cameraSpeed, nthp::deltaTime);
+                        }
+                        if(d) {
+                                nthp::core.p_coreDisplay.cameraWorldPosition.y -= nthp::f_fixedProduct(cameraSpeed, nthp::deltaTime);
+                        }
+                        if(l) {
+                                nthp::core.p_coreDisplay.cameraWorldPosition.x += nthp::f_fixedProduct(cameraSpeed, nthp::deltaTime);
+                        }
+                        if(r) {
+                                nthp::core.p_coreDisplay.cameraWorldPosition.x -= nthp::f_fixedProduct(cameraSpeed, nthp::deltaTime);
+                        }
 
-                        test.execute();
+                        if(inc) {
+                                ++maxFPS;
+                                nthp::setMaxFPS(maxFPS);
+                        }
+                        if(dec) {
+                                --maxFPS;
+                                nthp::setMaxFPS(maxFPS);
+                        }
 
-		        core.clear();
 
-                        core.display();
+
+		        nthp::core.clear();
+                        
+                        nthp::core.render(tux.getUpdateRenderPacket(&nthp::core.p_coreDisplay));
+
+                        nthp::core.display();
 
                         nthp::deltaTime = nthp::intToFixed(SDL_GetTicks() - frameStart);
                        
@@ -106,7 +144,8 @@ int main(int argv, char** argc) {
 
         }
 
-
+#ifdef DEBUG
         NTHP_GEN_DEBUG_CLOSE();
+#endif
         return 0;
 }

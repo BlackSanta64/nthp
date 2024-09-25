@@ -1,9 +1,9 @@
+
 #include "s_script.hpp"
 using namespace nthp::script::instructions;
 #define DEFINE_EXECUTION_BEHAVIOUR(instruction) const int instruction (nthp::script::Script::ScriptDataSet* data)
 
-nthp::EngineCore* core;
-
+#define EVAL_REF(ref) if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) { ref.value = data->varSet[nthp::fixedToInt(ref.value)]; }
 
 DEFINE_EXECUTION_BEHAVIOUR(EXIT) {
         return 0;
@@ -26,10 +26,10 @@ DEFINE_EXECUTION_BEHAVIOUR(GOTO) {
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(JUMP) {
-        const stdRef label = *(stdRef*)data->nodeSet[data->currentNode].access.data;
+        stdRef label = *(stdRef*)data->nodeSet[data->currentNode].access.data;
         uint32_t static_label = nthp::fixedToInt(label.value);
 
-        if(PR_METADATA_GET(label, nthp::script::flagBits::IS_REFERENCE)) static_label = nthp::fixedToInt(data->varSet[static_label]);
+        EVAL_REF(label);
 
         for(size_t i = 0; i < data->labelBlockSize; ++i) {
                 if(data->labelBlock[i + i] == static_label) {
@@ -49,7 +49,7 @@ DEFINE_EXECUTION_BEHAVIOUR(SUSPEND) {
 DEFINE_EXECUTION_BEHAVIOUR(RETURN) {
         stdRef index = *(stdRef*)data->nodeSet[data->currentNode].access.data;
 
-        if(PR_METADATA_GET(index, nthp::script::flagBits::IS_REFERENCE)) index.value = data->varSet[nthp::fixedToInt(index.value)];
+        EVAL_REF(index);
         data->currentNode = index.value;
 
         return 0;
@@ -76,15 +76,36 @@ DEFINE_EXECUTION_BEHAVIOUR(DEC) {
         return 0;
 }
 
+DEFINE_EXECUTION_BEHAVIOUR(LSHIFT) {
+        uint32_t var =  *(uint32_t*)data->nodeSet[data->currentNode].access.data;
+        stdRef count = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(uint32_t));
+
+        EVAL_REF(count);
+        
+        data->varSet[var] = ((data->varSet[var]) << nthp::fixedToInt(count.value));
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(RSHIFT) {
+        uint32_t var =  *(uint32_t*)data->nodeSet[data->currentNode].access.data;
+        stdRef count = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(uint32_t));
+
+        EVAL_REF(count);
+
+        data->varSet[var] = ((data->varSet[var]) >> nthp::fixedToInt(count.value));
+        return 0;
+}
+
 
 DEFINE_EXECUTION_BEHAVIOUR(ADD) {
         stdRef a = *(stdRef*)data->nodeSet[data->currentNode].access.data;
         stdRef b = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
         uint32_t output = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
 
-        if(PR_METADATA_GET(a, nthp::script::flagBits::IS_REFERENCE)) a.value = data->varSet[nthp::fixedToInt(a.value)];
-        if(PR_METADATA_GET(b, nthp::script::flagBits::IS_REFERENCE)) b.value = data->varSet[nthp::fixedToInt(b.value)];
 
+        EVAL_REF(a);
+        EVAL_REF(b);
+        
         data->varSet[output] = (a.value + b.value);
         return 0;
 }
@@ -94,8 +115,8 @@ DEFINE_EXECUTION_BEHAVIOUR(SUB) {
         stdRef b = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
         uint32_t output = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
 
-        if(PR_METADATA_GET(a, nthp::script::flagBits::IS_REFERENCE)) a.value = data->varSet[nthp::fixedToInt(a.value)];
-        if(PR_METADATA_GET(b, nthp::script::flagBits::IS_REFERENCE)) b.value = data->varSet[nthp::fixedToInt(b.value)];
+        EVAL_REF(a);
+        EVAL_REF(b);
 
         data->varSet[output] = (a.value - b.value);
         return 0;
@@ -106,8 +127,8 @@ DEFINE_EXECUTION_BEHAVIOUR(MUL) {
         stdRef b = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
         uint32_t output = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
 
-        if(PR_METADATA_GET(a, nthp::script::flagBits::IS_REFERENCE)) a.value = data->varSet[nthp::fixedToInt(a.value)];
-        if(PR_METADATA_GET(b, nthp::script::flagBits::IS_REFERENCE)) b.value = data->varSet[nthp::fixedToInt(b.value)];
+        EVAL_REF(a);
+        EVAL_REF(b);
 
         data->varSet[output] = nthp::f_fixedProduct(a.value, b.value);
         return 0;
@@ -118,8 +139,8 @@ DEFINE_EXECUTION_BEHAVIOUR(DIV) {
         stdRef b = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
         uint32_t output = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
 
-        if(PR_METADATA_GET(a, nthp::script::flagBits::IS_REFERENCE)) a.value = data->varSet[nthp::fixedToInt(a.value)];
-        if(PR_METADATA_GET(b, nthp::script::flagBits::IS_REFERENCE)) b.value = data->varSet[nthp::fixedToInt(b.value)];
+        EVAL_REF(a);
+        EVAL_REF(b);
 
         data->varSet[output] = nthp::f_fixedQuotient(a.value, b.value);
         return 0;
@@ -129,8 +150,7 @@ DEFINE_EXECUTION_BEHAVIOUR(SQRT) {
         stdRef base = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
         uint32_t pointer = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
 
-        if(PR_METADATA_GET(base, nthp::script::flagBits::IS_REFERENCE)) base.value = data->varSet[nthp::fixedToInt(base.value)];
-
+        EVAL_REF(base);
 
         data->varSet[pointer] = nthp::f_sqrt(base.value);
         return 0;
@@ -147,8 +167,8 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_EQU) {
         stdRef opB = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
         uint32_t endIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
 
-        if(PR_METADATA_GET(opA, nthp::script::flagBits::IS_REFERENCE)) opA.value = data->varSet[nthp::fixedToInt(opA.value)];
-        if(PR_METADATA_GET(opA, nthp::script::flagBits::IS_REFERENCE)) opB.value = data->varSet[nthp::fixedToInt(opB.value)];
+        EVAL_REF(opA);
+        EVAL_REF(opB);
 
         if(opA.value == opB.value)
                 return 0;
@@ -163,9 +183,9 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_NOT) {
         stdRef opB = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
         uint32_t endIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
 
-        if(PR_METADATA_GET(opA, nthp::script::flagBits::IS_REFERENCE)) opA.value = data->varSet[nthp::fixedToInt(opA.value)];
-        if(PR_METADATA_GET(opA, nthp::script::flagBits::IS_REFERENCE)) opB.value = data->varSet[nthp::fixedToInt(opB.value)];
-
+        EVAL_REF(opA);
+        EVAL_REF(opB);
+        
         if(opA.value != opB.value)
                 return 0;
         else 
@@ -179,8 +199,8 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_GRT) {
         stdRef opB = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
         uint32_t endIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
 
-        if(PR_METADATA_GET(opA, nthp::script::flagBits::IS_REFERENCE)) opA.value = data->varSet[nthp::fixedToInt(opA.value)];
-        if(PR_METADATA_GET(opA, nthp::script::flagBits::IS_REFERENCE)) opB.value = data->varSet[nthp::fixedToInt(opB.value)];
+        EVAL_REF(opA);
+        EVAL_REF(opB);
 
         if(opA.value > opB.value)
                 return 0;
@@ -195,8 +215,8 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_LST) {
         stdRef opB = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
         uint32_t endIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
 
-        if(PR_METADATA_GET(opA, nthp::script::flagBits::IS_REFERENCE)) opA.value = data->varSet[nthp::fixedToInt(opA.value)];
-        if(PR_METADATA_GET(opA, nthp::script::flagBits::IS_REFERENCE)) opB.value = data->varSet[nthp::fixedToInt(opB.value)];
+        EVAL_REF(opA);
+        EVAL_REF(opB);
 
         if(opA.value < opB.value)
                 return 0;
@@ -211,8 +231,8 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_GRTE) {
         stdRef opB = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
         uint32_t endIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
 
-        if(PR_METADATA_GET(opA, nthp::script::flagBits::IS_REFERENCE)) opA.value = data->varSet[nthp::fixedToInt(opA.value)];
-        if(PR_METADATA_GET(opA, nthp::script::flagBits::IS_REFERENCE)) opB.value = data->varSet[nthp::fixedToInt(opB.value)];
+        EVAL_REF(opA);
+        EVAL_REF(opB);
 
         if(opA.value >= opB.value)
                 return 0;
@@ -228,8 +248,8 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_LSTE) {
         stdRef opB = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
         uint32_t endIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
 
-        if(PR_METADATA_GET(opA, nthp::script::flagBits::IS_REFERENCE)) opA.value = data->varSet[nthp::fixedToInt(opA.value)];
-        if(PR_METADATA_GET(opA, nthp::script::flagBits::IS_REFERENCE)) opB.value = data->varSet[nthp::fixedToInt(opB.value)];
+        EVAL_REF(opA);
+        EVAL_REF(opB);
 
         if(opA.value <= opB.value)
                 return 0;
@@ -257,7 +277,7 @@ DEFINE_EXECUTION_BEHAVIOUR(CLEAR) {
 
 DEFINE_EXECUTION_BEHAVIOUR(DEFINE) {
         uint32_t size = *(uint32_t*)(data->nodeSet[data->currentNode].access.data);
-        data->varSet = new (std::nothrow) nthp::script::stdVarWidth[size];
+        data->varSet = new nthp::script::stdVarWidth[size];
 
         if(data->varSet == nullptr) return 1;
 
@@ -265,13 +285,20 @@ DEFINE_EXECUTION_BEHAVIOUR(DEFINE) {
         return 0;
 }
 
+DEFINE_EXECUTION_BEHAVIOUR(COPY) {
+        uint32_t from = *(uint32_t*)(data->nodeSet[data->currentNode].access.data);
+        uint32_t to = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(uint32_t));
+
+        data->varSet[to] = data->varSet[from];
+        return 0;
+}
 
 DEFINE_EXECUTION_BEHAVIOUR(TEXTURE_DEFINE) {
 	stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
 	
-	if(PR_METADATA_GET(size, nthp::script::flagBits::IS_REFERENCE)) { size.value = data->varSet[nthp::fixedToInt(size.value)]; }
+	EVAL_REF(size);
 	
-	data->textureBlock = new nthp::texture::SoftwareTexture[nthp::fixedToInt(size.value)];
+	data->textureBlock = new nthp::texture::gTexture[nthp::fixedToInt(size.value)];
 	data->textureBlockSize = nthp::fixedToInt(size.value);
 
 	return 0;
@@ -288,16 +315,95 @@ DEFINE_EXECUTION_BEHAVIOUR(TEXTURE_LOAD) {
 	stdRef output = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
 	const char* file = (data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
 
+        EVAL_REF(output);
+
 	if(nthp::fixedToInt(output.value) > data->textureBlockSize) {
 		PRINT_DEBUG_ERROR("Output index of LOAD_TEXTURE instuction out of bounds.\n");		
 		return 1;
 	}
 	
-	data->textureBlock[nthp::fixedToInt(output.value)].generateTexture(file, NULL, NULL);
+	data->textureBlock[nthp::fixedToInt(output.value)].autoLoadTextureFile(file, &data->activePalette, nthp::core.getRenderer());
 
 	return 0;
 }
 
+DEFINE_EXECUTION_BEHAVIOUR(SET_ACTIVE_PALETTE) {
+
+        data->activePalette.importPaletteFromFile(data->nodeSet[data->currentNode].access.data);
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(CORE_INIT) {
+        stdRef px = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+        stdRef py = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 1));
+        stdRef tx = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 2));
+        stdRef ty = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 3));
+        stdRef cx = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 4));
+        stdRef cy = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 5));
+        uint8_t flags = *(uint8_t*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 6));
+
+        EVAL_REF(px);
+        EVAL_REF(py);
+        EVAL_REF(tx);
+        EVAL_REF(ty);
+        EVAL_REF(cx);
+        EVAL_REF(cy);
+
+        const char* title = (char*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 6) + sizeof(uint8_t));
+
+        nthp::core.init(nthp::RenderRuleSet(nthp::fixedToInt(px.value), nthp::fixedToInt(py.value), tx.value, ty.value, nthp::vectFixed(cx.value, cy.value)), title, (flags >> NTHP_CORE_INIT_FULLSCREEN) & 1, (flags >> NTHP_CORE_INIT_SOFTWARE_RENDERING) & 1);
+
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(FRAME_DEFINE) {
+        stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+        
+        EVAL_REF(size);
+        data->frameBlock = new nthp::texture::Frame[nthp::fixedToInt(size.value)];
+        data->frameBlockSize = nthp::fixedToInt(size.value);
+
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(FRAME_CLEAR) {
+        if(data->frameBlockSize > 0) {
+                delete[] data->frameBlock;
+                data->frameBlockSize = 0;
+        }
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(FRAME_SET) {
+        stdRef frameIndex = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+        stdRef x = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+        stdRef y = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 2));
+        stdRef w = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 3));
+        stdRef h = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 4));
+        stdRef textureIndex = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 5));
+
+        EVAL_REF(frameIndex);
+        EVAL_REF(x);
+        EVAL_REF(y);
+        EVAL_REF(w);
+        EVAL_REF(h);
+        EVAL_REF(textureIndex);
+
+        SDL_Rect rect;
+        rect.x = nthp::fixedToInt(x.value);
+        rect.y = nthp::fixedToInt(y.value);
+        rect.w = nthp::fixedToInt(w.value);
+        rect.h = nthp::fixedToInt(h.value);
+        
+        data->frameBlock[nthp::fixedToInt(frameIndex.value)].src = rect;
+        data->frameBlock[nthp::fixedToInt(frameIndex.value)].texture = data->textureBlock[nthp::fixedToInt(textureIndex.value)].getTextureData().texture;
+
+        return 0;
+}
 
 
 // Genius design; Automatically updates ID indecies and places functions accordingly. Just add/change stuff in 's_instructions.hpp'.
@@ -418,7 +524,7 @@ int nthp::script::Script::execute() {
 int nthp::script::Script::execute(uint32_t entryPoint) {
         data.currentNode = entryPoint;
 
-        return this->execute();
+        return execute();
 }
 
 

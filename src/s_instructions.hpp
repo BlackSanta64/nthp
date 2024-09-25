@@ -13,6 +13,9 @@ namespace nthp { namespace script { namespace instructions {
 
 #define ____INSTRUCTION_TOKENS(...) __VA_ARGS__
 
+#define         DYNAMIC_SIZE    0
+#define         NTHP_CORE_INIT_SOFTWARE_RENDERING    1
+#define         NTHP_CORE_INIT_FULLSCREEN            0
 
 namespace ID {
         #define INSTRUCTION_TOKENS() ____INSTRUCTION_TOKENS(\
@@ -26,6 +29,8 @@ namespace ID {
                 GETINDEX,\
                 INC,\
                 DEC,\
+                LSHIFT,\
+                RSHIFT,\
                 ADD,\
                 SUB,\
                 MUL,\
@@ -41,11 +46,16 @@ namespace ID {
                 SET,\
                 CLEAR,\
                 DEFINE,\
+                COPY,\
 		\
 		TEXTURE_DEFINE,\
 		TEXTURE_CLEAR,\
 		TEXTURE_LOAD,\
-		SET_ACTIVE_PALETTE\
+		SET_ACTIVE_PALETTE,\
+                CORE_INIT,\
+                FRAME_DEFINE,\
+                FRAME_CLEAR,\
+                FRAME_SET\
         )
 
         INSTRUCTION_LIST( INSTRUCTION_TOKENS(), numberOfInstructions);
@@ -53,12 +63,13 @@ namespace ID {
 
 #define GET_INSTRUCTION_ID(instruction) nthp::script::instructions::ID::instruction
 typedef P_Reference<nthp::script::stdVarWidth> stdRef;
+typedef P_Reference<uint32_t> indRef;
 
 // Sizes must have the same name as the ENUM entry in 'ID'.
 namespace Size {
 
         INSTRUCTION_SIZE_LIST(
-                HEADER = 0,
+                HEADER = DYNAMIC_SIZE,
                 EXIT = 0,
 
                 LABEL = sizeof(uint32_t),
@@ -70,6 +81,8 @@ namespace Size {
 
                 INC = sizeof(uint32_t),
                 DEC = sizeof(uint32_t),
+                RSHIFT = sizeof(uint32_t) + sizeof(stdRef),
+                LSHIFT = sizeof(uint32_t) + sizeof(stdRef),
 
                 ADD = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
                 SUB = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
@@ -89,12 +102,19 @@ namespace Size {
                 SET = sizeof(uint32_t) + sizeof(nthp::script::stdVarWidth),
                 CLEAR = 0,
                 DEFINE = sizeof(uint32_t),
+                COPY = sizeof(uint32_t) + sizeof(uint32_t),
 
 		TEXTURE_DEFINE = sizeof(stdRef),
 		TEXTURE_CLEAR = 0,
-		TEXTURE_LOAD = 0, // not actually 0; dynamic with one stdRef.
-		
-		SET_ACTIVE_PALETTE = 0
+		TEXTURE_LOAD = DYNAMIC_SIZE, 
+		SET_ACTIVE_PALETTE = DYNAMIC_SIZE, 
+                
+                CORE_INIT = DYNAMIC_SIZE,
+
+                FRAME_DEFINE = sizeof(stdRef),
+                FRAME_CLEAR = 0,
+                FRAME_SET = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef)
+        
         );
 }
 

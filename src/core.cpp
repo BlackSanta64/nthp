@@ -8,7 +8,7 @@ nthp::RenderRuleSet::RenderRuleSet() {
         tunitResolution_y = 0;
 }
 
-nthp::RenderRuleSet::RenderRuleSet(FIXED_TYPE x, FIXED_TYPE y, FIXED_TYPE tx, FIXED_TYPE ty, vectFixed cameraPosition) {
+nthp::RenderRuleSet::RenderRuleSet(FIXED_TYPE x, FIXED_TYPE y, nthp::fixed_t tx, nthp::fixed_t ty, vectFixed cameraPosition) {
         pxlResolution_x = x;
         pxlResolution_y = y;
         tunitResolution_x = tx;
@@ -18,36 +18,26 @@ nthp::RenderRuleSet::RenderRuleSet(FIXED_TYPE x, FIXED_TYPE y, FIXED_TYPE tx, FI
 
 
 	double xs, ys;
-	xs = (double)pxlResolution_x / (double)tunitResolution_x;
-	ys = (double)pxlResolution_y / (double)tunitResolution_y;
+	xs = (double)pxlResolution_x / nthp::fixedToDouble(tunitResolution_x);
+	ys = (double)pxlResolution_y / nthp::fixedToDouble(tunitResolution_y);
 
 
 	scaleFactor.x = nthp::doubleToFixed(xs);
 	scaleFactor.y = nthp::doubleToFixed(ys);
 }
-
-void nthp::RenderRuleSet::updateRuleset(const nthp::RenderRuleSet& newSet) {
-	pxlResolution_x = newSet.pxlResolution_x;
-        pxlResolution_y = newSet.pxlResolution_y;
-        tunitResolution_x = newSet.tunitResolution_x;
-        tunitResolution_y = newSet.tunitResolution_y;
-
-	float xs, ys;
-	xs = (float)pxlResolution_x / (float)tunitResolution_x;
-	ys = (float)pxlResolution_y / (float)tunitResolution_y;
-
-
-
-	scaleFactor.x = nthp::doubleToFixed(xs);
-	scaleFactor.y = nthp::doubleToFixed(ys);
-
-}
-
 
 
 
 nthp::EngineCore::EngineCore(nthp::RenderRuleSet settings, const char* title, bool fullscreen, bool softwareRendering) {
-        p_coreDisplay = settings;
+        window = nullptr;
+        renderer = nullptr;
+        running = false;
+
+        if(this->init(settings, title, fullscreen, softwareRendering)) { }
+}
+
+int nthp::EngineCore::init(nthp::RenderRuleSet settings, const char* title, bool fullscreen, bool softwareRendering) {
+                p_coreDisplay = settings;
 
         PRINT_DEBUG("Initializing SDL binaries...\t");
 
@@ -98,11 +88,12 @@ nthp::EngineCore::EngineCore(nthp::RenderRuleSet settings, const char* title, bo
 	{
 		int w, h;
 		SDL_GetRendererOutputSize(renderer, &w, &h);
-		p_coreDisplay.updateRuleset(nthp::RenderRuleSet(w, h, settings.tunitResolution_x, settings.tunitResolution_y, settings.cameraWorldPosition));
+		p_coreDisplay = nthp::RenderRuleSet(w, h, settings.tunitResolution_x, settings.tunitResolution_y, settings.cameraWorldPosition);
 	}
         NOVERB_PRINT_DEBUG("done.\n\n");
-}
 
+        return 0;
+}
 
 
 void nthp::EngineCore::handleEvents() {
@@ -144,25 +135,27 @@ void nthp::EngineCore::stop() {
 }
 
 
-void nthp::EngineCore::render(nthp::RenderPacket packet) {
+int nthp::EngineCore::render(nthp::RenderPacket packet) {
         switch(packet.state) {
                 case nthp::RenderPacket::C_OPERATE::VALID:
-                        SDL_RenderCopy(renderer, packet.texture, packet.srcRect, &packet.dstRect);
+                        return SDL_RenderCopy(renderer, packet.texture, packet.srcRect, &packet.dstRect);
                         break;
 
                 case nthp::RenderPacket::C_OPERATE::INVALID:
                         PRINT_DEBUG_WARNING("Reading invalid render call. Ensure target texture is generated.\n");
+                        return -1;
                         break;
                 default:
                         break;
         }
+
+        return 0;
 }
 
 
 
 
 nthp::EngineCore::~EngineCore() {
-        PRINT_DEBUG("Destroying core [%p]...\t", this);
 
         SDL_DestroyWindow(window);
         SDL_DestroyRenderer(renderer);
@@ -172,5 +165,4 @@ nthp::EngineCore::~EngineCore() {
         IMG_Quit();
 #endif
 
-        NOVERB_PRINT_DEBUG("done.\n");
 }

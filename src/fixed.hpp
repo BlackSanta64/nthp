@@ -101,7 +101,7 @@ namespace nthp {
                 // If EPSILON = 0.000000533, then
                 // fixed_t++ = (fixed_t + 0.000000533)
                 constexpr double FIXED_EPSILON = nthp::fixedToDouble(1);
-                static const FIXED_TYPE sqrt_eval = (1 << (FIXED_POINT_SCALE / 2));
+                constexpr FIXED_TYPE sqrt_eval = (1 << (FIXED_POINT_SCALE / 2));
         }
 
 
@@ -195,7 +195,7 @@ namespace nthp {
 
         // Iterative square root algorithm for fixed point numbers. A little slower than floating point square roots.
         // Requires a conversion int->double to perform the square root. Use sparingly.
-        static inline const fixed_t f_sqrt(fixed_t a) { return (((fixed_t)sqrt(a)) * nthp::fixedTypeConstants::sqrt_eval); }
+        static inline const fixed_t f_sqrt(fixed_t a) { return (((fixed_t)sqrtf(a)) * nthp::fixedTypeConstants::sqrt_eval); }
 
 
 #if FIXED_POINT_WIDTH < 64
@@ -204,7 +204,7 @@ namespace nthp {
         // operations. (Provided the fixed point width is less than 64bit). Upcasting provides no loss in the possible range or accuracy,
         // but is painfully slow to perform, negating much of what little speed benefit fixed-point provides. Use the fast operations
         // whenever possible, as they work with any fixed point width and are faster.
-        constexpr fixed_t c_fixedProduct(fixed_t a, fixed_t b) { return ((((UPCAST_TYPE)a) * ((UPCAST_TYPE)b)) >> FIXED_POINT_SCALE); }
+        constexpr UPCAST_TYPE c_fixedProduct(fixed_t a, fixed_t b) { return ((((UPCAST_TYPE)a) * ((UPCAST_TYPE)b)) >> FIXED_POINT_SCALE); }
 
 
 
@@ -213,7 +213,7 @@ namespace nthp {
         // operations. (Provided the fixed point width is less than 64bit). Upcasting provides no loss in the possible range or accuracy,
         // but is painfully slow to perform, negating much of what little speed benefit fixed-point provides. Use the fast operations
         // whenever possible, as they work with any fixed point width and are faster.
-        constexpr fixed_t c_fixedQuotient(fixed_t a, fixed_t b) { return (((UPCAST_TYPE)a) << FIXED_POINT_SCALE) / (b); }
+        constexpr UPCAST_TYPE c_fixedQuotient(fixed_t a, fixed_t b) { return (((UPCAST_TYPE)a) << FIXED_POINT_SCALE) / (b); }
 
 
 #endif

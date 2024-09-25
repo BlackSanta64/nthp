@@ -19,14 +19,12 @@ namespace nthp {
         struct RenderRuleSet {
         public:
 		RenderRuleSet();
-                RenderRuleSet(FIXED_TYPE x, FIXED_TYPE y, FIXED_TYPE tx, FIXED_TYPE ty, vectFixed cameraPosition);
-
-		void updateRuleset(const nthp::RenderRuleSet& newSet);
+                RenderRuleSet(FIXED_TYPE x, FIXED_TYPE y, fixed_t tx, fixed_t ty, vectFixed cameraPosition);
 
 		FIXED_TYPE pxlResolution_x;
 		FIXED_TYPE pxlResolution_y;
-		FIXED_TYPE tunitResolution_x;
-		FIXED_TYPE tunitResolution_y;
+		fixed_t tunitResolution_x;
+		fixed_t tunitResolution_y;
                 vectFixed scaleFactor;
 
 		vectFixed cameraWorldPosition;
@@ -41,11 +39,13 @@ namespace nthp {
         public:
                 EngineCore() { window = nullptr; renderer = nullptr; running = false; };
                 EngineCore(nthp::RenderRuleSet settings, const char* title, bool fullscreen, bool softwareRendering);
-                void render(nthp::RenderPacket packet);
+
+                int init(nthp::RenderRuleSet settings, const char* title, bool fullscreen, bool softwareRendering);
 
                 void handleEvents();
                 void handleEvents(void (*handler)(SDL_Event*));
 
+                int render(nthp::RenderPacket packet);
                 void clear();
                 void display();
                 void stop();
@@ -71,6 +71,8 @@ namespace nthp {
                 bool running;
 
         };
+
+        extern nthp::EngineCore core;
 
 
 }

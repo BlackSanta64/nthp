@@ -9,6 +9,7 @@
         extern void     PRINT_COMPILER                  (const char* format, ...);
         extern void     PRINT_COMPILER_ERROR            (const char* format, ...);
         extern void     PRINT_COMPILER_WARNING          (const char* format, ...);
+        extern void     PRINT_COMPILER_DEPEND_ERROR     (const char* format, ...);
 
         #define         NOVERB_PRINT_COMPILER(...)      fprintf(NTHP_debug_output, __VA_ARGS__)
 
@@ -17,6 +18,7 @@
         #define         PRINT_COMPILER_ERROR(...)
         #define         PRINT_COMPILER_WARNING(...)
         #define         NOVERB_PRINT_COMPILER(...)
+        #define         PRINT_COMPILER_DEPEND_ERROR(...)
 #endif
 
 

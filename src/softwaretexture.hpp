@@ -16,7 +16,7 @@ namespace nthp {
                         SoftwareTexture(const char* filename);
 
 
-                        int generateTexture(const char* filename, nthp::texture::Palette* palette, SDL_Renderer* coreRenderer);
+                        virtual int generateTexture(const char* filename, nthp::texture::Palette* palette, SDL_Renderer* coreRenderer);
                         inline SDL_Texture* getTexture() { return texture; }
 
                         void regenerateTexture(nthp::texture::Palette* palette, SDL_Renderer* renderer);
@@ -40,24 +40,30 @@ namespace nthp {
                         void createEmptyTexture(const size_t dataSize);
                         const software_texture_header getMetaData() { return metadata; }
                         inline void manual_metadata_override(const software_texture_header _ovr) { metadata = _ovr; dataSize = metadata.x * metadata.y; }
+                        inline void purgeTextureData() {
+                                if(dataSize > 0) free(pixelData);
+                                if(texture != nullptr) SDL_DestroyTexture(texture);
+
+                                dataSize = 0;
+                                metadata.x = 0;
+                                metadata.y = 0;
+                        }
 
                         ~SoftwareTexture();
-                private:
 
 
-                        SDL_Texture* texture;
-
-
-                       
                         
+                        NTHPST_COLOR_WIDTH* pixelData;
+                        size_t dataSize;
+                        software_texture_header metadata;
+                        SDL_Texture* texture;
+                        
+                protected:
 
                         constexpr NTHPST_COLOR_WIDTH getPixelColor(NTHPST_COLOR_WIDTH pixel)        { return ((pixel & NTHPST_COLORMASK) >> 4); }
                         constexpr NTHPST_COLOR_WIDTH getPixelAlphaLevel(NTHPST_COLOR_WIDTH pixel)        { return (pixel & NTHPST_ALPHAMASK); }
                         constexpr NTHPST_COLOR_WIDTH getTrueAlpha(NTHPST_COLOR_WIDTH alphaLevel)    { return (alphaLevel * alphaLevelSize); }
 
-                        NTHPST_COLOR_WIDTH* pixelData;
-                        size_t dataSize;
-                        software_texture_header metadata;
                 };
                 namespace tools {
                 

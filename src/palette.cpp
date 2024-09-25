@@ -11,24 +11,25 @@ nthp::texture::Palette::Palette(const char* filename) {
         PRINT_DEBUG("Creating new Palette at [%p]...\n", this);
         memset(colorSet, 0, nthp::texture::PaletteFileByteSize);
 
-        this->importPaletteFromFile(filename);
+        if(this->importPaletteFromFile(filename)) { };
 
         PRINT_DEBUG("Successfully created valid palette object at [%p]\n", this);
 }
 
 
-void nthp::texture::Palette::importPaletteFromFile(const char* filename) {
+int nthp::texture::Palette::importPaletteFromFile(const char* filename) {
         std::fstream file;
         file.open(filename, std::ios::in | std::ios::binary);
 
         if(file.fail()) {
                 PRINT_DEBUG_ERROR("Failed to create palette; file [%s] not found.\n", filename);
 
-                return;
+                return 1;
         }
 
         if(colorSet == NULL) {
                 FATAL_PRINT(nthp::FATAL_ERROR::Memory_Fault, "Unable to allocate memory for palette object.\n");
+                return 1;
         }
 
         
@@ -37,17 +38,18 @@ void nthp::texture::Palette::importPaletteFromFile(const char* filename) {
 
         file.close();
         PRINT_DEBUG("Successfully imported color data into palette [%p]\n", this);
+        return 0;
 }
 
 
 
-void nthp::texture::Palette::exportPaletteToFile(const char* filename) {
+int nthp::texture::Palette::exportPaletteToFile(const char* filename) {
         std::fstream file;
         file.open(filename, std::ios::out | std::ios::binary);
 
         if(file.fail()) {
                 PRINT_DEBUG_ERROR("Failed to export palette data to file; Unable to open target file.\n");
-                return;
+                return 1;
         }
 
 
@@ -56,7 +58,7 @@ void nthp::texture::Palette::exportPaletteToFile(const char* filename) {
         file.close();
 
         PRINT_DEBUG("Successfully exported palette binary to file [%s].\n", filename);
-
+        return 0;
 }
 
 void nthp::texture::Palette::clean(const nthp::texture::STPixelBinary p) {

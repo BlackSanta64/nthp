@@ -42,6 +42,7 @@ int nthp::texture::SoftwareTexture::generateTexture(const char* filename, nthp::
         
         std::fstream file;
         file.open(filename, std::ios::in | std::ios::binary);
+        PRINT_DEBUG("Opening ST File [%s]...\n", filename);
 
         if(file.fail()) {
                 PRINT_DEBUG_ERROR("Unable to create SoftwareTexture; file not found.\n");

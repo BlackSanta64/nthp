@@ -17,6 +17,7 @@ const nthp::RenderPacket nthp::entity::gEntity::getUpdateRenderPacket(nthp::Rend
         if(frameData[currentFrame].texture == NULL)
                 state = nthp::RenderPacket::C_OPERATE::INVALID;
 
+
         return nthp::generateRenderPacket(frameData[currentFrame].texture, &frameData[currentFrame].src, 
                 {
                         (int)pxlPos.x, 
