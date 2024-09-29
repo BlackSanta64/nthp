@@ -108,6 +108,7 @@ namespace nthp {
                 T x;
                 T y;
         };
+        typedef vector<int> vectGen;
 
         typedef vector<int32_t> vect32;
         typedef vector<int64_t> vect64;
@@ -127,7 +128,9 @@ namespace nthp {
         extern vectFixed mousePosition;
 
         // Sets the max framerate in FPS to nthp::frameDelay
-        inline void setMaxFPS(const FIXED_TYPE fps) { frameDelay = nthp::f_fixedQuotient(nthp::intToFixed(1000), nthp::intToFixed(fps)); }
+        inline void setMaxFPS(const FIXED_TYPE fps) { nthp::frameDelay = nthp::f_fixedQuotient(nthp::intToFixed(1000), nthp::intToFixed(fps)); }
+
+        
 
 
         // Funny, lightweight (useless) dynamic storage class. This is genuinely
@@ -159,6 +162,22 @@ namespace nthp {
         private:
                 T* array;
                 size_t size;
+        };
+
+
+        struct RenderRuleSet {
+        public:
+		RenderRuleSet();
+                RenderRuleSet(FIXED_TYPE x, FIXED_TYPE y, fixed_t tx, fixed_t ty, vectFixed cameraPosition);
+
+		FIXED_TYPE pxlResolution_x;
+		FIXED_TYPE pxlResolution_y;
+		fixed_t tunitResolution_x;
+		fixed_t tunitResolution_y;
+                vectFixed scaleFactor;
+
+		vectFixed cameraWorldPosition;
+  
         };
 
 

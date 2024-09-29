@@ -39,7 +39,7 @@ namespace nthp {
 
 // Ugly, but there's no better way to do it. All you have to do now is change the
 // two macros above, and the whole fixed-point system should scale accordingly. Assumes
-// 32-bits if no width is defined.
+// 32-bits if no or an invalid width is defined.
 #if FIXED_POINT_WIDTH == 64
                                 #define FIXED_TYPE               int64_t
                                 #define UPCAST_TYPE              ____NOTYPE
@@ -48,7 +48,7 @@ namespace nthp {
         #if FIXED_POINT_WIDTH == 32
                                 #define FIXED_TYPE               int32_t
                                 #define UPCAST_TYPE              int64_t
-                               namespace fixedTypeConstants { constexpr uint32_t FIXED_MAX = UINT32_MAX; }
+                                namespace fixedTypeConstants { constexpr uint32_t FIXED_MAX = UINT32_MAX; }
         #else   
                 #if FIXED_POINT_WIDTH == 16
                                 #define FIXED_TYPE               int16_t
@@ -62,7 +62,7 @@ namespace nthp {
                         #else
                                 #define FIXED_TYPE               int32_t
                                 #define UPCAST_TYPE              int64_t
-                                namespace fixedTypeConstants { constexpr uint32_t FIXED_MAX = UINT64_MAX; }
+                                namespace fixedTypeConstants { constexpr uint32_t FIXED_MAX = UINT32_MAX; }
                         #endif
 
                 #endif
@@ -130,7 +130,7 @@ namespace nthp {
         // but the accuracy increases. The accuracy is automatically adjusted by the preprocessor
         // on compile time. An invalid range (over FIXED_POINT_SCALE) will be overwritten for maximum range
         // (and by extension minimal accuracy).
-        #define FAST_QUOTIENT_RANGE             (2)
+        #define FAST_QUOTIENT_RANGE             (1)
 
 #endif
 

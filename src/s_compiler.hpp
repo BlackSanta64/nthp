@@ -1,7 +1,7 @@
 #pragma once
 
-#include "s_script.hpp"
-
+#include "s_instructions.hpp"
+#include "s_stage.hpp"
 
 
 #ifdef DEBUG 
@@ -35,6 +35,11 @@ namespace nthp {
 
                 // Compiler-Only; Used by the compiler to track variables declared.
                 struct VAR_DEF {
+                        std::string varName;
+                        uint32_t relativeIndex;
+                };
+
+                struct GLOBAL_DEF {
                         std::string varName;
                         uint32_t relativeIndex;
                 };
@@ -75,6 +80,10 @@ namespace nthp {
                 // Writes stored Node data to the target output file.
                 // Is called by 'compileSourceFile' if the 'outputfile' is non-NULL.
                 int exportToFile(const char* outputFile);
+
+                int compileStageConfig(const char* stageConfigFile, const char* output);
+
+                int buildSystem(const char* stageFile);
 
 
                 ~CompilerInstance();

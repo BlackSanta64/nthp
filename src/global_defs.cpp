@@ -91,3 +91,31 @@ void NTHP_GEN_DEBUG_CLOSE(void) {
                 fclose(NTHP_debug_output);
         }
 }
+
+
+
+nthp::RenderRuleSet::RenderRuleSet() { 
+        pxlResolution_x = 0;
+        pxlResolution_y = 0;
+        tunitResolution_x = 0;
+        tunitResolution_y = 0;
+}
+
+nthp::RenderRuleSet::RenderRuleSet(FIXED_TYPE x, FIXED_TYPE y, nthp::fixed_t tx, nthp::fixed_t ty, vectFixed cameraPosition) {
+        pxlResolution_x = x;
+        pxlResolution_y = y;
+        tunitResolution_x = tx;
+        tunitResolution_y = ty;
+
+        cameraWorldPosition = cameraPosition;
+
+        // Yes yes I know. But the precision is too important here to pass up.
+        // It gets converted afterwards back to fixed-point, so overall speed is better.
+	double xs, ys;
+	xs = (double)pxlResolution_x / nthp::fixedToDouble(tunitResolution_x);
+	ys = (double)pxlResolution_y / nthp::fixedToDouble(tunitResolution_y);
+
+
+	scaleFactor.x = nthp::doubleToFixed(xs);
+	scaleFactor.y = nthp::doubleToFixed(ys);
+}

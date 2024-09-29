@@ -3,7 +3,20 @@
 using namespace nthp::script::instructions;
 #define DEFINE_EXECUTION_BEHAVIOUR(instruction) const int instruction (nthp::script::Script::ScriptDataSet* data)
 
-#define EVAL_REF(ref) if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) { ref.value = data->varSet[nthp::fixedToInt(ref.value)]; }
+uint8_t nthp::script::stageMemory[UINT8_MAX];
+nthp::texture::Palette nthp::script::activePalette;
+
+#define EVAL_STDREF(ref)   if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {\
+                                if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_GLOBAL)) {\
+                                        ref.value = data->globalVarSet[nthp::fixedToInt(ref.value)];\
+                                }\
+                                else {\
+                                        ref.value = data->currentLocalMemory[nthp::fixedToInt(ref.value)];\
+                                }\
+                        }
+
+
+
 
 DEFINE_EXECUTION_BEHAVIOUR(EXIT) {
         return 0;
@@ -29,11 +42,11 @@ DEFINE_EXECUTION_BEHAVIOUR(JUMP) {
         stdRef label = *(stdRef*)data->nodeSet[data->currentNode].access.data;
         uint32_t static_label = nthp::fixedToInt(label.value);
 
-        EVAL_REF(label);
+        EVAL_STDREF(label);
 
-        for(size_t i = 0; i < data->labelBlockSize; ++i) {
-                if(data->labelBlock[i + i] == static_label) {
-                        data->currentNode = data->labelBlock[i + i + 1];
+        for(size_t i = 0; i < data->currentLabelBlockSize; ++i) {
+                if(data->currentLabelBlock[i + i] == static_label) {
+                        data->currentNode = data->currentLabelBlock[i + i + 1];
                         break;
                 }
         }
@@ -49,50 +62,79 @@ DEFINE_EXECUTION_BEHAVIOUR(SUSPEND) {
 DEFINE_EXECUTION_BEHAVIOUR(RETURN) {
         stdRef index = *(stdRef*)data->nodeSet[data->currentNode].access.data;
 
-        EVAL_REF(index);
+        EVAL_STDREF(index);
         data->currentNode = index.value;
 
         return 0;
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(GETINDEX) {
-        uint32_t var = *(uint32_t*)data->nodeSet[data->currentNode].access.data;
-        data->varSet[var] = nthp::intToFixed(data->currentNode);
+        indRef var = *(indRef*)data->nodeSet[data->currentNode].access.data;
 
+        if(PR_METADATA_GET(var, nthp::script::flagBits::IS_GLOBAL)) {
+                data->globalVarSet[var.value] = nthp::intToFixed(data->currentNode);
+        }
+        else {
+                data->currentLocalMemory[var.value] = nthp::intToFixed(data->currentNode);
+        }
         return 0;
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(INC) {
-        uint32_t var = *(uint32_t*)data->nodeSet[data->currentNode].access.data;
-        data->varSet[var] += nthp::intToFixed(1);
+        indRef var = *(indRef*)data->nodeSet[data->currentNode].access.data;
+
+        if(PR_METADATA_GET(var, nthp::script::flagBits::IS_GLOBAL)) {
+                data->globalVarSet[var.value] += nthp::intToFixed(1);
+        }
+        else {
+                data->currentLocalMemory[var.value] += nthp::intToFixed(1);
+        }
 
         return 0;
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(DEC) {
-        uint32_t var = *(uint32_t*)data->nodeSet[data->currentNode].access.data;
-        data->varSet[var] -= nthp::intToFixed(1);
+        indRef var = *(indRef*)data->nodeSet[data->currentNode].access.data;
+
+        if(PR_METADATA_GET(var, nthp::script::flagBits::IS_GLOBAL)) {
+                data->globalVarSet[var.value] -= nthp::intToFixed(1);
+        }
+        else {
+                data->currentLocalMemory[var.value] -= nthp::intToFixed(1);
+        }
 
         return 0;
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(LSHIFT) {
-        uint32_t var =  *(uint32_t*)data->nodeSet[data->currentNode].access.data;
-        stdRef count = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(uint32_t));
+        indRef var =  *(indRef*)data->nodeSet[data->currentNode].access.data;
+        stdRef count = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(indRef));
 
-        EVAL_REF(count);
+        EVAL_STDREF(count);
         
-        data->varSet[var] = ((data->varSet[var]) << nthp::fixedToInt(count.value));
+        if(PR_METADATA_GET(var, nthp::script::flagBits::IS_GLOBAL)) {
+                data->globalVarSet[var.value] = ((data->globalVarSet[var.value]) << nthp::fixedToInt(count.value));
+        }
+        else {                
+                data->currentLocalMemory[var.value] = ((data->currentLocalMemory[var.value]) << nthp::fixedToInt(count.value));
+        }
+
         return 0;
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(RSHIFT) {
-        uint32_t var =  *(uint32_t*)data->nodeSet[data->currentNode].access.data;
-        stdRef count = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(uint32_t));
+        indRef var =  *(indRef*)data->nodeSet[data->currentNode].access.data;
+        stdRef count = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(indRef));
 
-        EVAL_REF(count);
+        EVAL_STDREF(count);
+        
+        if(PR_METADATA_GET(var, nthp::script::flagBits::IS_GLOBAL)) {
+                data->globalVarSet[var.value] = ((data->globalVarSet[var.value]) >> nthp::fixedToInt(count.value));
+        }
+        else {                
+                data->currentLocalMemory[var.value] = ((data->currentLocalMemory[var.value]) >> nthp::fixedToInt(count.value));
+        }
 
-        data->varSet[var] = ((data->varSet[var]) >> nthp::fixedToInt(count.value));
         return 0;
 }
 
@@ -100,59 +142,85 @@ DEFINE_EXECUTION_BEHAVIOUR(RSHIFT) {
 DEFINE_EXECUTION_BEHAVIOUR(ADD) {
         stdRef a = *(stdRef*)data->nodeSet[data->currentNode].access.data;
         stdRef b = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
-        uint32_t output = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
+        indRef output = *(indRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
 
 
-        EVAL_REF(a);
-        EVAL_REF(b);
-        
-        data->varSet[output] = (a.value + b.value);
+        EVAL_STDREF(a);
+        EVAL_STDREF(b);
+
+        if(PR_METADATA_GET(output, nthp::script::flagBits::IS_GLOBAL)) {
+                data->globalVarSet[output.value] = (a.value + b.value);
+        } else {
+                data->currentLocalMemory[output.value] = (a.value + b.value);
+        }
+
         return 0;
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(SUB) {
         stdRef a = *(stdRef*)data->nodeSet[data->currentNode].access.data;
         stdRef b = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
-        uint32_t output = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
+        indRef output = *(indRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
 
-        EVAL_REF(a);
-        EVAL_REF(b);
 
-        data->varSet[output] = (a.value - b.value);
+        EVAL_STDREF(a);
+        EVAL_STDREF(b);
+
+        if(PR_METADATA_GET(output, nthp::script::flagBits::IS_GLOBAL)) {
+                data->globalVarSet[output.value] = (a.value - b.value);
+        } else {
+                data->currentLocalMemory[output.value] = (a.value - b.value);
+        }
         return 0;
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(MUL) {
         stdRef a = *(stdRef*)data->nodeSet[data->currentNode].access.data;
         stdRef b = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
-        uint32_t output = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
+        indRef output = *(indRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
 
-        EVAL_REF(a);
-        EVAL_REF(b);
 
-        data->varSet[output] = nthp::f_fixedProduct(a.value, b.value);
+        EVAL_STDREF(a);
+        EVAL_STDREF(b);
+
+        if(PR_METADATA_GET(output, nthp::script::flagBits::IS_GLOBAL)) {
+                data->globalVarSet[output.value] = nthp::f_fixedProduct(a.value, b.value);
+        } else {
+                data->currentLocalMemory[output.value] = nthp::f_fixedProduct(a.value, b.value);
+        }
         return 0;
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(DIV) {
         stdRef a = *(stdRef*)data->nodeSet[data->currentNode].access.data;
         stdRef b = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
-        uint32_t output = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
+        indRef output = *(indRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
 
-        EVAL_REF(a);
-        EVAL_REF(b);
 
-        data->varSet[output] = nthp::f_fixedQuotient(a.value, b.value);
+        EVAL_STDREF(a);
+        EVAL_STDREF(b);
+
+        if(PR_METADATA_GET(output, nthp::script::flagBits::IS_GLOBAL)) {
+                data->globalVarSet[output.value] = nthp::f_fixedQuotient(a.value, b.value);
+        } else {
+                data->currentLocalMemory[output.value] = nthp::f_fixedQuotient(a.value, b.value);
+        }
         return 0;
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(SQRT) {
         stdRef base = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
-        uint32_t pointer = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+        indRef pointer = *(indRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
 
-        EVAL_REF(base);
+        EVAL_STDREF(base);
 
-        data->varSet[pointer] = nthp::f_sqrt(base.value);
+        if(PR_METADATA_GET(pointer, nthp::script::flagBits::IS_GLOBAL)) {
+                data->globalVarSet[pointer.value] = nthp::f_sqrt(base.value);
+        }
+        else {
+                data->currentLocalMemory[pointer.value] = nthp::f_sqrt(base.value);
+        }
+       
         return 0;
 }
 
@@ -167,8 +235,8 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_EQU) {
         stdRef opB = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
         uint32_t endIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
 
-        EVAL_REF(opA);
-        EVAL_REF(opB);
+        EVAL_STDREF(opA);
+        EVAL_STDREF(opB);
 
         if(opA.value == opB.value)
                 return 0;
@@ -183,8 +251,8 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_NOT) {
         stdRef opB = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
         uint32_t endIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
 
-        EVAL_REF(opA);
-        EVAL_REF(opB);
+        EVAL_STDREF(opA);
+        EVAL_STDREF(opB);
         
         if(opA.value != opB.value)
                 return 0;
@@ -199,8 +267,8 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_GRT) {
         stdRef opB = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
         uint32_t endIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
 
-        EVAL_REF(opA);
-        EVAL_REF(opB);
+        EVAL_STDREF(opA);
+        EVAL_STDREF(opB);
 
         if(opA.value > opB.value)
                 return 0;
@@ -215,8 +283,8 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_LST) {
         stdRef opB = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
         uint32_t endIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
 
-        EVAL_REF(opA);
-        EVAL_REF(opB);
+        EVAL_STDREF(opA);
+        EVAL_STDREF(opB);
 
         if(opA.value < opB.value)
                 return 0;
@@ -231,8 +299,8 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_GRTE) {
         stdRef opB = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
         uint32_t endIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
 
-        EVAL_REF(opA);
-        EVAL_REF(opB);
+        EVAL_STDREF(opA);
+        EVAL_STDREF(opB);
 
         if(opA.value >= opB.value)
                 return 0;
@@ -248,8 +316,8 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_LSTE) {
         stdRef opB = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
         uint32_t endIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
 
-        EVAL_REF(opA);
-        EVAL_REF(opB);
+        EVAL_STDREF(opA);
+        EVAL_STDREF(opB);
 
         if(opA.value <= opB.value)
                 return 0;
@@ -260,16 +328,22 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_LSTE) {
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(SET) {
-        uint32_t pointer = *(uint32_t*)(data->nodeSet[data->currentNode].access.data);
-        nthp::script::stdVarWidth value = *(nthp::script::stdVarWidth*)(data->nodeSet[data->currentNode].access.data + sizeof(uint32_t));
+        indRef pointer = *(indRef*)(data->nodeSet[data->currentNode].access.data);
+        nthp::script::stdVarWidth value = *(nthp::script::stdVarWidth*)(data->nodeSet[data->currentNode].access.data + sizeof(indRef));
 
-        data->varSet[pointer] = value;
+        if(PR_METADATA_GET(pointer, nthp::script::flagBits::IS_GLOBAL)) {
+                data->globalVarSet[pointer.value] = value;
+        }
+        else {
+                data->currentLocalMemory[pointer.value] = value;
+        }
+       
 
         return 0;
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(CLEAR) {
-        delete[] data->varSet;
+        delete[] data->currentLocalMemory;
         data->varSetSize = 0;
 
         return 0;
@@ -277,26 +351,43 @@ DEFINE_EXECUTION_BEHAVIOUR(CLEAR) {
 
 DEFINE_EXECUTION_BEHAVIOUR(DEFINE) {
         uint32_t size = *(uint32_t*)(data->nodeSet[data->currentNode].access.data);
-        data->varSet = new nthp::script::stdVarWidth[size];
+        data->currentLocalMemory = new (std::nothrow) nthp::script::stdVarWidth[size];
+        
+        if(data->currentLocalMemory == nullptr) return 1;
 
-        if(data->varSet == nullptr) return 1;
 
-        data->varSetSize = size;
         return 0;
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(COPY) {
-        uint32_t from = *(uint32_t*)(data->nodeSet[data->currentNode].access.data);
-        uint32_t to = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(uint32_t));
+        indRef from = *(indRef*)(data->nodeSet[data->currentNode].access.data);
+        indRef to = *(indRef*)(data->nodeSet[data->currentNode].access.data + sizeof(indRef));
+        nthp::script::stdVarWidth* from_target;
+        nthp::script::stdVarWidth* to_target;
 
-        data->varSet[to] = data->varSet[from];
+        if(PR_METADATA_GET(from, nthp::script::flagBits::IS_GLOBAL)) {
+                from_target = data->globalVarSet;
+        }
+        else {
+                from_target = data->currentLocalMemory;
+        }
+
+        if(PR_METADATA_GET(to, nthp::script::flagBits::IS_GLOBAL)) {
+                to_target = data->globalVarSet;
+        }
+        else {
+                to_target = data->currentLocalMemory;
+        }
+
+
+        to_target[to.value] = from_target[from.value];
         return 0;
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(TEXTURE_DEFINE) {
 	stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
 	
-	EVAL_REF(size);
+	EVAL_STDREF(size);
 	
 	data->textureBlock = new nthp::texture::gTexture[nthp::fixedToInt(size.value)];
 	data->textureBlockSize = nthp::fixedToInt(size.value);
@@ -315,21 +406,21 @@ DEFINE_EXECUTION_BEHAVIOUR(TEXTURE_LOAD) {
 	stdRef output = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
 	const char* file = (data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
 
-        EVAL_REF(output);
+        EVAL_STDREF(output);
 
 	if(nthp::fixedToInt(output.value) > data->textureBlockSize) {
 		PRINT_DEBUG_ERROR("Output index of LOAD_TEXTURE instuction out of bounds.\n");		
 		return 1;
 	}
 	
-	data->textureBlock[nthp::fixedToInt(output.value)].autoLoadTextureFile(file, &data->activePalette, nthp::core.getRenderer());
+	data->textureBlock[nthp::fixedToInt(output.value)].autoLoadTextureFile(file, &nthp::script::activePalette, nthp::core.getRenderer());
 
 	return 0;
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(SET_ACTIVE_PALETTE) {
 
-        data->activePalette.importPaletteFromFile(data->nodeSet[data->currentNode].access.data);
+        nthp::script::activePalette.importPaletteFromFile(data->nodeSet[data->currentNode].access.data);
 
         return 0;
 }
@@ -343,12 +434,12 @@ DEFINE_EXECUTION_BEHAVIOUR(CORE_INIT) {
         stdRef cy = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 5));
         uint8_t flags = *(uint8_t*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 6));
 
-        EVAL_REF(px);
-        EVAL_REF(py);
-        EVAL_REF(tx);
-        EVAL_REF(ty);
-        EVAL_REF(cx);
-        EVAL_REF(cy);
+        EVAL_STDREF(px);
+        EVAL_STDREF(py);
+        EVAL_STDREF(tx);
+        EVAL_STDREF(ty);
+        EVAL_STDREF(cx);
+        EVAL_STDREF(cy);
 
         const char* title = (char*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 6) + sizeof(uint8_t));
 
@@ -361,7 +452,7 @@ DEFINE_EXECUTION_BEHAVIOUR(CORE_INIT) {
 DEFINE_EXECUTION_BEHAVIOUR(FRAME_DEFINE) {
         stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
         
-        EVAL_REF(size);
+        EVAL_STDREF(size);
         data->frameBlock = new nthp::texture::Frame[nthp::fixedToInt(size.value)];
         data->frameBlockSize = nthp::fixedToInt(size.value);
 
@@ -386,12 +477,12 @@ DEFINE_EXECUTION_BEHAVIOUR(FRAME_SET) {
         stdRef h = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 4));
         stdRef textureIndex = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 5));
 
-        EVAL_REF(frameIndex);
-        EVAL_REF(x);
-        EVAL_REF(y);
-        EVAL_REF(w);
-        EVAL_REF(h);
-        EVAL_REF(textureIndex);
+        EVAL_STDREF(frameIndex);
+        EVAL_STDREF(x);
+        EVAL_STDREF(y);
+        EVAL_STDREF(w);
+        EVAL_STDREF(h);
+        EVAL_STDREF(textureIndex);
 
         SDL_Rect rect;
         rect.x = nthp::fixedToInt(x.value);
@@ -415,53 +506,43 @@ static const int (*exec_func[nthp::script::instructions::ID::numberOfInstruction
 /////////////////////////////////////////////////////
 /////////////////////////////////////////////////////
 
+#define POKE() printf("POKE!\n")
 
 nthp::script::Script::Script() {
-        data.varSet = nullptr;
-        data.varSetSize = 0;
-
-        data.entityBlock = nullptr;
-        data.entityBlockSize = 0;
-
-        data.textureBlock = nullptr;
-        data.textureBlockSize = 0;
-
-        data.frameBlock = nullptr;
-        data.frameBlockSize = 0;
-
-        data.currentNode = 0;
-        data.localMemBudget = 0;
-        data.globalMemBudget = 0;
-        data.labelBlock = nullptr;
-
+        data = NULL;
+        inStageContext = false;
+        localCurrentNode = 0;
+        localLabelBlock = nullptr;
+        localLabelBlockSize = 0;
+        localVarSet = nullptr;
+        localVarSetSize = 0;
 }
 
-nthp::script::Script::Script(const char* filename) {
-        data.varSet = nullptr;
-        data.varSetSize = 0;
-
-        data.entityBlock = nullptr;
-        data.entityBlockSize = 0;
-
-        data.textureBlock = nullptr;
-        data.textureBlockSize = 0;
-
-        data.frameBlock = nullptr;
-        data.frameBlockSize = 0;
+nthp::script::Script::Script(const char* filename, ScriptDataSet* dataSet) {
+        localCurrentNode = 0;
+        localLabelBlock = nullptr;
+        localLabelBlockSize = 0;
+        localVarSet = nullptr;
+        localVarSetSize = 0;
 
 
-        data.localMemBudget = 0;
-        data.globalMemBudget = 0;
-        data.labelBlock = nullptr;
 
-        data.currentNode = 0;
-
-        this->import(filename);
+        this->import(filename, dataSet);
 }
 
 
-int nthp::script::Script::import(const char* filename) {
+int nthp::script::Script::import(const char* filename, ScriptDataSet* dataSet) {
+        if(dataSet == NULL) {
+                dataSet = new nthp::script::Script::ScriptDataSet;
+                memset(dataSet, 0, sizeof(nthp::script::Script::ScriptDataSet));
+                inStageContext = false;
+        }
+        else {
+                inStageContext = true;
+        }
+
         std::fstream file(filename, std::ios::in | std::ios::binary);
+        data = dataSet;
 
         if(file.fail()) {
                 PRINT_DEBUG_ERROR("Unable to load Script file [%s]; File not found.\n");
@@ -476,30 +557,30 @@ int nthp::script::Script::import(const char* filename) {
                 for(size_t i = 0; read.access.ID != GET_INSTRUCTION_ID(EXIT); ++i) {
 
                         file.read((char*)&read, sizeof(nthp::script::Node::n_file_t));
-                        data.nodeSet.push_back((read));
+                        nodeSet.push_back(read);
                         NOVERB_PRINT_DEBUG("[%zu] ID:%u Size:%u\n", i, read.access.ID, read.access.size);
                         
-                        if(data.nodeSet.back().access.size != 0) {
-                                data.nodeSet.back().access.data = (char*)malloc(data.nodeSet.back().access.size);
-                                file.read(data.nodeSet.back().access.data, data.nodeSet.back().access.size);
+                        if(nodeSet.back().access.size != 0) {
+                                nodeSet.back().access.data = (char*)malloc(nodeSet.back().access.size);
+                                file.read(nodeSet.back().access.data, nodeSet.back().access.size);
                         }
 
-                        else data.nodeSet.back().access.data = nullptr;
+                        else nodeSet.back().access.data = nullptr;
 
                 }
         }
 
-        data.localMemBudget = *(uint32_t*)(data.nodeSet[0].access.data);
-        data.globalMemBudget = *(uint32_t*)(data.nodeSet[0].access.data + sizeof(uint32_t)); // Unused unless in stage context.
+        localVarSetSize = *(uint32_t*)(nodeSet[0].access.data);
+        data->globalMemBudget += *(uint32_t*)(nodeSet[0].access.data + sizeof(uint32_t)); // Unused unless in stage context.
 
         // Note this is a pointer to the region that stores labels.
-        data.labelBlock = (uint32_t*)(data.nodeSet[0].access.data + (sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t)));
-        data.labelBlockSize = *(uint32_t*)(data.nodeSet[0].access.data + (sizeof(uint32_t) + sizeof(uint32_t)));
+        localLabelBlock = (uint32_t*)(nodeSet[0].access.data + (sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t)));
+        localLabelBlockSize = *(uint32_t*)(nodeSet[0].access.data + (sizeof(uint32_t) + sizeof(uint32_t)));
 
-        data.varSet = (decltype(data.varSet))malloc(sizeof(nthp::fixed_t) * data.localMemBudget);
-        memset(data.varSet, 0, sizeof(nthp::fixed_t) * data.localMemBudget);
+        localVarSet = (decltype(localVarSet))malloc(sizeof(nthp::fixed_t) * localVarSetSize);;
 
-        data.varSetSize = data.localMemBudget;
+        memset(localVarSet, 0, sizeof(nthp::fixed_t) * localVarSetSize);
+        
 
         return 0;
 }
@@ -508,21 +589,34 @@ int nthp::script::Script::import(const char* filename) {
 
 
 int nthp::script::Script::execute() {
-        data.isSuspended = false;
+        data->isSuspended = false;
 
-        while(data.currentNode < data.nodeSet.size() && data.isSuspended == false) {
-                if(exec_func[data.nodeSet[data.currentNode].access.ID](&data)) return 1;
+        data->currentLocalMemory = localVarSet;
+        data->currentLabelBlock = localLabelBlock;
+        data->currentLabelBlockSize = localLabelBlockSize;
+        data->currentNode = localCurrentNode;
+        data->nodeSet = nodeSet.data();
 
-                ++data.currentNode;
+        // Could leave this to rot, but might be important later.
+        if(!inStageContext) {
+                data->globalVarSet = localVarSet;
         }
-        if(data.currentNode == data.nodeSet.size()) data.currentNode = 0;
+
+        while(data->currentNode < nodeSet.size() && data->isSuspended == false) {
+                if(exec_func[nodeSet[data->currentNode].access.ID](data)) return 1;
+
+                ++data->currentNode;
+        }
+        if(data->currentNode == nodeSet.size()) data->currentNode = 0;
+
+        localCurrentNode = data->currentNode;
 
         return 0;
 }
 
 
 int nthp::script::Script::execute(uint32_t entryPoint) {
-        data.currentNode = entryPoint;
+        localCurrentNode = entryPoint;
 
         return execute();
 }
@@ -531,16 +625,15 @@ int nthp::script::Script::execute(uint32_t entryPoint) {
 
 
 nthp::script::Script::~Script() {
-        if(data.varSetSize > 0)
-                delete[] data.varSet;
-        if(data.textureBlockSize > 0)
-                delete[] data.textureBlock;
-        if(data.frameBlockSize > 0)
-                delete[] data.frameBlock;
-        if(data.entityBlockSize > 0)
-                delete[] data.entityBlock;
+        if(localVarSetSize > 0)
+                delete[] localVarSet;
+        
+        if(!inStageContext) {
+                delete data;
+        }
 
-        for(size_t i = 0; i < data.nodeSet.size(); ++i) {
-                if(data.nodeSet[i].access.size > 0) free(data.nodeSet[i].access.data);
+
+        for(size_t i = 0; i < nodeSet.size(); ++i) {
+                if(nodeSet[i].access.size > 0) free(nodeSet[i].access.data);
         }
 }

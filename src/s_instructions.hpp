@@ -65,6 +65,7 @@ namespace ID {
 typedef P_Reference<nthp::script::stdVarWidth> stdRef;
 typedef P_Reference<uint32_t> indRef;
 
+
 // Sizes must have the same name as the ENUM entry in 'ID'.
 namespace Size {
 
@@ -77,18 +78,18 @@ namespace Size {
                 JUMP = sizeof(stdRef),
                 SUSPEND = 0,
                 RETURN = sizeof(stdRef),
-                GETINDEX = sizeof(uint32_t),
+                GETINDEX = sizeof(indRef),
 
-                INC = sizeof(uint32_t),
-                DEC = sizeof(uint32_t),
-                RSHIFT = sizeof(uint32_t) + sizeof(stdRef),
-                LSHIFT = sizeof(uint32_t) + sizeof(stdRef),
+                INC = sizeof(indRef),
+                DEC = sizeof(indRef),
+                RSHIFT = sizeof(indRef) + sizeof(stdRef),
+                LSHIFT = sizeof(indRef) + sizeof(stdRef),
 
-                ADD = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
-                SUB = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
-                MUL = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
-                DIV = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
-                SQRT = sizeof(stdRef) + sizeof(uint32_t),
+                ADD = sizeof(stdRef) + sizeof(stdRef) + sizeof(indRef),
+                SUB = sizeof(stdRef) + sizeof(stdRef) + sizeof(indRef),
+                MUL = sizeof(stdRef) + sizeof(stdRef) + sizeof(indRef),
+                DIV = sizeof(stdRef) + sizeof(stdRef) + sizeof(indRef),
+                SQRT = sizeof(stdRef) + sizeof(indRef),
 
                 LOGIC_EQU = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
                 LOGIC_NOT = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
@@ -99,10 +100,10 @@ namespace Size {
 
                 END = 0,
 
-                SET = sizeof(uint32_t) + sizeof(nthp::script::stdVarWidth),
+                SET = sizeof(indRef) + sizeof(nthp::script::stdVarWidth),
                 CLEAR = 0,
                 DEFINE = sizeof(uint32_t),
-                COPY = sizeof(uint32_t) + sizeof(uint32_t),
+                COPY = sizeof(indRef) + sizeof(indRef),
 
 		TEXTURE_DEFINE = sizeof(stdRef),
 		TEXTURE_CLEAR = 0,

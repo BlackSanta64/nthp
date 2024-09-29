@@ -3,6 +3,7 @@
 #include "softwaretexture.hpp"
 #include "position.hpp"
 #include "e_collision.hpp"
+#include "core.hpp"
 
 namespace nthp {
         namespace entity {

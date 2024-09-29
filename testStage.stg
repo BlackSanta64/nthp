@@ -1,0 +1,10 @@
+SCRIPT_CONFIG
+        FILE script/test.thpcs
+
+        TYPE T_INIT
+        GPR 25
+        MEMORY 0
+END
+
+
+EXIT

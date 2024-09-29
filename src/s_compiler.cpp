@@ -8,6 +8,7 @@ using namespace nthp::script::instructions;
                                                                         std::vector<nthp::script::CompilerInstance::CONST_DEF>& constantList,\
                                                                         std::vector<nthp::script::CompilerInstance::MACRO_DEF>& macroList,\
                                                                         std::vector<nthp::script::CompilerInstance::VAR_DEF>& varList,\
+                                                                        std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>& globalList,\
                                                                         std::vector<nthp::script::CompilerInstance::LABEL_DEF>& labelList,\
                                                                         std::vector<nthp::script::CompilerInstance::GOTO_DEF>& gotoList,\
                                                                         std::vector<size_t>& ifList,\
@@ -148,7 +149,7 @@ int EvaluateSymbol(std::fstream& file, std::string& expression, std::vector<nthp
 
 
 // Substitues a VAR reference or parses numeral references (for compatibility)
-nthp::script::instructions::stdRef EvaluateReference(std::string expression, std::vector<nthp::script::CompilerInstance::VAR_DEF>& list) {
+nthp::script::instructions::stdRef EvaluateReference(std::string expression, std::vector<nthp::script::CompilerInstance::VAR_DEF>& varList, std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>& globalList) {
         nthp::script::P_Reference<nthp::fixed_t> ref;
         ref.metadata = 0;
 
@@ -171,9 +172,18 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
         // If no VARNAME is referenced, assumes numeral reference type (instead of $VARNAME or >VARNAME, $2 or >2), or constant. Throws
         // Invalid argument if otherwise.
         if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {
-                for(size_t i = 0; i < list.size(); ++i) {
-                        if(expression == list[i].varName) {
-                                expression = std::to_string(list[i].relativeIndex);
+                if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_GLOBAL)) {
+                        for(size_t i = 0; i < globalList.size(); ++i) {
+                                if(expression == globalList[i].varName) {
+                                        expression = std::to_string(globalList[i].relativeIndex);
+                                }
+                        }
+                }
+                else {
+                        for(size_t i = 0; i < varList.size(); ++i) {
+                                if(expression == varList[i].varName) {
+                                        expression = std::to_string(varList[i].relativeIndex);
+                                }
                         }
                 }
         }
@@ -214,6 +224,7 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
 // Generic conviencence macro to evaluate the next symbol in the stream. Automatically pulls the next
 // symbol from a macro or source file into 'fileRead'
 #define EVAL_SYMBOL() ____S_EVAL(file, fileRead, constantList, macroList, currentMacroPosition, targetMacro, evaluateMacro)
+#define EVAL_PREF() EvaluateReference(fileRead, varList, globalList)
 
 #define CHECK_REF(ref) if(!PR_METADATA_GET(ref, nthp::script::flagBits::IS_VALID)) return 1 
 
@@ -334,8 +345,8 @@ DEFINE_COMPILATION_BEHAVIOUR(JUMP) {
 
 
         EVAL_SYMBOL();
-        nthp::script::instructions::stdRef* labelID = decltype(labelID)(nodeList[currentNode].access.data);
-        auto static_label = EvaluateReference(fileRead, varList);
+        nthp::script::instructions::indRef* labelID = decltype(labelID)(nodeList[currentNode].access.data);
+        auto static_label = EVAL_PREF();
 
         CHECK_REF(static_label);
         if(!PR_METADATA_GET(static_label, nthp::script::flagBits::IS_REFERENCE)) {
@@ -344,7 +355,8 @@ DEFINE_COMPILATION_BEHAVIOUR(JUMP) {
 
 
 
-        *labelID = static_label;
+        labelID->metadata = static_label.metadata;
+        labelID->value = nthp::fixedToInt(static_label.value);
         NOVERB_PRINT_COMPILER("[%zu] JUMP Node evaluated: ID = %lld\n", currentNode, nthp::fixedToInt(labelID->value));
 
         PRINT_NODEDATA();
@@ -354,13 +366,14 @@ DEFINE_COMPILATION_BEHAVIOUR(JUMP) {
 DEFINE_COMPILATION_BEHAVIOUR(RETURN) {
         ADD_NODE(RETURN);
 
-        nthp::script::instructions::stdRef* instruction = decltype(instruction)(nodeList[currentNode].access.data);
+        indRef* instruction = decltype(instruction)(nodeList[currentNode].access.data);
         EVAL_SYMBOL();
 
-        auto static_ref = EvaluateReference(fileRead, varList);
+        auto static_ref = EVAL_PREF();
         CHECK_REF(static_ref);
 
-        *instruction = static_ref;
+        instruction->metadata = static_ref.metadata;
+        instruction->value = nthp::fixedToInt(static_ref.value);
 
         PRINT_NODEDATA();
         return 0;
@@ -371,10 +384,10 @@ DEFINE_COMPILATION_BEHAVIOUR(GETINDEX) {
         ADD_NODE(GETINDEX);
 
 
-        uint32_t* pointer = decltype(pointer)(nodeList[currentNode].access.data);
+        indRef* pointer = decltype(pointer)(nodeList[currentNode].access.data);
         EVAL_SYMBOL();
 
-        auto static_ref = EvaluateReference(fileRead, varList);
+        auto static_ref = EVAL_PREF();
         CHECK_REF(static_ref);
 
         if(!PR_METADATA_GET(static_ref, nthp::script::flagBits::IS_REFERENCE)) {
@@ -382,7 +395,8 @@ DEFINE_COMPILATION_BEHAVIOUR(GETINDEX) {
                 return 1;
         }
 
-        *pointer = nthp::fixedToInt(static_ref.value);
+        pointer->metadata = static_ref.metadata;
+        pointer->value = nthp::fixedToInt(static_ref.value);
 
         PRINT_NODEDATA();
         return 0;
@@ -393,16 +407,13 @@ DEFINE_COMPILATION_BEHAVIOUR(INC) {
         ADD_NODE(INC);
 
         EVAL_SYMBOL();
-        uint32_t* var = decltype(var)(nodeList[currentNode].access.data);
-        auto static_var = EvaluateReference(fileRead, varList);
+        indRef* var = decltype(var)(nodeList[currentNode].access.data);
+        auto static_var = EVAL_PREF();
 
         CHECK_REF(static_var);
 
-        if(!PR_METADATA_GET(static_var, nthp::script::flagBits::IS_REFERENCE)) {
-                PRINT_COMPILER_ERROR("Unable to evaluate Reference; INC must take reference.\n");
-                return 1;
-        }
-        *var = (uint32_t)nthp::fixedToInt(static_var.value);
+        var->metadata = static_var.metadata;
+        var->value = (uint32_t)nthp::fixedToInt(static_var.value);
       
         PRINT_NODEDATA();
         return 0;
@@ -412,8 +423,8 @@ DEFINE_COMPILATION_BEHAVIOUR(DEC) {
         ADD_NODE(DEC);
 
         EVAL_SYMBOL();
-        uint32_t* var = decltype(var)(nodeList[currentNode].access.data);
-        auto static_var = EvaluateReference(fileRead, varList);
+        indRef* var = decltype(var)(nodeList[currentNode].access.data);
+        auto static_var = EVAL_PREF();
 
         CHECK_REF(static_var);
 
@@ -421,7 +432,8 @@ DEFINE_COMPILATION_BEHAVIOUR(DEC) {
                 PRINT_COMPILER_ERROR("Unable to evaluate Reference; INC must take reference.\n");
                 return 1;
         }
-        *var = (uint32_t)nthp::fixedToInt(static_var.value);
+        var->metadata = static_var.metadata;
+        var->value = (uint32_t)nthp::fixedToInt(static_var.value);
       
         PRINT_NODEDATA();
         return 0;
@@ -432,7 +444,7 @@ DEFINE_COMPILATION_BEHAVIOUR(RSHIFT) {
         ADD_NODE(RSHIFT);
 
         EVAL_SYMBOL();
-        auto ref = EvaluateReference(fileRead, varList);
+        auto ref = EVAL_PREF();
         CHECK_REF(ref);
 
         if(!PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {
@@ -440,14 +452,17 @@ DEFINE_COMPILATION_BEHAVIOUR(RSHIFT) {
                 return 1;
         }
 
-        uint32_t* var = (decltype(var))(nodeList[currentNode].access.data);
+        indRef* var = (decltype(var))(nodeList[currentNode].access.data);
 
         EVAL_SYMBOL();
-        auto count = EvaluateReference(fileRead, varList);
+        auto count = EVAL_PREF();
         CHECK_REF(count);
 
-        stdRef* fcount = (decltype(fcount))(nodeList[currentNode].access.data + sizeof(uint32_t));
-        *var = (uint32_t)nthp::fixedToInt(ref.value);
+        stdRef* fcount = (decltype(fcount))(nodeList[currentNode].access.data + sizeof(indRef));
+
+        var->metadata = ref.metadata;
+        var->value = (uint32_t)nthp::fixedToInt(ref.value);
+
         *fcount = count;
 
         PRINT_NODEDATA();
@@ -458,22 +473,25 @@ DEFINE_COMPILATION_BEHAVIOUR(LSHIFT) {
         ADD_NODE(LSHIFT);
 
         EVAL_SYMBOL();
-        auto ref = EvaluateReference(fileRead, varList);
+        auto ref = EVAL_PREF();
         CHECK_REF(ref);
 
         if(!PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {
-                PRINT_COMPILER_ERROR("Unable to evaluate Reference; LSHIFT must take reference.\n");
+                PRINT_COMPILER_ERROR("Unable to evaluate Reference; RSHIFT must take reference.\n");
                 return 1;
         }
 
-        uint32_t* var = (decltype(var))(nodeList[currentNode].access.data);
+        indRef* var = (decltype(var))(nodeList[currentNode].access.data);
 
         EVAL_SYMBOL();
-        auto count = EvaluateReference(fileRead, varList);
+        auto count = EVAL_PREF();
         CHECK_REF(count);
 
-        stdRef* fcount = (decltype(fcount))(nodeList[currentNode].access.data + sizeof(uint32_t));
-        *var = (uint32_t)nthp::fixedToInt(ref.value);
+        stdRef* fcount = (decltype(fcount))(nodeList[currentNode].access.data + sizeof(indRef));
+
+        var->metadata = ref.metadata;
+        var->value = (uint32_t)nthp::fixedToInt(ref.value);
+        
         *fcount = count;
 
         PRINT_NODEDATA();
@@ -487,18 +505,18 @@ DEFINE_COMPILATION_BEHAVIOUR(ADD) {
 
         nthp::script::instructions::stdRef* operandA = decltype(operandA)(nodeList[currentNode].access.data);
         nthp::script::instructions::stdRef* operandB = decltype(operandB)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef));
-        uint32_t* output = decltype(output)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(nthp::script::instructions::stdRef));
+        indRef* output = decltype(output)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(nthp::script::instructions::stdRef));
 
         EVAL_SYMBOL();
-        auto static_op_A = EvaluateReference(fileRead, varList);
+        auto static_op_A = EVAL_PREF();
         CHECK_REF(static_op_A);
 
         EVAL_SYMBOL();
-        auto static_op_B = EvaluateReference(fileRead, varList);
+        auto static_op_B = EVAL_PREF();
         CHECK_REF(static_op_B);
 
         EVAL_SYMBOL();
-        auto static_output = EvaluateReference(fileRead, varList);
+        auto static_output = EVAL_PREF();
         CHECK_REF(static_output);
 
 
@@ -510,7 +528,9 @@ DEFINE_COMPILATION_BEHAVIOUR(ADD) {
 
         *operandA = static_op_A;
         *operandB = static_op_B;
-        *output = (uint32_t)nthp::fixedToInt(static_output.value);;
+
+        output->metadata = static_output.metadata;
+        output->value = (uint32_t)nthp::fixedToInt(static_output.value);;
 
         
         PRINT_NODEDATA();
@@ -522,18 +542,18 @@ DEFINE_COMPILATION_BEHAVIOUR(SUB) {
 
         nthp::script::instructions::stdRef* operandA = decltype(operandA)(nodeList[currentNode].access.data);
         nthp::script::instructions::stdRef* operandB = decltype(operandB)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef));
-        uint32_t* output = decltype(output)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(nthp::script::instructions::stdRef));
+        indRef* output = decltype(output)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(nthp::script::instructions::stdRef));
 
         EVAL_SYMBOL();
-        auto static_op_A = EvaluateReference(fileRead, varList);
+        auto static_op_A = EVAL_PREF();
         CHECK_REF(static_op_A);
 
         EVAL_SYMBOL();
-        auto static_op_B = EvaluateReference(fileRead, varList);
+        auto static_op_B = EVAL_PREF();
         CHECK_REF(static_op_B);
 
         EVAL_SYMBOL();
-        auto static_output = EvaluateReference(fileRead, varList);
+        auto static_output = EVAL_PREF();
         CHECK_REF(static_output);
 
 
@@ -545,7 +565,9 @@ DEFINE_COMPILATION_BEHAVIOUR(SUB) {
 
         *operandA = static_op_A;
         *operandB = static_op_B;
-        *output = (uint32_t)nthp::fixedToInt(static_output.value);;
+
+        output->metadata = static_output.metadata;
+        output->value = (uint32_t)nthp::fixedToInt(static_output.value);
 
         PRINT_NODEDATA();
         return 0;
@@ -556,18 +578,18 @@ DEFINE_COMPILATION_BEHAVIOUR(MUL) {
 
         nthp::script::instructions::stdRef* operandA = decltype(operandA)(nodeList[currentNode].access.data);
         nthp::script::instructions::stdRef* operandB = decltype(operandB)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef));
-        uint32_t* output = decltype(output)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(nthp::script::instructions::stdRef));
+        indRef* output = decltype(output)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(nthp::script::instructions::stdRef));
 
         EVAL_SYMBOL();
-        auto static_op_A = EvaluateReference(fileRead, varList);
+        auto static_op_A = EVAL_PREF();
         CHECK_REF(static_op_A);
 
         EVAL_SYMBOL();
-        auto static_op_B = EvaluateReference(fileRead, varList);
+        auto static_op_B = EVAL_PREF();
         CHECK_REF(static_op_B);
 
         EVAL_SYMBOL();
-        auto static_output = EvaluateReference(fileRead, varList);
+        auto static_output = EVAL_PREF();
         CHECK_REF(static_output);
 
 
@@ -579,9 +601,10 @@ DEFINE_COMPILATION_BEHAVIOUR(MUL) {
 
         *operandA = static_op_A;
         *operandB = static_op_B;
-        *output = (uint32_t)nthp::fixedToInt(static_output.value);;
 
-\
+        output->metadata = static_output.metadata;
+        output->value = (uint32_t)nthp::fixedToInt(static_output.value);
+
 
         PRINT_NODEDATA();
         return 0;
@@ -592,18 +615,18 @@ DEFINE_COMPILATION_BEHAVIOUR(DIV) {
 
         nthp::script::instructions::stdRef* operandA = decltype(operandA)(nodeList[currentNode].access.data);
         nthp::script::instructions::stdRef* operandB = decltype(operandB)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef));
-        uint32_t* output = decltype(output)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(nthp::script::instructions::stdRef));
+        indRef* output = decltype(output)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(nthp::script::instructions::stdRef));
 
         EVAL_SYMBOL();
-        auto static_op_A = EvaluateReference(fileRead, varList);
+        auto static_op_A = EVAL_PREF();
         CHECK_REF(static_op_A);
 
         EVAL_SYMBOL();
-        auto static_op_B = EvaluateReference(fileRead, varList);
+        auto static_op_B = EVAL_PREF();
         CHECK_REF(static_op_B);
 
         EVAL_SYMBOL();
-        auto static_output = EvaluateReference(fileRead, varList);
+        auto static_output = EVAL_PREF();
         CHECK_REF(static_output);
 
 
@@ -615,7 +638,9 @@ DEFINE_COMPILATION_BEHAVIOUR(DIV) {
 
         *operandA = static_op_A;
         *operandB = static_op_B;
-        *output = (uint32_t)nthp::fixedToInt(static_output.value);
+
+        output->metadata = static_output.metadata;
+        output->value = (uint32_t)nthp::fixedToInt(static_output.value);
 
      
         PRINT_NODEDATA();
@@ -626,14 +651,14 @@ DEFINE_COMPILATION_BEHAVIOUR(SQRT) {
         ADD_NODE(SQRT);
 
         nthp::script::instructions::stdRef* base = (decltype(base))nodeList[currentNode].access.data;
-        uint32_t* output = (decltype(output))(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef));
+        indRef* output = (decltype(output))(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef));
 
         EVAL_SYMBOL();
-        auto static_base = EvaluateReference(fileRead, varList);
+        auto static_base = EVAL_PREF();
         CHECK_REF(static_base);
 
         EVAL_SYMBOL();
-        auto static_output = EvaluateReference(fileRead, varList);
+        auto static_output = EVAL_PREF();
         CHECK_REF(static_output);
 
         if(!PR_METADATA_GET(static_output, nthp::script::flagBits::IS_REFERENCE)) {
@@ -642,7 +667,9 @@ DEFINE_COMPILATION_BEHAVIOUR(SQRT) {
         }
 
         *base = static_base;
-        *output = (uint32_t)nthp::fixedToInt(static_output.value);
+        
+        output->metadata = static_output.metadata;
+        output->value = (uint32_t)nthp::fixedToInt(static_output.value);;
 
 
         PRINT_NODEDATA();
@@ -666,7 +693,7 @@ DEFINE_COMPILATION_BEHAVIOUR(IF) {
         nthp::script::instructions::stdRef static_opB;
 
         EVAL_SYMBOL();
-        static_opA = EvaluateReference(fileRead, varList);
+        static_opA = EVAL_PREF();
         CHECK_REF(static_opA);
 
         // God this is wonderful. I love C++
@@ -700,7 +727,7 @@ DEFINE_COMPILATION_BEHAVIOUR(IF) {
         }
 
         EVAL_SYMBOL();
-        static_opB = EvaluateReference(fileRead, varList);
+        static_opB = EVAL_PREF();
         CHECK_REF(static_opB);
 
         nthp::script::instructions::stdRef* opA = (decltype(opA))(nodeList[currentNode].access.data);
@@ -730,11 +757,11 @@ DEFINE_COMPILATION_BEHAVIOUR(SET) {
         ADD_NODE(SET);
 
 
-        uint32_t* pointer = decltype(pointer)(nodeList[currentNode].access.data);
-        nthp::script::stdVarWidth* value = decltype(value)(nodeList[currentNode].access.data + sizeof(uint32_t));
+        indRef* pointer = decltype(pointer)(nodeList[currentNode].access.data);
+        nthp::script::stdVarWidth* value = decltype(value)(nodeList[currentNode].access.data + sizeof(indRef));
 
         EVAL_SYMBOL(); // pointer
-        auto ref = EvaluateReference(fileRead, varList);
+        auto ref = EVAL_PREF();
 
         CHECK_REF(ref);
         if(!PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {
@@ -754,7 +781,9 @@ DEFINE_COMPILATION_BEHAVIOUR(SET) {
                 return 1;
         }
 
-        *pointer = nthp::fixedToInt(ref.value);
+        pointer->metadata = ref.metadata;
+        pointer->value = (uint32_t)nthp::fixedToInt(ref.value);
+
         *value = static_value;
 
         PRINT_NODEDATA();
@@ -784,11 +813,11 @@ DEFINE_COMPILATION_BEHAVIOUR(COPY) {
         ADD_NODE(COPY);
 
         EVAL_SYMBOL();
-        auto sfrom = EvaluateReference(fileRead, varList);
+        auto sfrom = EVAL_PREF();
         CHECK_REF(sfrom);
 
         EVAL_SYMBOL();
-        auto sto = EvaluateReference(fileRead, varList);
+        auto sto = EVAL_PREF();
         CHECK_REF(sto);
 
         if(!PR_METADATA_GET(sfrom, nthp::script::flagBits::IS_REFERENCE) || !PR_METADATA_GET(sto, nthp::script::flagBits::IS_REFERENCE)) {
@@ -796,11 +825,14 @@ DEFINE_COMPILATION_BEHAVIOUR(COPY) {
                 return 1;
         }
 
-        uint32_t* from = (uint32_t*)(nodeList[currentNode].access.data);
-        uint32_t* to = (uint32_t*)(nodeList[currentNode].access.data + sizeof(uint32_t));        
+        indRef* from = (indRef*)(nodeList[currentNode].access.data);
+        indRef* to = (indRef*)(nodeList[currentNode].access.data + sizeof(indRef));        
 
-        *from = nthp::fixedToInt(sfrom.value);
-        *to = nthp::fixedToInt(sto.value);
+        to->value = nthp::fixedToInt(sto.value);
+        to->metadata = sto.metadata;
+
+        from->value = nthp::fixedToInt(sfrom.value);
+        from->metadata = sfrom.metadata;
 
 
         PRINT_NODEDATA();
@@ -814,7 +846,7 @@ DEFINE_COMPILATION_BEHAVIOUR(TEXTURE_DEFINE) {
 	stdRef* size = (decltype(size))(nodeList[currentNode].access.data);
 	EVAL_SYMBOL(); // file
 
-	auto ref = EvaluateReference(fileRead, varList);
+	auto ref = EVAL_PREF();
 	CHECK_REF(ref);
 
 	// Remove decimal, As it is defining a memory block. Redundant if it's a reference, but cheap so who cares.
@@ -856,7 +888,7 @@ DEFINE_COMPILATION_BEHAVIOUR(TEXTURE_LOAD) {
         nodeList[currentNode].access.data[nodeList[currentNode].access.size - 1] = '\000';
         
         EVAL_SYMBOL(); // output
-        auto ref = EvaluateReference(fileRead, varList);
+        auto ref = EVAL_PREF();
         CHECK_REF(ref);
 
         ref.value = nthp::getFixedInteger(ref.value);
@@ -893,27 +925,27 @@ DEFINE_COMPILATION_BEHAVIOUR(CORE_INIT) {
         
 
         EVAL_SYMBOL();
-        auto spx = EvaluateReference(fileRead, varList);
+        auto spx = EVAL_PREF();
         CHECK_REF(spx);
 
         EVAL_SYMBOL();
-        auto spy = EvaluateReference(fileRead, varList);
+        auto spy = EVAL_PREF();
         CHECK_REF(spy);
 
         EVAL_SYMBOL();
-        auto stx = EvaluateReference(fileRead, varList);
+        auto stx = EVAL_PREF();
         CHECK_REF(stx);
 
         EVAL_SYMBOL();
-        auto sty = EvaluateReference(fileRead, varList);
+        auto sty = EVAL_PREF();
         CHECK_REF(sty);
 
         EVAL_SYMBOL();
-        auto scx = EvaluateReference(fileRead, varList);
+        auto scx = EVAL_PREF();
         CHECK_REF(scx);
 
         EVAL_SYMBOL();
-        auto scy = EvaluateReference(fileRead, varList);
+        auto scy = EVAL_PREF();
         CHECK_REF(scy);
 
 
@@ -972,7 +1004,7 @@ DEFINE_COMPILATION_BEHAVIOUR(FRAME_DEFINE) {
         ADD_NODE(FRAME_DEFINE);
 
         EVAL_SYMBOL();
-        auto size = EvaluateReference(fileRead, varList);
+        auto size = EVAL_PREF();
         CHECK_REF(size);
 
         stdRef* dSize = (decltype(dSize))(nodeList[currentNode].access.data);
@@ -993,27 +1025,27 @@ DEFINE_COMPILATION_BEHAVIOUR(FRAME_SET) {
         ADD_NODE(FRAME_SET);
 
         EVAL_SYMBOL();
-        auto sframeIndex = EvaluateReference(fileRead, varList);
+        auto sframeIndex = EVAL_PREF();
         CHECK_REF(sframeIndex);
 
         EVAL_SYMBOL();
-        auto sx = EvaluateReference(fileRead, varList);
+        auto sx = EVAL_PREF();
         CHECK_REF(sx);
 
         EVAL_SYMBOL();
-        auto sy = EvaluateReference(fileRead, varList);
+        auto sy = EVAL_PREF();
         CHECK_REF(sy);
         
         EVAL_SYMBOL();
-        auto sw = EvaluateReference(fileRead, varList);
+        auto sw = EVAL_PREF();
         CHECK_REF(sw);
         
         EVAL_SYMBOL();
-        auto sh = EvaluateReference(fileRead, varList);
+        auto sh = EVAL_PREF();
         CHECK_REF(sh);
 
         EVAL_SYMBOL();
-        auto stextureIndex = EvaluateReference(fileRead, varList);
+        auto stextureIndex = EVAL_PREF();
         CHECK_REF(stextureIndex);
 
         stdRef* frameIndex = (decltype(frameIndex))(nodeList[currentNode].access.data);
@@ -1036,6 +1068,21 @@ DEFINE_COMPILATION_BEHAVIOUR(FRAME_SET) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // COMPILER INSTANCE BEHAVIOUR GOES HERE                ||
 //                                                      VV
 
@@ -1054,6 +1101,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
         std::vector<nthp::script::CompilerInstance::CONST_DEF>  constantList;
         std::vector<nthp::script::CompilerInstance::MACRO_DEF>  macroList;
         std::vector<nthp::script::CompilerInstance::VAR_DEF>    varList;
+        std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>    globalList;  
 
 
         // Labels and Goto's are matched post-compilation.
@@ -1082,7 +1130,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
         bool evaluateMacro = false;
 
 
-        #define COMPILE(instruction) if( instruction ( nodeList, file, fileRead, constantList, macroList, varList, labelList, gotoList, ifLocations, endLocations, currentMacroPosition, targetMacro, evaluateMacro ) ) return 1
+        #define COMPILE(instruction) if( instruction ( nodeList, file, fileRead, constantList, macroList, varList, globalList, labelList, gotoList, ifLocations, endLocations, currentMacroPosition, targetMacro, evaluateMacro ) ) return 1
         #define CHECK_COMP(instruction) if(fileRead == #instruction) { COMPILE(instruction); continue; }
 
         bool operationOngoing = true;
@@ -1128,6 +1176,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                 if(fileRead == "VAR") {
                         // Define a new variable.
                         EVAL_SYMBOL();
+
                         for(size_t i = 0; i < varList.size(); ++i) {
                                 if(fileRead == varList[i].varName) {
                                         PRINT_COMPILER_WARNING("VAR [$%s] already declared; Ignoring redefinition.\n");
@@ -1143,6 +1192,26 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                         varList.push_back(newDef);
                 }
+                if(fileRead == "GLOBAL") {
+                          // Define a new variable.
+                        EVAL_SYMBOL();
+
+                        for(size_t i = 0; i < globalList.size(); ++i) {
+                                if(fileRead == globalList[i].varName) {
+                                        PRINT_COMPILER_WARNING("GLOBAL [$%s] already declared; Ignoring redefinition.\n");
+                                        goto COMP_START; // thank god.
+                                }
+                        }
+
+                        PRINT_COMPILER("Defined GLOBAL [%s].\n", fileRead.c_str());
+
+                        GLOBAL_DEF newDef;
+                        newDef.varName = fileRead;
+                        newDef.relativeIndex = globalList.size();
+
+                        globalList.push_back(newDef);
+                }
+
 
                 if(fileRead == "CONST") {
                         // Define new Const sub.
@@ -1442,7 +1511,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
 
         *localmem = (uint32_t)varList.size();
-        *globalmem = 0; // unused for now
+        *globalmem = (uint32_t)globalList.size();
 
         // Writes label data to header. For use in JUMP.
         for(size_t i = 0; i < labelList.size(); ++i) {
@@ -1457,32 +1526,152 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
         nodeBlockSize = nodeList.size();
         compiledNodes = (decltype(compiledNodes))malloc(NodeSize * nodeBlockSize);
 
-
         memcpy(compiledNodes, nodeList.data(), NodeSize * nodeBlockSize);
 
         NOVERB_PRINT_COMPILER("  Allocated & copied [%zu] bytes at [%p].\n", NodeSize * nodeBlockSize, compiledNodes);
 
         if(outputFile != NULL) {
-                file.open(outputFile, std::ios::out | std::ios::binary);
-
-                if(file.fail()) {
-                        PRINT_COMPILER_ERROR("Unable to write compiled binary to output file.\n");
-                        return 1;
-                }
-
-                for(size_t i = 0; i < nodeList.size(); ++i) {
-                        file.write((char*)&nodeList[i], sizeof(nthp::script::Node::n_file_t));
-                        if(nodeList[i].access.size != 0) file.write(nodeList[i].access.data, nodeList[i].access.size);
-                }
-
-                file.close();
+                return exportToFile(outputFile);
         }
         
-
-
         return 0;
 
 }
+
+int nthp::script::CompilerInstance::exportToFile(const char* outputFile) {
+        std::fstream file;
+        file.open(outputFile, std::ios::out | std::ios::binary);
+
+        if(file.fail()) {
+                PRINT_COMPILER_ERROR("Unable to write compiled binary to output file.\n");
+                return 1;
+        }
+
+        for(size_t i = 0; i < nodeBlockSize; ++i) {
+                file.write((char*)&compiledNodes[i], sizeof(nthp::script::Node::n_file_t));
+                if(compiledNodes[i].access.size != 0) file.write(compiledNodes[i].access.data, compiledNodes[i].access.size);
+        }
+
+        file.close();
+
+        return 0;
+}
+
+
+
+int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFile, const char* output) {
+        std::fstream file(stageConfigFile, std::ios::in);
+        if(file.fail()) {
+                PRINT_COMPILER_ERROR("Failed to compile StageConfig [%s]; File not found.\n", stageConfigFile);
+                return 1;
+        }
+
+        std::string fileRead;
+        bool operationComplete = false;
+        std::vector<nthp::script::stage::scriptConfig> triggerList;
+        nthp::script::stage::scriptConfig script;
+
+        while(!operationComplete) {
+                file >> fileRead;
+
+                if(fileRead == "SCRIPT_CONFIG") {
+
+                        do {
+                                file >> fileRead;
+
+                                if(fileRead == "GPR") {
+                                        file >> fileRead;
+                                        try {
+                                                script.trig.GPR = std::stoul(fileRead);
+                                        }
+                                        catch(std::invalid_argument) {
+                                                PRINT_COMPILER_ERROR("Invalid GPR Argument.\n");
+                                                return 1;
+                                        }
+                                        continue;
+                                }
+                                if(fileRead == "TYPE") {
+                                        file >> fileRead;
+                                        if(fileRead == "T_INIT") {
+                                                script.trig.ID = TRIG_INIT;
+                                                continue;
+                                        }
+                                        if(fileRead == "T_EXIT"){
+                                                script.trig.ID = TRIG_EXIT;
+                                                continue;
+                                        }
+                                        if(fileRead == "T_TICK"){
+                                                script.trig.ID = TRIG_TICK;
+                                                continue;
+                                        }
+                                        if(fileRead == "T_LOGIC"){
+                                                script.trig.ID = TRIG_LOGIC;
+                                                continue;
+                                        }
+                                        if(fileRead == "T_HIDDEN"){
+                                                script.trig.ID = TRIG_HIDDEN;
+                                                continue;
+                                        }
+                                }
+                                if(fileRead == "MEMORY") {
+                                        file >> fileRead;
+                                        try {
+                                                script.trig.MEM = std::stoul(fileRead);
+                                        }
+                                        catch(std::invalid_argument) {
+                                                PRINT_COMPILER_ERROR("Invalid MEM Argument.\n");
+                                                return 1;
+                                        }
+                                        continue;
+                                }
+
+                                if(fileRead == "FILE") {
+                                        file >> fileRead;
+                                        script.scriptFile = fileRead;
+                                }
+
+                        } while(fileRead != "END");
+
+                        triggerList.push_back(script);
+
+                } // if(fileRead == "SCRIPT_CONFIG")
+
+                
+                if(fileRead == "EXIT" || file.eof()) {
+                        operationComplete = true;
+                }
+        } // while(!operationComplete)
+
+
+        file.close();
+        file.open(output, std::ios::out | std::ios::binary);
+        
+        nthp::script::stage::trigger_w primTrig = 0;
+        uint8_t fileLength = 0;
+        for(size_t i = 0; i < triggerList.size(); ++i) {
+                primTrig = 0;
+                fileLength = 0;
+                TRIGGER_SETID(primTrig, triggerList[i].trig.ID);
+                TRIGGER_SETGPR(primTrig, triggerList[i].trig.GPR);
+                TRIGGER_SETMEM(primTrig, triggerList[i].trig.MEM);
+                fileLength = triggerList[i].scriptFile.size();
+
+                file.write((char*)&primTrig, sizeof(primTrig));
+                file.write((char*)&fileLength, sizeof(fileLength));
+                file.write((char*)triggerList[i].scriptFile.c_str(), fileLength);
+
+        }
+
+        primTrig = 0;
+        TRIGGER_SETID(primTrig, TRIG_END);
+        file.write((char*)&primTrig, sizeof(primTrig));
+
+        file.close();
+        return 0;
+
+}
+
+
 
 
 

@@ -1,0 +1,49 @@
+CONST START 10
+CONST l_include 20
+CONST l_mainLoop 30
+
+
+VAR value1
+VAR value2
+VAR returnRegister
+
+
+GLOBAL mathReg
+
+MACRO setMathTarget { CONST mt }
+
+
+MACRO INIT_FLAGS {
+        / x  y    tx  ty  cx cy fs sr title /
+        960 540 500 500 0  0  0  0  NTHP_RUNTIME
+}
+DEPEND @INIT_FLAGS
+
+
+
+CORE_INIT @INIT_FLAGS
+
+SET_ACTIVE_PALETTE resource/genericPalette.pal
+
+CONST t_tux 0
+TEXTURE_DEFINE 1
+TEXTURE_LOAD resource/c_tux.cst #t_tux
+
+CONST f0_tux 0
+FRAME_DEFINE 1
+FRAME_SET #f0_tux 0 0 764 910 #t_tux
+
+@setMathTarget $value1
+SQRT 732.3451 #mt
+
+@setMathTarget $value2
+COPY $value1 #mt
+RSHIFT #mt 2
+MUL #mt 5 #mt
+
+COPY #mt >mathReg
+
+
+
+
+EXIT

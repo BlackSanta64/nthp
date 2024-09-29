@@ -1,6 +1,6 @@
 #pragma once
 #include "global.hpp"
-
+#include "position.hpp"
 
 
 namespace nthp {
@@ -10,29 +10,13 @@ namespace nthp {
                 SDL_Rect* srcRect;
                 SDL_Rect dstRect;
 
-                enum C_OPERATE { VALID, INVALID } state;
+                enum C_OPERATE { VALID, ABSOLUTE, INVALID } state;
         };
         static nthp::RenderPacket generateRenderPacket(SDL_Texture* texture, SDL_Rect* srcRect, SDL_Rect dst, nthp::RenderPacket::C_OPERATE s) {
                 return {texture, srcRect, dst, s};
         }
 
-        struct RenderRuleSet {
-        public:
-		RenderRuleSet();
-                RenderRuleSet(FIXED_TYPE x, FIXED_TYPE y, fixed_t tx, fixed_t ty, vectFixed cameraPosition);
 
-		FIXED_TYPE pxlResolution_x;
-		FIXED_TYPE pxlResolution_y;
-		fixed_t tunitResolution_x;
-		fixed_t tunitResolution_y;
-                vectFixed scaleFactor;
-
-		vectFixed cameraWorldPosition;
-
-        private:
-		vector<FIXED_TYPE> cameraPixelPosition;
-  
-        };
 
 
         class EngineCore {

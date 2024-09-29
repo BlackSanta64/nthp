@@ -1,31 +1,6 @@
 #include "core.hpp"
 
 
-nthp::RenderRuleSet::RenderRuleSet() { 
-        pxlResolution_x = 0;
-        pxlResolution_y = 0;
-        tunitResolution_x = 0;
-        tunitResolution_y = 0;
-}
-
-nthp::RenderRuleSet::RenderRuleSet(FIXED_TYPE x, FIXED_TYPE y, nthp::fixed_t tx, nthp::fixed_t ty, vectFixed cameraPosition) {
-        pxlResolution_x = x;
-        pxlResolution_y = y;
-        tunitResolution_x = tx;
-        tunitResolution_y = ty;
-
-        cameraWorldPosition = cameraPosition;
-
-
-	double xs, ys;
-	xs = (double)pxlResolution_x / nthp::fixedToDouble(tunitResolution_x);
-	ys = (double)pxlResolution_y / nthp::fixedToDouble(tunitResolution_y);
-
-
-	scaleFactor.x = nthp::doubleToFixed(xs);
-	scaleFactor.y = nthp::doubleToFixed(ys);
-}
-
 
 
 nthp::EngineCore::EngineCore(nthp::RenderRuleSet settings, const char* title, bool fullscreen, bool softwareRendering) {
@@ -138,8 +113,17 @@ void nthp::EngineCore::stop() {
 int nthp::EngineCore::render(nthp::RenderPacket packet) {
         switch(packet.state) {
                 case nthp::RenderPacket::C_OPERATE::VALID:
+                        {
+                                vectGen offset = nthp::generatePixelPosition(nthp::worldPosition(p_coreDisplay.cameraWorldPosition.x, p_coreDisplay.cameraWorldPosition.y), &p_coreDisplay);
+                                packet.dstRect.x += offset.x;
+                                packet.dstRect.y += offset.y;
+                                return SDL_RenderCopy(renderer, packet.texture, packet.srcRect, &packet.dstRect);
+                        }
+                        break;
+                case nthp::RenderPacket::C_OPERATE::ABSOLUTE:
                         return SDL_RenderCopy(renderer, packet.texture, packet.srcRect, &packet.dstRect);
                         break;
+
 
                 case nthp::RenderPacket::C_OPERATE::INVALID:
                         PRINT_DEBUG_WARNING("Reading invalid render call. Ensure target texture is generated.\n");

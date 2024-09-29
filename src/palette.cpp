@@ -94,10 +94,7 @@ void nthp::texture::Palette::blueShift(int shiftLevel) {
 
 
 nthp::texture::Palette::~Palette() {
-        PRINT_DEBUG("Destroying Palette [%p]...\t", this); 
 
-
-        NOVERB_PRINT_DEBUG("done.\n");
 }
 
 

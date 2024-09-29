@@ -9,36 +9,30 @@
 namespace nthp { 
 namespace script {
 
+        extern uint8_t stageMemory[UINT8_MAX];
+        extern nthp::texture::Palette activePalette;
 
         class Script {
         public:
-                Script();
-                Script(const char* filename);
 
-                int import(const char* filename);
-
-                int execute();
-                int execute(uint32_t entryPoint);
-
-                inline nthp::script::stdVarWidth getVar(size_t index) { if(index < data.varSetSize) return data.varSet[index]; else return 0; }
-                
-
-                struct ScriptDataSet {
+        struct ScriptDataSet {
                         uint32_t localMemBudget;
                         uint32_t globalMemBudget;
 
-                        uint32_t* labelBlock;
-                        uint32_t labelBlockSize;
+                        uint32_t* currentLabelBlock;
+                        uint32_t currentLabelBlockSize;
 
                         // Compiler-Evaluated.
                         //////////////////////////
-                        std::vector<nthp::script::Node> nodeSet;
+                        nthp::script::Node* nodeSet;
                         size_t currentNode;
 
 
-                        nthp::script::stdVarWidth* varSet;
+                        nthp::script::stdVarWidth* globalVarSet;
                         size_t varSetSize;
                         /////////////////////////
+
+                        nthp::script::stdVarWidth* currentLocalMemory; // Changes when different scripts are executed.
 
 
                         nthp::texture::gTexture* textureBlock;
@@ -50,17 +44,41 @@ namespace script {
                         nthp::texture::Frame* frameBlock;
                         size_t frameBlockSize;
 
-                        nthp::texture::Palette activePalette;
 
                         bool isSuspended;
 
                 };
 
-                inline ScriptDataSet* getScriptData() { return &data; }
+
+                Script();
+                Script(const char* filename, ScriptDataSet* dataSet);
+
+                int import(const char* filename, ScriptDataSet* dataSet);
+
+                int execute();
+                int execute(uint32_t entryPoint);
+
+                // Safe getter for any THPScript Var. To accurately pull VAR names, a debug compiler object must be used to query relative var indecies.
+                inline nthp::script::stdVarWidth getVar(size_t index) { if(index < localVarSetSize) return localVarSet[index]; else return 0; }
+                
+
+                
+                ScriptDataSet* getScriptData() { return data; }
 
                 ~Script();
         private:
-                ScriptDataSet data;
+                mutable ScriptDataSet* data;
+                
+                nthp::script::stdVarWidth* localVarSet;
+                size_t localVarSetSize;
+
+                uint32_t* localLabelBlock;
+                uint32_t localLabelBlockSize;
+
+                size_t localCurrentNode;
+                std::vector<nthp::script::Node> nodeSet;
+
+                bool inStageContext;
         };
 
 
