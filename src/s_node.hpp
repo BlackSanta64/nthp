@@ -27,6 +27,22 @@ namespace script {
 
         };
 
+        inline void cleanNodeSet(std::vector<Node>& set) {
+                for(size_t i = 0; i < set.size(); ++i) {
+                        free(set[i].access.data);
+                }
+                set.clear();
+        }
+
+        
+                        // Use this to work with script triggers, but read and write from files with the
+                        // 'trigger_w' 
+        struct scriptTriggerComplex {
+                uint16_t ID : 3;
+                uint16_t GPR : 5;
+                uint16_t MEM : 8;
+        };
+
         constexpr size_t NodeSize = sizeof(Node);
         typedef nthp::fixed_t stdVarWidth;
 

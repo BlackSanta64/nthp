@@ -1,0 +1,8 @@
+DEPEND >mathReg
+
+VAR returnRegister
+COPY >mathReg $returnRegister
+
+GETGPR $returnRegister
+
+EXIT

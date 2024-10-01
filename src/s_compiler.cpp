@@ -1018,6 +1018,7 @@ DEFINE_COMPILATION_BEHAVIOUR(FRAME_DEFINE) {
 DEFINE_COMPILATION_BEHAVIOUR(FRAME_CLEAR) {
         ADD_NODE(FRAME_CLEAR);
 
+        PRINT_NODEDATA();
         return 0;
 }
 
@@ -1067,18 +1068,290 @@ DEFINE_COMPILATION_BEHAVIOUR(FRAME_SET) {
 }
 
 
+DEFINE_COMPILATION_BEHAVIOUR(GETGPR) {
+        ADD_NODE(GETGPR);
+
+        EVAL_SYMBOL();
+        auto write_to = EVAL_PREF();
+        CHECK_REF(write_to);
+
+
+        if(!PR_METADATA_GET(write_to, nthp::script::flagBits::IS_REFERENCE)) {
+                PRINT_COMPILER_ERROR("GETGPR must take a reference.\n");
+                return 1;
+        }
+
+        indRef* output = (indRef*)(nodeList[currentNode].access.data);
+        output->value = nthp::fixedToInt(write_to.value);
+        output->metadata = write_to.metadata;
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(SM_WRITE) {
+        ADD_NODE(SM_WRITE);
+
+        EVAL_SYMBOL();
+        auto to = EVAL_PREF();
+        CHECK_REF(to);
+
+        EVAL_SYMBOL();
+        auto from = EVAL_PREF();
+        CHECK_REF(from);
+
+        stdRef* _to = (stdRef*)(nodeList[currentNode].access.data);
+        stdRef* value = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
+
+        *_to = to;
+        *value = from;
+
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+DEFINE_COMPILATION_BEHAVIOUR(SM_READ) {
+        ADD_NODE(SM_READ);
+
+
+        stdRef* from = (stdRef*)(nodeList[currentNode].access.data);
+        indRef* into = (indRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
+
+
+        EVAL_SYMBOL();
+        auto _from = EVAL_PREF();
+        CHECK_REF(_from);
+
+        EVAL_SYMBOL();
+        auto _into = EVAL_PREF();
+        CHECK_REF(_into);
+
+        if(!PR_METADATA_GET(_into, nthp::script::flagBits::IS_REFERENCE)) {
+                PRINT_COMPILER_ERROR("SM_READ must take reference as 2nd argument.\n");
+                return 1;
+        }
+
+        *from = _from;
+        into->value = nthp::fixedToInt(_into.value);
+        into->metadata = _into.metadata;
+
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(ENT_DEFINE) {
+        ADD_NODE(ENT_DEFINE);
+
+        EVAL_SYMBOL();
+        auto size = EVAL_PREF();
+        CHECK_REF(size);
+
+        stdRef* wsize = (stdRef*)(nodeList[currentNode].access.data);
+
+        *wsize = size;
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(ENT_CLEAR) {
+        ADD_NODE(ENT_CLEAR);
+
+
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(ENT_SETCURRENTFRAME) {
+        ADD_NODE(ENT_SETCURRENTFRAME);
+
+        EVAL_SYMBOL();
+        auto target = EVAL_PREF();
+        CHECK_REF(target);
+
+        EVAL_SYMBOL();
+        auto frameN = EVAL_PREF();
+        CHECK_REF(frameN);
+
+        stdRef* tout = (stdRef*)(nodeList[currentNode].access.data);
+        stdRef* tframe = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
+
+        *tout = target;
+        *tframe = frameN;
+
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(ENT_SETPOS) {
+        ADD_NODE(ENT_SETPOS);
+
+        EVAL_SYMBOL();
+        auto target = EVAL_PREF();
+        CHECK_REF(target);
+
+        EVAL_SYMBOL();
+        auto x = EVAL_PREF();
+        CHECK_REF(x);
+
+        EVAL_SYMBOL();
+        auto y = EVAL_PREF();
+        CHECK_REF(y);
+
+        stdRef* _target = (stdRef*)(nodeList[currentNode].access.data);
+        stdRef* _x = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
+        stdRef* _y = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
+
+
+        *_target = target;
+        *_x = x;
+        *_y = y;
+
+
+        return 0;
+}
+
+DEFINE_COMPILATION_BEHAVIOUR(ENT_MOVE) {
+        ADD_NODE(ENT_MOVE);
+
+        EVAL_SYMBOL();
+        auto target = EVAL_PREF();
+        CHECK_REF(target);
+
+        EVAL_SYMBOL();
+        auto x = EVAL_PREF();
+        CHECK_REF(x);
+
+        EVAL_SYMBOL();
+        auto y = EVAL_PREF();
+        CHECK_REF(y);
+
+        stdRef* _target = (stdRef*)(nodeList[currentNode].access.data);
+        stdRef* _x = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
+        stdRef* _y = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
+
+
+        *_target = target;
+        *_x = x;
+        *_y = y;
+
+
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(ENT_SETFRAMERANGE) {
+        ADD_NODE(ENT_SETFRAMERANGE);
+
+        EVAL_SYMBOL();
+        auto target = EVAL_PREF();
+        CHECK_REF(target);
+
+        EVAL_SYMBOL();
+        auto start = EVAL_PREF();
+        CHECK_REF(start);
+
+        EVAL_SYMBOL();
+        auto size = EVAL_PREF();
+        CHECK_REF(size);
+
+
+        stdRef* _target = (stdRef*)(nodeList[currentNode].access.data);
+        stdRef* _start = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
+        stdRef* _size = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
+
+        *_target = target;
+        *_start = start;
+        *_size = size;
+
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(ENT_SETHITBOXSIZE) {
+        ADD_NODE(ENT_SETHITBOXOFFSET);
+
+        EVAL_SYMBOL();
+        auto target = EVAL_PREF();
+        CHECK_REF(target);
+
+        EVAL_SYMBOL();
+        auto x = EVAL_PREF();
+        CHECK_REF(x);
+
+        EVAL_SYMBOL();
+        auto y = EVAL_PREF();
+        CHECK_REF(y);
+
+        stdRef* _target = (stdRef*)(nodeList[currentNode].access.data);
+        stdRef* _x = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
+        stdRef* _y = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
+
+
+        *_target = target;
+        *_x = x;
+        *_y = y;
+
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(ENT_SETHITBOXOFFSET) {
+        ADD_NODE(ENT_SETHITBOXOFFSET);
+
+        EVAL_SYMBOL();
+        auto target = EVAL_PREF();
+        CHECK_REF(target);
+
+        EVAL_SYMBOL();
+        auto x = EVAL_PREF();
+        CHECK_REF(x);
+
+        EVAL_SYMBOL();
+        auto y = EVAL_PREF();
+        CHECK_REF(y);
+
+        stdRef* _target = (stdRef*)(nodeList[currentNode].access.data);
+        stdRef* _x = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
+        stdRef* _y = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
+
+
+        *_target = target;
+        *_x = x;
+        *_y = y;
+
+        return 0;
+}
 
 
 
+DEFINE_COMPILATION_BEHAVIOUR(ENT_SETRENDERSIZE) {
+        ADD_NODE(ENT_SETRENDERSIZE);
+
+        EVAL_SYMBOL();
+        auto target = EVAL_PREF();
+        CHECK_REF(target);
+
+        EVAL_SYMBOL();
+        auto x = EVAL_PREF();
+        CHECK_REF(x);
+
+        EVAL_SYMBOL();
+        auto y = EVAL_PREF();
+        CHECK_REF(y);
+
+        stdRef* _target = (stdRef*)(nodeList[currentNode].access.data);
+        stdRef* _x = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
+        stdRef* _y = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
 
 
+        *_target = target;
+        *_x = x;
+        *_y = y;
 
-
-
-
-
-
-
+        return 0;
+}
 
 
 
@@ -1088,8 +1361,8 @@ DEFINE_COMPILATION_BEHAVIOUR(FRAME_SET) {
 
 
 
-int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, const char* outputFile) {
-        NOVERB_PRINT_COMPILER("\tCompiling Source File [%s]...\n", inputFile);
+int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, const char* outputFile, bool buildSystemContext) {
+        NOVERB_PRINT_COMPILER("\n\tCompiling Source File [%s]...\n\n", inputFile);
         
         std::fstream file(inputFile, std::ios::in);
         if(file.fail()) {
@@ -1097,19 +1370,22 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                 return 1;
         }
         std::string fileRead;
+        
+        if(!buildSystemContext) { 
+                globalList.clear(); 
+                macroList.clear();
+                constantList.clear();
+        }
+        labelList.clear();
+        gotoList.clear();
+        varList.clear();
 
-        std::vector<nthp::script::CompilerInstance::CONST_DEF>  constantList;
-        std::vector<nthp::script::CompilerInstance::MACRO_DEF>  macroList;
-        std::vector<nthp::script::CompilerInstance::VAR_DEF>    varList;
-        std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>    globalList;  
+
+        nthp::script::cleanNodeSet(nodeList);
+
+        size_t globalAlloc = 0;
 
 
-        // Labels and Goto's are matched post-compilation.
-        std::vector<nthp::script::CompilerInstance::LABEL_DEF>  labelList;
-        std::vector<nthp::script::CompilerInstance::GOTO_DEF>   gotoList;
-
-
-        std::vector<nthp::script::Node>                         nodeList;
 
         std::vector<size_t> ifLocations;
         std::vector<size_t> endLocations;
@@ -1193,12 +1469,19 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                         varList.push_back(newDef);
                 }
                 if(fileRead == "GLOBAL") {
+                        if(!buildSystemContext) {
+                                PRINT_COMPILER_WARNING("GLOBAL definitions are invalid outside of buildsystem.\n");
+                                EVAL_SYMBOL(); // Cycles to the invalid global name.
+
+                                continue;
+                        }
+
                           // Define a new variable.
                         EVAL_SYMBOL();
 
                         for(size_t i = 0; i < globalList.size(); ++i) {
                                 if(fileRead == globalList[i].varName) {
-                                        PRINT_COMPILER_WARNING("GLOBAL [$%s] already declared; Ignoring redefinition.\n");
+                                        PRINT_COMPILER_WARNING("GLOBAL [>%s] already declared; Ignoring redefinition.\n");
                                         goto COMP_START; // thank god.
                                 }
                         }
@@ -1210,6 +1493,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                         newDef.relativeIndex = globalList.size();
 
                         globalList.push_back(newDef);
+                        ++globalAlloc;
                 }
 
 
@@ -1334,7 +1618,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                                                 if(fileRead == varList[i].varName) break;
                                         }
                                         if(i == varList.size()) {
-                                                PRINT_COMPILER_DEPEND_ERROR("Dependency [%s] not declared; Dependency check failed.\n", fileRead.c_str());
+                                                PRINT_COMPILER_DEPEND_ERROR("VAR Dependency [%s] not declared; Dependency check failed.\n", fileRead.c_str());
                                                 return 1;
                                         }
                                         }
@@ -1345,7 +1629,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                                                 if(fileRead == macroList[i].macroName) break;
                                         }
                                         if(i == varList.size()) {
-                                                PRINT_COMPILER_DEPEND_ERROR("Dependency [%s] not declared; Dependency check failed.\n", fileRead.c_str());
+                                                PRINT_COMPILER_DEPEND_ERROR("MACRO Dependency [%s] not declared; Dependency check failed.\n", fileRead.c_str());
                                                 return 1;
                                         }
                                         }
@@ -1356,11 +1640,24 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                                                 if(fileRead == constantList[i].constName) break;
                                         }
                                         if(i == constantList.size()) {
-                                                PRINT_COMPILER_DEPEND_ERROR("Dependency [%s] not declared; Dependency check failed.\n", fileRead.c_str());
+                                                PRINT_COMPILER_DEPEND_ERROR("CONST Dependency [%s] not declared; Dependency check failed.\n", fileRead.c_str());
                                                 return 1;
                                         }
                                         }
                                         break;
+                                case '>':
+                                        {
+                                        fileRead.erase(fileRead.begin());
+                                        for(; i < globalList.size(); ++i) {
+                                                if(fileRead == globalList[i].varName) break;
+                                        }
+                                        if(i == globalList.size()) {
+                                                PRINT_COMPILER_DEPEND_ERROR("GLOBAL Dependency [%s] not declared; Dependency check failed.\n", fileRead.c_str());
+                                        }
+
+                                        }
+                                        break;
+
 
                                 default:
                                         PRINT_COMPILER_DEPEND_ERROR("Dependency [%s] is an invalid compiler type; Dependency check failed.\n", fileRead.c_str());
@@ -1412,6 +1709,20 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                 CHECK_COMP(FRAME_CLEAR);
                 CHECK_COMP(FRAME_SET);
 
+                CHECK_COMP(GETGPR);
+                CHECK_COMP(SM_WRITE);
+                CHECK_COMP(SM_READ);
+
+                CHECK_COMP(ENT_DEFINE);
+                CHECK_COMP(ENT_CLEAR);
+                CHECK_COMP(ENT_SETCURRENTFRAME);
+                CHECK_COMP(ENT_SETPOS);
+                CHECK_COMP(ENT_MOVE);
+                CHECK_COMP(ENT_SETFRAMERANGE);
+                CHECK_COMP(ENT_SETHITBOXSIZE);
+                CHECK_COMP(ENT_SETHITBOXOFFSET);
+                CHECK_COMP(ENT_SETRENDERSIZE);
+                
         }
 
         NOVERB_PRINT_COMPILER("\tSuccessfully compiled source file [%s].\n", inputFile);
@@ -1437,10 +1748,8 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                         
                 }
                 if(labelIndex == labelList.size()) {
-                        PRINT_DEBUG_WARNING("Failed to link GOTO [%zu] to LABEL block. Broken GOTO created.\n", gotoList[gotoIndex].goto_position);
-                        uint32_t* location = (decltype(location))nodeList[gotoList[gotoIndex].goto_position].access.data;
-
-                        *location = gotoList[gotoIndex].goto_position;
+                        PRINT_DEBUG_ERROR("Failed to link GOTO [%zu] to LABEL block. Broken GOTO created.\n", gotoList[gotoIndex].goto_position);
+                        
                 }
         }
         
@@ -1511,7 +1820,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
 
         *localmem = (uint32_t)varList.size();
-        *globalmem = (uint32_t)globalList.size();
+        *globalmem = (uint32_t)globalAlloc;
 
         // Writes label data to header. For use in JUMP.
         for(size_t i = 0; i < labelList.size(); ++i) {
@@ -1522,23 +1831,28 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
         file.close();
 
-        PRINT_COMPILER("Allocating and Copying node data to safe container...");
-        nodeBlockSize = nodeList.size();
-        compiledNodes = (decltype(compiledNodes))malloc(NodeSize * nodeBlockSize);
+        if(!buildSystemContext) {
+                PRINT_COMPILER("Allocating and Copying node data to safe container...");
+                nodeBlockSize = nodeList.size();
+                compiledNodes = (decltype(compiledNodes))malloc(NodeSize * nodeBlockSize);
 
-        memcpy(compiledNodes, nodeList.data(), NodeSize * nodeBlockSize);
+                memcpy(compiledNodes, nodeList.data(), NodeSize * nodeBlockSize);
 
-        NOVERB_PRINT_COMPILER("  Allocated & copied [%zu] bytes at [%p].\n", NodeSize * nodeBlockSize, compiledNodes);
+                NOVERB_PRINT_COMPILER("\t\nAllocated & copied [%zu] bytes at [%p].\n", NodeSize * nodeBlockSize, compiledNodes);
+        }
 
         if(outputFile != NULL) {
-                return exportToFile(outputFile);
+                if(buildSystemContext)
+                        return exportToFile(outputFile, &nodeList, buildSystemContext);
+                else
+                        return exportToFile(outputFile, NULL, buildSystemContext);
         }
         
         return 0;
 
 }
 
-int nthp::script::CompilerInstance::exportToFile(const char* outputFile) {
+int nthp::script::CompilerInstance::exportToFile(const char* outputFile, std::vector<nthp::script::Node>* nodeList, bool buildSystemContext) {
         std::fstream file;
         file.open(outputFile, std::ios::out | std::ios::binary);
 
@@ -1547,9 +1861,16 @@ int nthp::script::CompilerInstance::exportToFile(const char* outputFile) {
                 return 1;
         }
 
-        for(size_t i = 0; i < nodeBlockSize; ++i) {
-                file.write((char*)&compiledNodes[i], sizeof(nthp::script::Node::n_file_t));
-                if(compiledNodes[i].access.size != 0) file.write(compiledNodes[i].access.data, compiledNodes[i].access.size);
+        nthp::script::Node* target = compiledNodes;
+        size_t cont_size = nodeBlockSize;
+        if(nodeList != NULL) {
+                target = nodeList->data();
+                cont_size = nodeList->size();
+        }
+
+        for(size_t i = 0; i < cont_size; ++i) {
+                file.write((char*)&target[i], sizeof(nthp::script::Node::n_file_t));
+                if(target[i].access.size != 0) file.write(target[i].access.data, target[i].access.size);
         }
 
         file.close();
@@ -1628,6 +1949,7 @@ int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFi
                                 if(fileRead == "FILE") {
                                         file >> fileRead;
                                         script.scriptFile = fileRead;
+
                                 }
 
                         } while(fileRead != "END");
@@ -1636,7 +1958,21 @@ int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFi
 
                 } // if(fileRead == "SCRIPT_CONFIG")
 
-                
+
+                if(fileRead == "BUILD_SYSTEM") {
+                        while(!file.eof()) {
+                                file >> fileRead;
+                                if(fileRead == "END") { break; }
+
+                                std::string output;
+                                file >> output;
+                                compileSourceFile(fileRead.c_str(), output.c_str(), true);
+                        }
+                        
+
+
+                }
+
                 if(fileRead == "EXIT" || file.eof()) {
                         operationComplete = true;
                 }
@@ -1675,10 +2011,12 @@ int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFi
 
 
 
+
 nthp::script::CompilerInstance::~CompilerInstance() {
         // Nodes tokens are copied into script objects when loaded;
         // the stored symbols of the compiler is purely for debugging.
         // Free to destroy.
+        nthp::script::cleanNodeSet(nodeList);
 
         if(nodeBlockSize > 0) {
                 for(size_t i = 0; i < nodeBlockSize; ++i) {

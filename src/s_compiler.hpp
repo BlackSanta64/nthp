@@ -75,15 +75,14 @@ namespace nthp {
 
                 // Takes source script as input, writes compiled script to output.
                 // output file can be NULL, where the compiler won't write anything.
-                int compileSourceFile(const char* inputFile, const char* outputFile);
+                int compileSourceFile(const char* inputFile, const char* outputFile, bool buildSystemContext);
                 
                 // Writes stored Node data to the target output file.
                 // Is called by 'compileSourceFile' if the 'outputfile' is non-NULL.
-                int exportToFile(const char* outputFile);
+                int exportToFile(const char* outputFile, std::vector<nthp::script::Node>* nodeList, bool buildSystemContext);
 
                 int compileStageConfig(const char* stageConfigFile, const char* output);
 
-                int buildSystem(const char* stageFile);
 
 
                 ~CompilerInstance();
@@ -92,6 +91,17 @@ namespace nthp {
                         nthp::script::Node* compiledNodes;
                         size_t nodeBlockSize;
 
+                        std::vector<nthp::script::CompilerInstance::CONST_DEF>  constantList;
+                        std::vector<nthp::script::CompilerInstance::MACRO_DEF>  macroList;
+                        std::vector<nthp::script::CompilerInstance::VAR_DEF>    varList;
+                        std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>    globalList;  
+
+
+                        // Labels and Goto's are matched post-compilation.
+                        std::vector<nthp::script::CompilerInstance::LABEL_DEF>  labelList;
+                        std::vector<nthp::script::CompilerInstance::GOTO_DEF>   gotoList;
+
+                        std::vector<nthp::script::Node>                         nodeList;
                 };
 
         }

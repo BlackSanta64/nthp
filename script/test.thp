@@ -1,25 +1,35 @@
-CONST START 10
-CONST l_include 20
-CONST l_mainLoop 30
+CONST l_include 10
+CONST mt 0
+MACRO setMathTarget { CONST mt }
 
+GLOBAL test1
+GLOBAL test2
+GLOBAL test3
+GLOBAL mathReg
+GLOBAL test4
+
+
+VAR returnRegister
+
+@setMathTarget >mathReg
+
+GOTO #l_include
+
+        CALL script/mathFunc.thp
+
+LABEL #l_include
 
 VAR value1
 VAR value2
-VAR returnRegister
 
 
-GLOBAL mathReg
 
-MACRO setMathTarget { CONST mt }
 
 
 MACRO INIT_FLAGS {
         / x  y    tx  ty  cx cy fs sr title /
         960 540 500 500 0  0  0  0  NTHP_RUNTIME
 }
-DEPEND @INIT_FLAGS
-
-
 
 CORE_INIT @INIT_FLAGS
 
@@ -43,6 +53,12 @@ MUL #mt 5 #mt
 
 COPY #mt >mathReg
 
+CONST e_tux 0
+ENT_DEFINE 1
+ENT_SETFRAMERANGE #e_tux 0 1
+ENT_SETRENDERSIZE #e_tux 200 300
+ENT_SETCURRENTFRAME #e_tux 0
+ENT_SETPOS #e_tux 0 0
 
 
 

@@ -1,8 +1,5 @@
 #include "s_stage.hpp"
-#define POKE() printf("POKE!\n")
 
-
-uint8_t nthp::script::stage::stagemMemory[UINT8_MAX];
 
 nthp::script::stage::Stage::Stage() {
         memset(&data, 0, sizeof(nthp::script::Script::ScriptDataSet));
@@ -56,7 +53,7 @@ int nthp::script::stage::Stage::loadStage(const char* stageFile) {
 
 
         scriptBlock = new nthp::script::Script[configs.size()];
-        triggerBlock = new nthp::script::stage::scriptTriggerComplex[configs.size()];
+        triggerBlock = new nthp::script::scriptTriggerComplex[configs.size()];
         stageSize = configs.size();
 
         for(size_t i = 0; i < configs.size() - 1; ++i) {
@@ -97,6 +94,7 @@ int nthp::script::stage::Stage::loadStage(const char* stageFile) {
 
 int nthp::script::stage::Stage::init() {
         for(size_t i = 0; i < initList.size(); ++i) {
+                data.currentTriggerConfig = triggerBlock[initList[i]];
                 if(scriptBlock[initList[i]].execute()) return 1;
         }
 
@@ -105,6 +103,8 @@ int nthp::script::stage::Stage::init() {
 
 int nthp::script::stage::Stage::tick() {
         for(size_t i = 0; i < tickList.size(); ++i) {
+                data.currentTriggerConfig = triggerBlock[tickList[i]];
+
                 if(scriptBlock[tickList[i]].execute()) return 1;
         }
 
@@ -117,6 +117,8 @@ int nthp::script::stage::Stage::logic() {
                 // Checks the FIRST BIT of the corresponding stage memory. Can use RSHIFT and LSHIFT
                 // with M_STAGE_READ and M_STAGE_WRITE to cycle bits in script.
                 if(nthp::script::stageMemory[triggerBlock[logicList[i]].MEM] & 1) {
+                        data.currentTriggerConfig = triggerBlock[logicList[i]];
+
                         if(scriptBlock[logicList[i]].execute()) return 1;
                 }
         }
@@ -127,6 +129,8 @@ int nthp::script::stage::Stage::logic() {
 
 int nthp::script::stage::Stage::exit() {
         for(size_t i = 0; i < exitList.size(); ++i) {
+                data.currentTriggerConfig = triggerBlock[exitList[i]];
+                
                 if(scriptBlock[exitList[i]].execute()) return 1;
         }
 

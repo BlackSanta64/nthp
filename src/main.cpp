@@ -8,7 +8,7 @@
 #include "st_compress.hpp"
 #include "s_compiler.hpp"
 
-#define POKE() printf("POKE!\n")
+
 
 bool u,d,l,r,inc,dec;
  nthp::EngineCore nthp::core;
@@ -63,12 +63,12 @@ void hEvents(SDL_Event* event) {
 
 
 
-#define POKE() printf("POKE!\n")
+
 
 int main(int argv, char** argc) {
 #ifdef DEBUG
-        NTHP_GEN_DEBUG_INIT(stdout);
-        //NTHP_GEN_DEBUG_INIT(fopen("debug.log", "w+"));
+        //NTHP_GEN_DEBUG_INIT(stdout);
+        NTHP_GEN_DEBUG_INIT(fopen("debug.log", "w+"));
 #endif
         { // The entire engine debug context.
                 
@@ -78,10 +78,7 @@ int main(int argv, char** argc) {
                 nthp::setMaxFPS(maxFPS);
                 auto frameStart = SDL_GetTicks();
 
-                nthp::entity::gEntity tux;
-
                 nthp::script::CompilerInstance comp;
-                comp.compileSourceFile("script/test.thp", "script/test.thpcs");
                 if(comp.compileStageConfig("testStage.stg", "ts.cstg")) return -1;
 
 
@@ -89,12 +86,9 @@ int main(int argv, char** argc) {
 
                 const nthp::fixed_t cameraSpeed = nthp::doubleToFixed(0.5);
 
-                testStage.init();
-                
-                tux.importFrameData(testStage.getScript(0).getScriptData()->frameBlock, 1, false);
-                tux.setCurrentFrame(0);
-                tux.setRenderSize(nthp::vectFixed(nthp::intToFixed(500), nthp::intToFixed(500)));
-                tux.setPosition(nthp::vectFixed(0,0));
+
+                if(testStage.init()) return -1;
+
 
                 
                 while(nthp::core.isRunning()) {
@@ -120,7 +114,7 @@ int main(int argv, char** argc) {
 
 		        nthp::core.clear();
                         
-                        nthp::core.render(tux.getUpdateRenderPacket(&nthp::core.p_coreDisplay));
+                        nthp::core.render(testStage.getScript(0).getScriptData()->entityBlock[0].getUpdateRenderPacket(&nthp::core.p_coreDisplay));
 
                         nthp::core.display();
 
@@ -133,7 +127,6 @@ int main(int argv, char** argc) {
                 }
 
                 testStage.exit();
-
 
         }
 

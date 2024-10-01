@@ -19,13 +19,6 @@ namespace nthp {
 
                         extern uint8_t stagemMemory[UINT8_MAX];
 
-                        // Use this to work with script triggers, but read and write from files with the
-                        // 'trigger_w' 
-                        struct scriptTriggerComplex {
-                                uint16_t ID : 3;
-                                uint16_t GPR : 5;
-                                uint16_t MEM : 8;
-                        };
 
                         struct scriptConfig {
                                 std::string scriptFile;
@@ -67,7 +60,8 @@ namespace nthp {
                                 ~Stage();
                         private:
                                 nthp::script::Script* scriptBlock;
-                                nthp::script::stage::scriptTriggerComplex* triggerBlock;
+                                nthp::script::scriptTriggerComplex* triggerBlock;
+                                size_t stageSize;
 
                                 std::vector<uint32_t> tickList;
                                 std::vector<uint32_t> logicList;
@@ -75,7 +69,7 @@ namespace nthp {
                                 std::vector<uint32_t> initList;
 
                                 nthp::script::Script::ScriptDataSet data;
-                                size_t stageSize;
+
                                 uint32_t globalMemBudget;
                         };
                 }

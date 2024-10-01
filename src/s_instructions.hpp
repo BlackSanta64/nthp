@@ -8,7 +8,7 @@ namespace nthp { namespace script { namespace instructions {
         __VA_ARGS__\
         } Instruction
 
-#define INSTRUCTION_SIZE_LIST(...) constexpr uint32_t\
+#define INSTRUCTION_SIZE_LIST(...) constexpr uint8_t\
         __VA_ARGS__
 
 #define ____INSTRUCTION_TOKENS(...) __VA_ARGS__
@@ -55,7 +55,19 @@ namespace ID {
                 CORE_INIT,\
                 FRAME_DEFINE,\
                 FRAME_CLEAR,\
-                FRAME_SET\
+                FRAME_SET,\
+                GETGPR,\
+                SM_READ,\
+                SM_WRITE,\
+                ENT_DEFINE,\
+                ENT_CLEAR,\
+                ENT_SETCURRENTFRAME,\
+                ENT_SETPOS,\
+                ENT_MOVE,\
+                ENT_SETFRAMERANGE,\
+                ENT_SETHITBOXSIZE,\
+                ENT_SETHITBOXOFFSET,\
+                ENT_SETRENDERSIZE\
         )
 
         INSTRUCTION_LIST( INSTRUCTION_TOKENS(), numberOfInstructions);
@@ -114,8 +126,21 @@ namespace Size {
 
                 FRAME_DEFINE = sizeof(stdRef),
                 FRAME_CLEAR = 0,
-                FRAME_SET = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef)
-        
+                FRAME_SET = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef),
+                GETGPR = sizeof(indRef),
+                SM_WRITE = sizeof(stdRef) + sizeof(stdRef),
+                SM_READ = sizeof(stdRef) + sizeof(indRef),
+
+                ENT_DEFINE = sizeof(stdRef),
+                ENT_CLEAR = 0,
+                ENT_SETCURRENTFRAME = sizeof(stdRef) + sizeof(stdRef),
+                ENT_SETPOS = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef),
+                ENT_MOVE = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef),
+                ENT_SETFRAMERANGE = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef),
+                ENT_SETHITBOXSIZE = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef),
+                ENT_SETHITBOXOFFSET = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef),
+                ENT_SETRENDERSIZE = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) 
+
         );
 }
 

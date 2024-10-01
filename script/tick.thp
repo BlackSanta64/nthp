@@ -1,0 +1,10 @@
+VAR inc
+
+INC $inc
+IF $inc GRT 254
+        SET $inc 0
+END
+
+SM_WRITE 1 $inc
+
+EXIT

@@ -2,7 +2,7 @@
 
 #include "gtexture.hpp"
 #include "core.hpp"
-#define POKE printf("POKE!\n")
+
 
 nthp::texture::gTexture::gTexture() {
 

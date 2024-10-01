@@ -32,7 +32,7 @@ namespace script {
                         size_t varSetSize;
                         /////////////////////////
 
-                        nthp::script::stdVarWidth* currentLocalMemory; // Changes when different scripts are executed.
+                        nthp::script::stdVarWidth** currentLocalMemory; // Changes when different scripts are executed.
 
 
                         nthp::texture::gTexture* textureBlock;
@@ -43,6 +43,8 @@ namespace script {
 
                         nthp::texture::Frame* frameBlock;
                         size_t frameBlockSize;
+
+                        nthp::script::scriptTriggerComplex currentTriggerConfig;
 
 
                         bool isSuspended;
