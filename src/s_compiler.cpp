@@ -790,6 +790,43 @@ DEFINE_COMPILATION_BEHAVIOUR(SET) {
         return 0;
 }
 
+DEFINE_COMPILATION_BEHAVIOUR(SET_BINARY) {
+        ADD_NODE(SET_BINARY);
+
+
+        indRef* pointer = decltype(pointer)(nodeList[currentNode].access.data);
+        nthp::script::stdVarWidth* value = decltype(value)(nodeList[currentNode].access.data + sizeof(indRef));
+
+        EVAL_SYMBOL(); // pointer
+        auto ref = EVAL_PREF();
+
+        CHECK_REF(ref);
+        if(!PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {
+                PRINT_COMPILER_ERROR("First SET argument must be a reference. Syntax: SET $var value\n");
+                return 1;
+        }
+
+        EVAL_SYMBOL(); // value
+        nthp::script::stdVarWidth static_value;
+
+        try {
+                auto conv = std::stoll(fileRead);
+                static_value = conv;
+        }
+        catch(std::invalid_argument) {
+                PRINT_COMPILER_ERROR("Unable to evaluate numeral at [%zu]; Invalid Argument.\n", currentNode);
+                return 1;
+        }
+
+        pointer->metadata = ref.metadata;
+        pointer->value = (uint32_t)nthp::fixedToInt(ref.value);
+
+        *value = static_value;
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
 DEFINE_COMPILATION_BEHAVIOUR(DEFINE) {
         ADD_NODE(DEFINE);
 
@@ -1694,6 +1731,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                 CHECK_COMP(END);
 
                 CHECK_COMP(SET);
+                CHECK_COMP(SET_BINARY);
                 CHECK_COMP(CLEAR);
                 CHECK_COMP(DEFINE);
                 CHECK_COMP(COPY);

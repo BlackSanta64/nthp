@@ -44,6 +44,7 @@ namespace ID {
                 LOGIC_LSTE,\
                 END,\
                 SET,\
+                SET_BINARY,\
                 CLEAR,\
                 DEFINE,\
                 COPY,\
@@ -113,6 +114,7 @@ namespace Size {
                 END = 0,
 
                 SET = sizeof(indRef) + sizeof(nthp::script::stdVarWidth),
+                SET_BINARY = sizeof(indRef) + sizeof(nthp::script::stdVarWidth),
                 CLEAR = 0,
                 DEFINE = sizeof(uint32_t),
                 COPY = sizeof(indRef) + sizeof(indRef),

@@ -342,6 +342,21 @@ DEFINE_EXECUTION_BEHAVIOUR(SET) {
         return 0;
 }
 
+DEFINE_EXECUTION_BEHAVIOUR(SET_BINARY) {
+        indRef pointer = *(indRef*)(data->nodeSet[data->currentNode].access.data);
+        nthp::script::stdVarWidth value = *(nthp::script::stdVarWidth*)(data->nodeSet[data->currentNode].access.data + sizeof(indRef));
+
+        if(PR_METADATA_GET(pointer, nthp::script::flagBits::IS_GLOBAL)) {
+                data->globalVarSet[pointer.value] = value;
+        }
+        else {
+                (*data->currentLocalMemory)[pointer.value] = value;
+        }
+       
+
+        return 0;
+}
+
 DEFINE_EXECUTION_BEHAVIOUR(CLEAR) {
         delete[] data->currentLocalMemory;
         data->varSetSize = 0;
