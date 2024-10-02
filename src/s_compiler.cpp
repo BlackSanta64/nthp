@@ -1,3 +1,7 @@
+#ifdef PM
+	#define DEBUG
+#endif
+
 #include "s_compiler.hpp"
 using namespace nthp::script::instructions;
 

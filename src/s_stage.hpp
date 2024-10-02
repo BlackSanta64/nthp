@@ -31,13 +31,13 @@ namespace nthp {
                         // 3-7  ; GPR (5bits)
                         // 8-15 ; MEM (8bits)
 
-                        #define TRIGGER_SETID(trigger, ID)      (((uint16_t)trigger) |= (ID))
-                        #define TRIGGER_SETGPR(trigger, GPR)    (((uint16_t)trigger) |= ((GPR << 3)))
-                        #define TRIGGER_SETMEM(trigger, MEM)    (((uint16_t)trigger) |= (((uint16_t)MEM) << 8))
+                        #define TRIGGER_SETID(trigger, ID)      ((trigger) |= (ID))
+                        #define TRIGGER_SETGPR(trigger, GPR)    ((trigger) |= ((GPR << 3)))
+                        #define TRIGGER_SETMEM(trigger, MEM)    ((trigger) |= ((MEM) << 8))
 
-                        #define TRIGGER_GETID(trigger)      (((uint16_t)trigger) & 0b111)
-                        #define TRIGGER_GETGPR(trigger)    ((((uint16_t)trigger) >> 3) & 0b11111)
-                        #define TRIGGER_GETMEM(trigger)    ((((uint16_t)trigger) >> 8) & 0b11111111)
+                        #define TRIGGER_GETID(trigger)      ((trigger) & 0b111)
+                        #define TRIGGER_GETGPR(trigger)    (((trigger) >> 3) & 0b11111)
+                        #define TRIGGER_GETMEM(trigger)    (((trigger) >> 8) & 0b11111111)
 
                         // Upper-most object in the script structure. Contains a list of scripts and
                         // 'triggers' to define when to execute them.

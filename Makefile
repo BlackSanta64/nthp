@@ -25,17 +25,26 @@ endif
 
 CFLAGS = -lSDL2 $(SDL_imageLibInclude) -D LINUX -D USE_SDLIMG=$(USE_SDLIMAGE)
 DEBUG_CFLAGS = -g -lSDL2 $(SDL_imageLibInclude) -D LINUX -D DEBUG -DUSE_SDLIMG=$(USE_SDLIMAGE)
+libTargets = global_defs.o core.o position.o palette.o rawsurface.o softwaretexture.o e_entity.o e_collision.o st_compress.o s_compiler.o s_script.o gtexture.o s_stage.o
+debug_libTargets = global_defs_d.o core_d.o position_d.o palette_d.o rawsurface_d.o softwaretexture_d.o e_entity_d.o e_collision_d.o st_compress_d.o s_compiler_d.o s_script_d.o gtexture_d.o s_stage_d.o
 
 
-all: release debug
+lib_srcSymbols = $(SRCDIR)global_defs.cpp $(SRCDIR)core.cpp $(SRCDIR)position.cpp $(SRCDIR)palette.cpp $(SRCDIR)rawsurface.cpp $(SRCDIR)softwaretexture.cpp $(SRCDIR)e_entity.cpp $(SRCDIR)e_collision.cpp $(SRCDIR)st_compress.cpp $(SRCDIR)s_compiler.cpp $(SRCDIR)s_script.cpp $(SRCDIR)gtexture.cpp $(SRCDIR)s_stage.cpp
 
 
-release: main.o global_defs.o core.o position.o palette.o rawsurface.o softwaretexture.o e_entity.o e_collision.o st_compress.o s_compiler.o s_script.o
-	$(CC) main.o global_defs.o core.o position.o palette.o rawsurface.o softwaretexture.o e_entity.o e_collision.o st_compress.o s_compiler.o s_script.o $(CFLAGS) -o $(TARGET)
+
+PM_CLAGS = -lSDL2 $(SDL_imageLibInclude) -D LINUX -D DEBUG -D USE_SDLIMG=$(USE_SDLIMAGE)
+
+all: release debug pm
 
 
-debug: main_d.o global_defs_d.o core_d.o position_d.o palette_d.o rawsurface_d.o softwaretexture_d.o e_entity_d.o e_collision_d.o st_compress_d.o s_compiler_d.o s_script_d.o
-	$(CC) main_d.o global_defs_d.o core_d.o position_d.o palette_d.o rawsurface_d.o softwaretexture_d.o e_entity_d.o e_collision_d.o st_compress_d.o s_compiler_d.o s_script_d.o $(DEBUG_CFLAGS) -o $(TARGET)_debug
+release: $(libTargets) main.o
+	$(CC) $(libTargets) main.o  $(CFLAGS) -o $(TARGET)
+
+
+debug: $(debug_libTargets) main_d.o 
+	$(CC) $(debug_libTargets) main_d.o $(DEBUG_CFLAGS) -o $(TARGET)_debug
+
 
 
 # RELEASE DEPENDENCIES GO HERE VVV
@@ -82,6 +91,14 @@ s_script.o: $(SRCDIR)s_script.cpp $(SRCDIR)s_script.hpp
 	$(CC) $(CFLAGS) -c $(SRCDIR)s_script.cpp -o s_script.o
 
 
+gtexture.o: $(SRCDIR)gtexture.hpp $(SRCDIR)gtexture.cpp
+	$(CC) $(CFLAGS) -c $(SRCDIR)gtexture.cpp -o gtexture.o
+
+
+s_stage.o: $(SRCDIR)s_stage.hpp $(SRCDIR)s_stage.cpp
+	$(CC) $(CFLAGS) -c $(SRCDIR)s_stage.cpp -o s_stage.o
+
+
 # DEBUG DEPENDENCIES GO HERE VVV
 
 
@@ -126,6 +143,33 @@ s_compiler_d.o: $(SRCDIR)s_compiler.hpp $(SRCDIR)s_compiler.cpp
 
 s_script_d.o: $(SRCDIR)s_script.cpp $(SRCDIR)s_script.hpp
 	$(CC) $(DEBUG_CFLAGS) -c $(SRCDIR)s_script.cpp -o s_script_d.o
+
+gtexture_d.o: $(SRCDIR)gtexture.hpp $(SRCDIR)gtexture.cpp
+	$(CC) $(DEBUG_CFLAGS) -c $(SRCDIR)gtexture.cpp -o gtexture_d.o
+
+
+s_stage_d.o: $(SRCDIR)s_stage.hpp $(SRCDIR)s_stage.cpp
+	$(CC) $(DEBUG_CFLAGS) -c $(SRCDIR)s_stage.cpp -o s_stage_d.o
+
+
+
+# PM DEPENDENCIES GO HERE ||
+# 			  VV
+
+
+
+
+
+
+pm: pm_globals.o pm_core.o 	
+	$(CC) $(SRCDIR)pm_globals.cpp $(SRCDIR)pm_core.cpp $(lib_srcSymbols) $(CFLAGS) -D PM  -o pm
+
+
+
+
+
+
+
 
 
 clean:
