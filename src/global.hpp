@@ -1,5 +1,8 @@
 #pragma once
 
+#define NTHP_VERSION "1.0.0"
+
+
 #ifdef LINUX
 	#include <SDL2/SDL.h>
 #endif
@@ -130,7 +133,6 @@ namespace nthp {
         // Sets the max framerate in FPS to nthp::frameDelay
         inline void setMaxFPS(const FIXED_TYPE fps) { nthp::frameDelay = nthp::f_fixedQuotient(nthp::intToFixed(1000), nthp::intToFixed(fps)); }
 
-        
 
 
         // Funny, lightweight (useless) dynamic storage class. This is genuinely
@@ -169,6 +171,7 @@ namespace nthp {
         public:
 		RenderRuleSet();
                 RenderRuleSet(FIXED_TYPE x, FIXED_TYPE y, fixed_t tx, fixed_t ty, vectFixed cameraPosition);
+                void updateScaleFactor();
 
 		FIXED_TYPE pxlResolution_x;
 		FIXED_TYPE pxlResolution_y;

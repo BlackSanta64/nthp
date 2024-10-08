@@ -8,7 +8,7 @@ namespace nthp { namespace script { namespace instructions {
         __VA_ARGS__\
         } Instruction
 
-#define INSTRUCTION_SIZE_LIST(...) constexpr uint8_t\
+#define INSTRUCTION_SIZE_LIST(...) constexpr decltype(nthp::script::Node::n_binary_t::size)\
         __VA_ARGS__
 
 #define ____INSTRUCTION_TOKENS(...) __VA_ARGS__
@@ -48,12 +48,10 @@ namespace ID {
                 CLEAR,\
                 DEFINE,\
                 COPY,\
-		\
 		TEXTURE_DEFINE,\
 		TEXTURE_CLEAR,\
 		TEXTURE_LOAD,\
 		SET_ACTIVE_PALETTE,\
-                CORE_INIT,\
                 FRAME_DEFINE,\
                 FRAME_CLEAR,\
                 FRAME_SET,\
@@ -68,7 +66,8 @@ namespace ID {
                 ENT_SETFRAMERANGE,\
                 ENT_SETHITBOXSIZE,\
                 ENT_SETHITBOXOFFSET,\
-                ENT_SETRENDERSIZE\
+                ENT_SETRENDERSIZE,\
+                CORE_INIT\
         )
 
         INSTRUCTION_LIST( INSTRUCTION_TOKENS(), numberOfInstructions);
@@ -77,7 +76,12 @@ namespace ID {
 #define GET_INSTRUCTION_ID(instruction) nthp::script::instructions::ID::instruction
 typedef P_Reference<nthp::script::stdVarWidth> stdRef;
 typedef P_Reference<uint32_t> indRef;
-
+/*
+ CORE_CLEAR,\
+                CORE_QUEUERENDER,\
+                CORE_ABS_QUEUERENDER,\
+                CORE_SWAPBUFFER\
+*/
 
 // Sizes must have the same name as the ENUM entry in 'ID'.
 namespace Size {

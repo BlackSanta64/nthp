@@ -72,6 +72,11 @@ int nthp::EngineCore::init(nthp::RenderRuleSet settings, const char* title, bool
 
 
 void nthp::EngineCore::handleEvents() {
+        int x,y;
+        SDL_GetMouseState(&x, &y);
+        nthp::mousePosition = nthp::generateWorldPosition(nthp::vectGen(x, y), &p_coreDisplay);
+        nthp::mousePosition -= p_coreDisplay.cameraWorldPosition;
+
         while(SDL_PollEvent(&eventList)) {
                 switch(eventList.type) {
                 case SDL_QUIT:
@@ -82,6 +87,11 @@ void nthp::EngineCore::handleEvents() {
 }
 
 void nthp::EngineCore::handleEvents(void (*handler)(SDL_Event*)) {
+        int x,y;
+        SDL_GetMouseState(&x, &y);
+        nthp::mousePosition = nthp::generateWorldPosition(nthp::vectGen(x, y), &p_coreDisplay);
+        nthp::mousePosition -= p_coreDisplay.cameraWorldPosition;
+
         while(SDL_PollEvent(&eventList)) {
                 switch(eventList.type) {
                 case SDL_QUIT:
@@ -136,10 +146,50 @@ int nthp::EngineCore::render(nthp::RenderPacket packet) {
         return 0;
 }
 
+void nthp::EngineCore::setWindowRenderSize(int x, int y) {
+        if(SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) {
+                SDL_DisplayMode mode;
+                SDL_GetWindowDisplayMode(window, &mode);
+                
+                // For some fucking reason, SDL Can't resize a window while in fullscreen,
+                // Even when tweaking the DisplayMode. :/
+                SDL_SetWindowFullscreen(window, 0);
+                mode.w = x;
+                mode.h = y;
+
+                if(SDL_SetWindowDisplayMode(window, &mode) < 0) {
+                        PRINT_DEBUG_ERROR("%s", SDL_GetError());
+                }
+                SDL_GetWindowDisplayMode(window, &mode);
+
+                p_coreDisplay.pxlResolution_x = mode.w;
+                p_coreDisplay.pxlResolution_y = mode.h;
+
+                SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
+        }
+        else {
+                SDL_SetWindowSize(window, x, y);
+                SDL_GetWindowSizeInPixels(window, &x, &y);
+                SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+
+                p_coreDisplay.pxlResolution_x = x;
+                p_coreDisplay.pxlResolution_y = y;
+        }
+
+        p_coreDisplay.updateScaleFactor();
+}
+
+void nthp::EngineCore::setVirtualRenderScale(nthp::fixed_t x, nthp::fixed_t y) {
+        p_coreDisplay.tunitResolution_x = x;
+        p_coreDisplay.tunitResolution_y = y;
+
+        p_coreDisplay.updateScaleFactor();
+}
 
 
 
 nthp::EngineCore::~EngineCore() {
+        PRINT_DEBUG("Destroying Core and cleaning up...  ");
 
         SDL_DestroyWindow(window);
         SDL_DestroyRenderer(renderer);
@@ -147,6 +197,12 @@ nthp::EngineCore::~EngineCore() {
         SDL_Quit();
 #if USE_SDLIMG == 1
         IMG_Quit();
+#endif
+        NOVERB_PRINT_DEBUG("done.\n");
+
+
+#ifdef DEBUG
+        NTHP_GEN_DEBUG_CLOSE();
 #endif
 
 }

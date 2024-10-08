@@ -217,3 +217,6 @@ int nthp::texture::tools::generateSoftwareTextureFromImage(const char* inputImag
 }
 
 #endif
+
+
+#undef SUPRESS_DEBUG_OUTPUT

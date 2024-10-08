@@ -35,7 +35,7 @@ namespace nthp {
                 void stop();
 
                 void setWindowRenderSize(int x, int y);
-                void setVirtualRenderScale(float x, float y);
+                void setVirtualRenderScale(nthp::fixed_t x, nthp::fixed_t y);
 
                 inline bool isRunning() { return running; }
 

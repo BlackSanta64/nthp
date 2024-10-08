@@ -109,11 +109,16 @@ nthp::RenderRuleSet::RenderRuleSet(FIXED_TYPE x, FIXED_TYPE y, nthp::fixed_t tx,
 
         cameraWorldPosition = cameraPosition;
 
+       updateScaleFactor();
+}
+
+
+void nthp::RenderRuleSet::updateScaleFactor() {
         // Yes yes I know. But the precision is too important here to pass up.
         // It gets converted afterwards back to fixed-point, so overall speed is better.
-	double xs, ys;
-	xs = (double)pxlResolution_x / nthp::fixedToDouble(tunitResolution_x);
-	ys = (double)pxlResolution_y / nthp::fixedToDouble(tunitResolution_y);
+	float xs, ys;
+	xs = (float)pxlResolution_x / nthp::fixedToDouble(tunitResolution_x);
+	ys = (float)pxlResolution_y / nthp::fixedToDouble(tunitResolution_y);
 
 
 	scaleFactor.x = nthp::doubleToFixed(xs);

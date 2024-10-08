@@ -81,7 +81,7 @@ namespace nthp {
                 // Is called by 'compileSourceFile' if the 'outputfile' is non-NULL.
                 int exportToFile(const char* outputFile, std::vector<nthp::script::Node>* nodeList, bool buildSystemContext);
 
-                int compileStageConfig(const char* stageConfigFile, const char* output);
+                int compileStageConfig(const char* stageConfigFile, const char* output, bool forceBuild);
 
 
 

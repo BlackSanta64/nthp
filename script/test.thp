@@ -7,6 +7,7 @@ GLOBAL test2
 GLOBAL test3
 GLOBAL mathReg
 GLOBAL test4
+GLOBAL returnRegister
 
 
 VAR returnRegister
@@ -24,11 +25,11 @@ VAR value2
 
 
 
-
+DEFINE 20
 
 MACRO INIT_FLAGS {
         / x  y  tx  ty  cx cy fs sr title /
-        960 540 500 500 100 100  0  0  NTHP_RUNTIME
+        1600 900 500 500 0 0  0  0  NTHP_RUNTIME
 }
 
 CORE_INIT @INIT_FLAGS
@@ -36,12 +37,16 @@ CORE_INIT @INIT_FLAGS
 SET_ACTIVE_PALETTE resource/genericPalette.pal
 
 CONST t_tux 0
-TEXTURE_DEFINE 1
+CONST t_wall 1
+TEXTURE_DEFINE 2
 TEXTURE_LOAD resource/c_tux.cst #t_tux
+TEXTURE_LOAD resource/wall.cst #t_wall
 
 CONST f0_tux 0
-FRAME_DEFINE 1
+CONST f0_wall 1
+FRAME_DEFINE 2
 FRAME_SET #f0_tux 0 0 764 910 #t_tux
+FRAME_SET #f0_wall 0 0 100 76 #t_wall
 
 @setMathTarget $value1
 SQRT 732.3451 #mt
@@ -54,12 +59,18 @@ MUL #mt 5 #mt
 COPY #mt >mathReg
 
 CONST e_tux 0
-ENT_DEFINE 1
+CONST e_absTux 1
+
+ENT_DEFINE 2
 ENT_SETFRAMERANGE #e_tux 0 1
 ENT_SETRENDERSIZE #e_tux 200 300
 ENT_SETCURRENTFRAME #e_tux 0
-ENT_SETPOS #e_tux 0 0
+ENT_SETPOS #e_tux 150 150
 
+ENT_SETFRAMERANGE #e_absTux #f0_wall 1
+ENT_SETRENDERSIZE #e_absTux 100 76
+ENT_SETCURRENTFRAME #e_absTux 0
+ENT_SETPOS #e_absTux 0 0
 
 
 EXIT

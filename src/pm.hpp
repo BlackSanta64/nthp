@@ -4,6 +4,8 @@
 #include "s_script.hpp"
 #include "s_stage.hpp"
 #include <sstream>
+#include <thread>
+#include <mutex>
 
 
 #define PM_PRINT(...) printf(__VA_ARGS__)

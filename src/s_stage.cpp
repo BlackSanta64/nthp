@@ -148,4 +148,9 @@ nthp::script::stage::Stage::~Stage() {
                 delete[] scriptBlock;
                 delete[] triggerBlock;
         }
+        if(data.textureBlockSize > 0) delete[] data.textureBlock;
+        if(data.entityBlockSize > 0) delete[] data.entityBlock;
+        if(data.frameBlockSize > 0) delete[] data.frameBlock;
+        if(data.varSetSize > 0) delete[] data.globalVarSet;
+
 }

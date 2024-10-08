@@ -19,7 +19,8 @@ using namespace nthp::script::instructions;
                                                                         std::vector<size_t>& endList,\
                                                                         size_t& currentMacroPosition,\
                                                                         size_t& targetMacro,\
-                                                                        bool& evaluateMacro\
+                                                                        bool& evaluateMacro,\
+                                                                        const bool& buildSystemContext\
                                                                         )
 
 #define currentNode nodeList.size() - (decltype(nodeList.size()))1
@@ -153,7 +154,7 @@ int EvaluateSymbol(std::fstream& file, std::string& expression, std::vector<nthp
 
 
 // Substitues a VAR reference or parses numeral references (for compatibility)
-nthp::script::instructions::stdRef EvaluateReference(std::string expression, std::vector<nthp::script::CompilerInstance::VAR_DEF>& varList, std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>& globalList) {
+nthp::script::instructions::stdRef EvaluateReference(std::string expression, std::vector<nthp::script::CompilerInstance::VAR_DEF>& varList, std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>& globalList, bool buildSystemContext) {
         nthp::script::P_Reference<nthp::fixed_t> ref;
         ref.metadata = 0;
 
@@ -166,7 +167,8 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
         else {
                 if(expression[0] == '>') {
                         PR_METADATA_SET (ref, nthp::script::flagBits::IS_REFERENCE);
-                        PR_METADATA_SET (ref, nthp::script::flagBits::IS_GLOBAL);
+
+                        if(buildSystemContext) PR_METADATA_SET (ref, nthp::script::flagBits::IS_GLOBAL);
 
                         expression.erase(expression.begin());
                 }
@@ -228,7 +230,7 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
 // Generic conviencence macro to evaluate the next symbol in the stream. Automatically pulls the next
 // symbol from a macro or source file into 'fileRead'
 #define EVAL_SYMBOL() ____S_EVAL(file, fileRead, constantList, macroList, currentMacroPosition, targetMacro, evaluateMacro)
-#define EVAL_PREF() EvaluateReference(fileRead, varList, globalList)
+#define EVAL_PREF() EvaluateReference(fileRead, varList, globalList, buildSystemContext)
 
 #define CHECK_REF(ref) if(!PR_METADATA_GET(ref, nthp::script::flagBits::IS_VALID)) return 1 
 
@@ -1447,7 +1449,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
         bool evaluateMacro = false;
 
 
-        #define COMPILE(instruction) if( instruction ( nodeList, file, fileRead, constantList, macroList, varList, globalList, labelList, gotoList, ifLocations, endLocations, currentMacroPosition, targetMacro, evaluateMacro ) ) return 1
+        #define COMPILE(instruction) if( instruction ( nodeList, file, fileRead, constantList, macroList, varList, globalList, labelList, gotoList, ifLocations, endLocations, currentMacroPosition, targetMacro, evaluateMacro, buildSystemContext) ) return 1
         #define CHECK_COMP(instruction) if(fileRead == #instruction) { COMPILE(instruction); continue; }
 
         bool operationOngoing = true;
@@ -1501,18 +1503,32 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                                 }
                         }
 
-                        PRINT_COMPILER("Defined VAR [%s].\n", fileRead.c_str());
 
                         VAR_DEF newDef;
                         newDef.varName = fileRead;
                         newDef.relativeIndex = varList.size();
 
                         varList.push_back(newDef);
+                        PRINT_COMPILER("Defined VAR [%s].\n", fileRead.c_str());
                 }
                 if(fileRead == "GLOBAL") {
                         if(!buildSystemContext) {
-                                PRINT_COMPILER_WARNING("GLOBAL definitions are invalid outside of buildsystem.\n");
+                                PRINT_COMPILER_WARNING("GLOBAL definitions are invalid outside of buildsystem. Evaluating as VAR\n");
                                 EVAL_SYMBOL(); // Cycles to the invalid global name.
+
+                                for(size_t i = 0; i < varList.size(); ++i) {
+                                        if(fileRead == varList[i].varName) {
+                                                PRINT_COMPILER_WARNING("VAR [$%s] already declared; Ignoring redefinition.\n");
+                                                goto COMP_START; // thank god.
+                                        }
+                                }
+
+                                VAR_DEF newDef;
+                                newDef.varName = fileRead;
+                                newDef.relativeIndex = varList.size();
+
+                                varList.push_back(newDef);
+                                PRINT_COMPILER("Defined VAR [%s].\n", fileRead.c_str());
 
                                 continue;
                         }
@@ -1694,6 +1710,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                                         }
                                         if(i == globalList.size()) {
                                                 PRINT_COMPILER_DEPEND_ERROR("GLOBAL Dependency [%s] not declared; Dependency check failed.\n", fileRead.c_str());
+                                                return 1;
                                         }
 
                                         }
@@ -1922,7 +1939,7 @@ int nthp::script::CompilerInstance::exportToFile(const char* outputFile, std::ve
 
 
 
-int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFile, const char* output) {
+int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFile, const char* output, bool forceBuild) {
         std::fstream file(stageConfigFile, std::ios::in);
         if(file.fail()) {
                 PRINT_COMPILER_ERROR("Failed to compile StageConfig [%s]; File not found.\n", stageConfigFile);
@@ -2008,12 +2025,20 @@ int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFi
 
                                 std::string output;
                                 file >> output;
-                                compileSourceFile(fileRead.c_str(), output.c_str(), true);
+                                if(compileSourceFile(fileRead.c_str(), output.c_str(), true)) {
+                                        if(forceBuild) {
+                                                PRINT_DEBUG_WARNING("Compiler failure in source file [%s]; forcing continue...\n", fileRead.c_str());
+                                        }
+                                        else {
+                                                PRINT_DEBUG_ERROR("Compiler failure in source file [%s]; aborting.\n", fileRead.c_str());
+                                                return 1;
+                                        }
+                                }
                         }
                         
 
 
-                }
+                } // if (BUILD_SYSTEM)
 
                 if(fileRead == "EXIT" || file.eof()) {
                         operationComplete = true;

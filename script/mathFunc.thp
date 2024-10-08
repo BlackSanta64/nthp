@@ -1,5 +1,5 @@
 DEPEND #mt
-DEPEND $returnRegister
+DEPEND >returnRegister
 
 CONST l_m_half 20
 CONST l_m_double 30

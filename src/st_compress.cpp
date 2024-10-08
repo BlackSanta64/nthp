@@ -70,7 +70,10 @@ int nthp::texture::compression::compressSoftwareTexture(nthp::texture::SoftwareT
 
 int nthp::texture::compression::compressSoftwareTextureFile(const char* input, const char* output) {
         PRINT_DEBUG("Compressing SoftwareTexture file [%s]...\n", input);
-        nthp::texture::SoftwareTexture texture(input, NULL, NULL);
+        nthp::texture::SoftwareTexture texture;
+        if(texture.generateTexture(input, NULL, NULL)) {
+                return 1;
+        }
 
         return nthp::texture::compression::compressSoftwareTexture(&texture, output);
 }

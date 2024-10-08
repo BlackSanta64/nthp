@@ -36,6 +36,12 @@ void hEvents(SDL_Event* event) {
                         if(event->key.keysym.sym == SDLK_TAB) {
                                 nthp::core.stop();
                         }
+                        if(event->key.keysym.sym == SDLK_q) {
+                                nthp::core.setWindowRenderSize(1920, 1080);
+                        }
+                        if(event->key.keysym.sym == SDLK_e) {
+                                nthp::core.setWindowRenderSize(960, 540);
+                        }
                         break;
 
                 case SDL_KEYUP:
@@ -47,6 +53,7 @@ void hEvents(SDL_Event* event) {
 
                         if(event->key.keysym.sym == SDLK_w) {
                                 u = false;
+
                         }
                         if(event->key.keysym.sym == SDLK_s) {
                                 d = false;
@@ -66,20 +73,26 @@ void hEvents(SDL_Event* event) {
 
 
 int main(int argv, char** argc) {
+        // The DEBUG_INIT is called at the start of main, and DEBUG_CLOSE
+        // is called after the destruction of the main core.
+
 #ifdef DEBUG
         //NTHP_GEN_DEBUG_INIT(stdout);
         NTHP_GEN_DEBUG_INIT(fopen("debug.log", "w+"));
 #endif
         { // The entire engine debug context.
                 
-              
 
-                uint16_t maxFPS = 60;
+
+                uint16_t maxFPS = 500;
                 nthp::setMaxFPS(maxFPS);
                 auto frameStart = SDL_GetTicks();
 
                 nthp::script::CompilerInstance comp;
-                if(comp.compileStageConfig("testStage.stg", "ts.cstg")) return -1;
+                if(comp.compileStageConfig("testStage.stg", "ts.cstg", true)) {
+
+                        return -1;
+                };
 
 
                 nthp::script::stage::Stage testStage("ts.cstg");
@@ -88,13 +101,14 @@ int main(int argv, char** argc) {
 
 
                 if(testStage.init()) return -1;
-
+                
 
                 
                 while(nthp::core.isRunning()) {
                         frameStart = SDL_GetTicks();
 
                         nthp::core.handleEvents(hEvents);
+                        printf("%d %d\n", nthp::fixedToInt(nthp::mousePosition.x), nthp::fixedToInt(nthp::mousePosition.y));
                         if(u) {
                                 nthp::core.p_coreDisplay.cameraWorldPosition.y += nthp::f_fixedProduct(nthp::intToFixed(1), nthp::deltaTime);
                         }
@@ -107,6 +121,12 @@ int main(int argv, char** argc) {
                         if(r) {
                                 nthp::core.p_coreDisplay.cameraWorldPosition.x -= nthp::f_fixedProduct(nthp::intToFixed(1), nthp::deltaTime);
                         }
+                        if(inc) {
+                                nthp::core.setVirtualRenderScale(nthp::core.p_coreDisplay.tunitResolution_x + nthp::intToFixed(1), nthp::core.p_coreDisplay.tunitResolution_y + nthp::intToFixed(1));
+                        }
+                        if(dec) {
+                                nthp::core.setVirtualRenderScale(nthp::core.p_coreDisplay.tunitResolution_x - nthp::intToFixed(1), nthp::core.p_coreDisplay.tunitResolution_y - nthp::intToFixed(1));
+                        }
 
                         testStage.tick();
                         testStage.logic();
@@ -115,6 +135,7 @@ int main(int argv, char** argc) {
 		        nthp::core.clear();
                         
                         nthp::core.render(testStage.getScript(0).getScriptData()->entityBlock[0].getUpdateRenderPacket(&nthp::core.p_coreDisplay));
+                        nthp::core.render(testStage.getScript(0).getScriptData()->entityBlock[1].abs_getRenderPacket(&nthp::core.p_coreDisplay));
 
                         nthp::core.display();
 
@@ -130,9 +151,5 @@ int main(int argv, char** argc) {
 
         }
 
-
-#ifdef DEBUG
-        NTHP_GEN_DEBUG_CLOSE();
-#endif
         return 0;
 }
