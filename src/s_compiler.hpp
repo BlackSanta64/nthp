@@ -102,6 +102,17 @@ namespace nthp {
                         std::vector<nthp::script::CompilerInstance::GOTO_DEF>   gotoList;
 
                         std::vector<nthp::script::Node>                         nodeList;
+
+
+                        inline void addGlobalDef(const char* name) {
+                                GLOBAL_DEF def;
+                                def.relativeIndex = globalList.size();
+                                def.varName = name;
+
+                                globalList.push_back(def);
+                        }
+                
+                
                 };
 
         }

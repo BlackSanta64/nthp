@@ -5,6 +5,7 @@ nthp::script::stage::Stage::Stage() {
         memset(&data, 0, sizeof(nthp::script::Script::ScriptDataSet));
         scriptBlock = NULL;
         triggerBlock = NULL;
+        
 
         stageSize = 0;
 }
@@ -89,6 +90,26 @@ int nthp::script::stage::Stage::loadStage(const char* stageFile) {
 
 
         return 0;
+}
+
+void nthp::script::stage::Stage::checkActions(SDL_Event* event) {
+        switch(event->type) {
+                case SDL_KEYDOWN:
+                        for(size_t i = 0; i < data.actionListSize; ++i) {
+                                if(event->key.keysym.sym == data.actionList[i].boundKey) {
+                                        data.globalVarSet[data.actionList->varIndex.value] = nthp::intToFixed(1);
+                                }
+                        }
+                        break;
+
+                case SDL_KEYUP:
+                        for(size_t i = 0; i < data.actionListSize; ++i) {
+                                if(event->key.keysym.sym == data.actionList[i].boundKey) {
+                                        data.globalVarSet[data.actionList->varIndex.value] = ;
+                                }
+                        }
+                        break;
+        }
 }
 
 

@@ -54,7 +54,10 @@ namespace nthp {
                                 int exit();
                                 int logic();
 
+                                
+
                                 nthp::script::Script& getScript(size_t index) { return scriptBlock[index]; }
+                                const nthp::script::Script::ScriptDataSet& getStageDataSet() { return data; }
 
 
                                 ~Stage();
@@ -69,6 +72,7 @@ namespace nthp {
                                 std::vector<uint32_t> initList;
 
                                 nthp::script::Script::ScriptDataSet data;
+                                
 
                                 uint32_t globalMemBudget;
                         };

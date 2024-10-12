@@ -666,6 +666,119 @@ DEFINE_EXECUTION_BEHAVIOUR(ENT_SETRENDERSIZE) {
         return 0;
 }
 
+DEFINE_EXECUTION_BEHAVIOUR(CORE_QRENDER) {
+        stdRef entity = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+
+        EVAL_STDREF(entity);
+
+        nthp::core.render(data->entityBlock[nthp::fixedToInt(entity.value)].getUpdateRenderPacket(&nthp::core.p_coreDisplay));
+        return 0;
+}
+
+
+DEFINE_EXECUTION_BEHAVIOUR(CORE_ABS_QRENDER) {
+        stdRef entity = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+
+        EVAL_STDREF(entity);
+
+        nthp::core.render(data->entityBlock[nthp::fixedToInt(entity.value)].abs_getRenderPacket(&nthp::core.p_coreDisplay));
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(CORE_CLEAR) {
+        nthp::core.clear();
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(CORE_DISPLAY) {
+        nthp::core.display();
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(CORE_SETMAXFPS) {
+        stdRef fps = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+
+        EVAL_STDREF(fps);
+
+        nthp::setMaxFPS(nthp::fixedToInt(fps.value));
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(CORE_SETWINDOWRES) {
+        stdRef x = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+        stdRef y = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+
+        EVAL_STDREF(x);
+        EVAL_STDREF(y);
+
+        nthp::core.setWindowRenderSize(nthp::fixedToInt(x.value), nthp::fixedToInt(y.value));
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(CORE_SETCAMERARES) {
+        stdRef x = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+        stdRef y = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+
+        EVAL_STDREF(x);
+        EVAL_STDREF(y);
+
+        nthp::core.setVirtualRenderScale(x.value, y.value);
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(CORE_SETCAMERAPOSITION) {
+        stdRef x = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+        stdRef y = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+
+        EVAL_STDREF(x);
+        EVAL_STDREF(y);
+
+        nthp::core.p_coreDisplay.cameraWorldPosition.x = x.value;
+        nthp::core.p_coreDisplay.cameraWorldPosition.y = y.value;
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(CORE_MOVECAMERA) {
+        stdRef x = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+        stdRef y = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+
+        EVAL_STDREF(x);
+        EVAL_STDREF(y);
+
+        nthp::core.p_coreDisplay.cameraWorldPosition += nthp::worldPosition(nthp::f_fixedProduct(x.value, nthp::deltaTime), nthp::f_fixedProduct(y.value, nthp::deltaTime));
+        return 0;
+}
+
+
+DEFINE_EXECUTION_BEHAVIOUR(ACTION_DEFINE) {
+        stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+
+        EVAL_STDREF(size);
+
+        data->actionList = new nthp::script::Script::Action[nthp::fixedToInt(size.value)];
+        data->actionListSize = nthp::fixedToInt(size.value);
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(ACTION_BIND) {
+        stdRef output = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+        indRef var = *(indRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+        int key = *(int32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(indRef));
+
+        EVAL_STDREF(output);
+
+        data->actionList[nthp::fixedToInt(output.value)].varIndex = var;  
+        data->actionList[nthp::fixedToInt(output.value)].boundKey = key;      
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(ACTION_CLEAR) {
+        delete[] data->actionList;
+        data->actionListSize = 0;
+
+        return 0;
+}
 
 
 

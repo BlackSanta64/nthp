@@ -67,7 +67,19 @@ namespace ID {
                 ENT_SETHITBOXSIZE,\
                 ENT_SETHITBOXOFFSET,\
                 ENT_SETRENDERSIZE,\
-                CORE_INIT\
+                CORE_INIT,\
+                CORE_QRENDER,\
+                CORE_ABS_QRENDER,\
+                CORE_CLEAR,\
+                CORE_DISPLAY,\
+                CORE_SETMAXFPS,\
+                CORE_SETWINDOWRES,\
+                CORE_SETCAMERARES,\
+                CORE_SETCAMERAPOSITION,\
+                CORE_MOVECAMERA,\
+                ACTION_DEFINE,\
+                ACTION_BIND,\
+                ACTION_CLEAR\
         )
 
         INSTRUCTION_LIST( INSTRUCTION_TOKENS(), numberOfInstructions);
@@ -76,12 +88,7 @@ namespace ID {
 #define GET_INSTRUCTION_ID(instruction) nthp::script::instructions::ID::instruction
 typedef P_Reference<nthp::script::stdVarWidth> stdRef;
 typedef P_Reference<uint32_t> indRef;
-/*
- CORE_CLEAR,\
-                CORE_QUEUERENDER,\
-                CORE_ABS_QUEUERENDER,\
-                CORE_SWAPBUFFER\
-*/
+
 
 // Sizes must have the same name as the ENUM entry in 'ID'.
 namespace Size {
@@ -145,8 +152,21 @@ namespace Size {
                 ENT_SETFRAMERANGE = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef),
                 ENT_SETHITBOXSIZE = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef),
                 ENT_SETHITBOXOFFSET = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef),
-                ENT_SETRENDERSIZE = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) 
+                ENT_SETRENDERSIZE = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef),
 
+                CORE_QRENDER = sizeof(stdRef),
+                CORE_ABS_QRENDER = sizeof(stdRef),
+                CORE_CLEAR = 0,
+                CORE_DISPLAY = 0,
+                CORE_SETMAXFPS = sizeof(stdRef),
+                CORE_SETWINDOWRES = sizeof(stdRef) + sizeof(stdRef),
+                CORE_SETCAMERARES = sizeof(stdRef) + sizeof(stdRef),
+                CORE_SETCAMERAPOSITION = sizeof(stdRef) + sizeof(stdRef),
+                CORE_MOVECAMERA = sizeof(stdRef) + sizeof(stdRef),
+
+                ACTION_DEFINE = sizeof(stdRef),
+                ACTION_CLEAR = 0,
+                ACTION_BIND =  sizeof(stdRef) + sizeof(indRef) + sizeof(int32_t)
         );
 }
 

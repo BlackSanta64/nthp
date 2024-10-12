@@ -9,11 +9,16 @@
 namespace nthp { 
 namespace script {
 
-        extern uint8_t stageMemory[UINT8_MAX];
+        extern uint8_t stageMemory[255];
         extern nthp::texture::Palette activePalette;
 
         class Script {
         public:
+
+                struct Action {
+                        nthp::script::instructions::indRef varIndex;
+                        int boundKey = SDLK_UNKNOWN;
+                };
 
         struct ScriptDataSet {
                         uint32_t localMemBudget;
@@ -46,10 +51,16 @@ namespace script {
 
                         nthp::script::scriptTriggerComplex currentTriggerConfig;
 
+                        Action* actionList;
+                        size_t  actionListSize;
+
 
                         bool isSuspended;
 
                 };
+
+
+
 
 
                 Script();

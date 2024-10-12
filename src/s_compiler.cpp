@@ -728,7 +728,7 @@ DEFINE_COMPILATION_BEHAVIOUR(IF) {
                 ADD_NODE(LOGIC_LSTE);
         }
         else {
-                PRINT_COMPILER_ERROR("Invalid Comparison Operator [%s]; Valid operators: EQU NOT, GRT, LST, GRTE, LSTE\n", fileRead.c_str());
+                PRINT_COMPILER_ERROR("Invalid Comparison Operator [%s]; Valid operators: EQU, NOT, GRT, LST, GRTE, LSTE\n", fileRead.c_str());
                 return 1;
         }
 
@@ -1180,6 +1180,7 @@ DEFINE_COMPILATION_BEHAVIOUR(SM_READ) {
         into->value = nthp::fixedToInt(_into.value);
         into->metadata = _into.metadata;
 
+        PRINT_NODEDATA();
         return 0;
 }
 
@@ -1194,6 +1195,8 @@ DEFINE_COMPILATION_BEHAVIOUR(ENT_DEFINE) {
         stdRef* wsize = (stdRef*)(nodeList[currentNode].access.data);
 
         *wsize = size;
+
+        PRINT_NODEDATA();
         return 0;
 }
 
@@ -1201,7 +1204,7 @@ DEFINE_COMPILATION_BEHAVIOUR(ENT_DEFINE) {
 DEFINE_COMPILATION_BEHAVIOUR(ENT_CLEAR) {
         ADD_NODE(ENT_CLEAR);
 
-
+        PRINT_NODEDATA();
         return 0;
 }
 
@@ -1223,6 +1226,7 @@ DEFINE_COMPILATION_BEHAVIOUR(ENT_SETCURRENTFRAME) {
         *tout = target;
         *tframe = frameN;
 
+        PRINT_NODEDATA();
         return 0;
 }
 
@@ -1251,7 +1255,7 @@ DEFINE_COMPILATION_BEHAVIOUR(ENT_SETPOS) {
         *_x = x;
         *_y = y;
 
-
+        PRINT_NODEDATA();
         return 0;
 }
 
@@ -1279,7 +1283,7 @@ DEFINE_COMPILATION_BEHAVIOUR(ENT_MOVE) {
         *_x = x;
         *_y = y;
 
-
+        PRINT_NODEDATA();
         return 0;
 }
 
@@ -1308,6 +1312,7 @@ DEFINE_COMPILATION_BEHAVIOUR(ENT_SETFRAMERANGE) {
         *_start = start;
         *_size = size;
 
+        PRINT_NODEDATA();
         return 0;
 }
 
@@ -1335,6 +1340,7 @@ DEFINE_COMPILATION_BEHAVIOUR(ENT_SETHITBOXSIZE) {
         *_target = target;
         *_x = x;
         *_y = y;
+        PRINT_NODEDATA();
 
         return 0;
 }
@@ -1364,6 +1370,7 @@ DEFINE_COMPILATION_BEHAVIOUR(ENT_SETHITBOXOFFSET) {
         *_x = x;
         *_y = y;
 
+        PRINT_NODEDATA();
         return 0;
 }
 
@@ -1393,8 +1400,217 @@ DEFINE_COMPILATION_BEHAVIOUR(ENT_SETRENDERSIZE) {
         *_x = x;
         *_y = y;
 
+        PRINT_NODEDATA();
         return 0;
 }
+
+
+DEFINE_COMPILATION_BEHAVIOUR(CORE_QRENDER) {
+        ADD_NODE(CORE_QRENDER);
+
+        EVAL_SYMBOL();
+        auto entity = EVAL_PREF();
+        CHECK_REF(entity);
+
+        stdRef* ent = (stdRef*)nodeList[currentNode].access.data;
+        *ent = entity;
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+DEFINE_COMPILATION_BEHAVIOUR(CORE_ABS_QRENDER) {
+        ADD_NODE(CORE_ABS_QRENDER);
+
+        EVAL_SYMBOL();
+        auto entity = EVAL_PREF();
+        CHECK_REF(entity);
+
+        stdRef* ent = (stdRef*)nodeList[currentNode].access.data;
+        *ent = entity;
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+DEFINE_COMPILATION_BEHAVIOUR(CORE_CLEAR) {
+        ADD_NODE(CORE_CLEAR);
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+DEFINE_COMPILATION_BEHAVIOUR(CORE_DISPLAY) {
+        ADD_NODE(CORE_DISPLAY);
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+DEFINE_COMPILATION_BEHAVIOUR(CORE_SETMAXFPS) {
+        ADD_NODE(CORE_SETMAXFPS);
+
+        EVAL_SYMBOL();
+        auto fps = EVAL_PREF();
+        CHECK_REF(fps);
+
+        stdRef* _fps = (stdRef*)(nodeList[currentNode].access.data);
+        *_fps = fps;
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+#define cast_stdRef(offset) (stdRef*)(nodeList[currentNode].access.data + (offset))
+
+DEFINE_COMPILATION_BEHAVIOUR(CORE_SETWINDOWRES) {
+        ADD_NODE(CORE_SETWINDOWRES);
+
+        EVAL_SYMBOL();
+        auto xRes = EVAL_PREF();
+        CHECK_REF(xRes);
+
+        EVAL_SYMBOL();
+        auto yRes = EVAL_PREF();
+        CHECK_REF(yRes);
+
+        stdRef* x = cast_stdRef(0);
+        stdRef* y = cast_stdRef(sizeof(stdRef));
+
+        *x = xRes;
+        *y = yRes;
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+DEFINE_COMPILATION_BEHAVIOUR(CORE_SETCAMERARES) {
+        ADD_NODE(CORE_SETCAMERARES);
+
+        EVAL_SYMBOL();
+        auto xRes = EVAL_PREF();
+        CHECK_REF(xRes);
+
+        EVAL_SYMBOL();
+        auto yRes = EVAL_PREF();
+        CHECK_REF(yRes);
+
+        stdRef* x = cast_stdRef(0);
+        stdRef* y = cast_stdRef(sizeof(stdRef));
+
+        *x = xRes;
+        *y = yRes;
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+DEFINE_COMPILATION_BEHAVIOUR(CORE_SETCAMERAPOSITION) {
+        ADD_NODE(CORE_SETCAMERAPOSITION);
+
+        EVAL_SYMBOL();
+        auto xRes = EVAL_PREF();
+        CHECK_REF(xRes);
+
+        EVAL_SYMBOL();
+        auto yRes = EVAL_PREF();
+        CHECK_REF(yRes);
+
+        stdRef* x = cast_stdRef(0);
+        stdRef* y = cast_stdRef(sizeof(stdRef));
+
+        *x = xRes;
+        *y = yRes;
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+DEFINE_COMPILATION_BEHAVIOUR(CORE_MOVECAMERA) {
+        ADD_NODE(CORE_MOVECAMERA);
+
+        EVAL_SYMBOL();
+        auto xRes = EVAL_PREF();
+        CHECK_REF(xRes);
+
+        EVAL_SYMBOL();
+        auto yRes = EVAL_PREF();
+        CHECK_REF(yRes);
+
+        stdRef* x = cast_stdRef(0);
+        stdRef* y = cast_stdRef(sizeof(stdRef));
+
+        *x = xRes;
+        *y = yRes;
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+
+
+DEFINE_COMPILATION_BEHAVIOUR(ACTION_DEFINE) {
+        ADD_NODE(ACTION_DEFINE);
+
+        EVAL_SYMBOL();
+        auto size = EVAL_PREF();
+        CHECK_REF(size);
+
+        stdRef* psize = (stdRef*)(nodeList[currentNode].access.data);
+
+        *psize = size;
+
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(ACTION_CLEAR) {
+        ADD_NODE(ACTION_CLEAR);
+
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(ACTION_BIND) {
+        ADD_NODE(ACTION_BIND);
+
+        EVAL_SYMBOL();
+        auto output = EVAL_PREF();
+        CHECK_REF(output);
+
+        EVAL_SYMBOL();
+        auto var = EVAL_PREF(); // Global to bind it to.
+        CHECK_REF(var);
+
+        if(!PR_METADATA_GET(var, nthp::script::flagBits::IS_GLOBAL)) {
+                PRINT_COMPILER_ERROR("Second argument of ACTION_BIND must be a GLOBAL reference.\n");
+                return 1;
+        }
+
+        EVAL_SYMBOL();
+        int32_t key = fileRead[0]; // should correspond to keycode. idk _
+
+        stdRef* _output = (stdRef*)(nodeList[currentNode].access.data);
+        indRef* _varIndex = (indRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
+        int32_t* _key = (int32_t*)(nodeList[currentNode].access.data + sizeof(stdRef) + sizeof(indRef));
+
+        *_output = output;
+
+        _varIndex->value = (int32_t)var.value;
+        _varIndex->metadata = var.metadata;
+
+        *_key = key;
+
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+
 
 
 
@@ -1545,11 +1761,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                         PRINT_COMPILER("Defined GLOBAL [%s].\n", fileRead.c_str());
 
-                        GLOBAL_DEF newDef;
-                        newDef.varName = fileRead;
-                        newDef.relativeIndex = globalList.size();
-
-                        globalList.push_back(newDef);
+                        addGlobalDef(fileRead.c_str());
                         ++globalAlloc;
                 }
 
@@ -1762,7 +1974,6 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 		CHECK_COMP(TEXTURE_LOAD);
                 CHECK_COMP(SET_ACTIVE_PALETTE);
 
-                CHECK_COMP(CORE_INIT);
 
                 CHECK_COMP(FRAME_DEFINE);
                 CHECK_COMP(FRAME_CLEAR);
@@ -1781,6 +1992,22 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                 CHECK_COMP(ENT_SETHITBOXSIZE);
                 CHECK_COMP(ENT_SETHITBOXOFFSET);
                 CHECK_COMP(ENT_SETRENDERSIZE);
+
+                CHECK_COMP(CORE_INIT);
+                CHECK_COMP(CORE_QRENDER);
+                CHECK_COMP(CORE_ABS_QRENDER);
+                CHECK_COMP(CORE_CLEAR);
+                CHECK_COMP(CORE_DISPLAY);
+                CHECK_COMP(CORE_SETMAXFPS);
+                CHECK_COMP(CORE_SETWINDOWRES);
+                CHECK_COMP(CORE_SETCAMERARES);
+                CHECK_COMP(CORE_SETCAMERAPOSITION);
+                CHECK_COMP(CORE_MOVECAMERA);
+
+                CHECK_COMP(ACTION_BIND);
+                CHECK_COMP(ACTION_DEFINE);
+                CHECK_COMP(ACTION_CLEAR);
+
                 
         }
 
@@ -2019,12 +2246,17 @@ int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFi
 
 
                 if(fileRead == "BUILD_SYSTEM") {
+                        globalList.clear();
+
                         while(!file.eof()) {
                                 file >> fileRead;
                                 if(fileRead == "END") { break; }
 
                                 std::string output;
                                 file >> output;
+
+
+
                                 if(compileSourceFile(fileRead.c_str(), output.c_str(), true)) {
                                         if(forceBuild) {
                                                 PRINT_DEBUG_WARNING("Compiler failure in source file [%s]; forcing continue...\n", fileRead.c_str());

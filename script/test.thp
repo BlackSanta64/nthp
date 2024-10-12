@@ -29,7 +29,7 @@ DEFINE 20
 
 MACRO INIT_FLAGS {
         / x  y  tx  ty  cx cy fs sr title /
-        1600 900 500 500 0 0  0  0  NTHP_RUNTIME
+        1600 900 500 500 0 0  0  0  nthp.exe
 }
 
 CORE_INIT @INIT_FLAGS
