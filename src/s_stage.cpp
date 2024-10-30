@@ -30,6 +30,19 @@ int nthp::script::stage::Stage::loadStage(const char* stageFile) {
                 return 1;
         }
 
+        if(stageSize > 0) {
+                if(stageSize > 0) {
+                        delete[] scriptBlock;
+                        delete[] triggerBlock;
+                }
+                if(data.textureBlockSize > 0) delete[] data.textureBlock;
+                if(data.entityBlockSize > 0) delete[] data.entityBlock;
+                if(data.frameBlockSize > 0) delete[] data.frameBlock;
+                if(data.varSetSize > 0) delete[] data.globalVarSet;
+        }
+
+        memset(&data, 0, sizeof(nthp::script::Script::ScriptDataSet));
+        
         std::vector<nthp::script::stage::scriptConfig> configs;
         nthp::script::stage::scriptConfig temp;
         uint8_t length = 0;
@@ -87,28 +100,43 @@ int nthp::script::stage::Stage::loadStage(const char* stageFile) {
 
         // Allocate all global memory at once.
         data.globalVarSet = new nthp::script::stdVarWidth[data.globalMemBudget];
+        memset((data.globalVarSet), 0, sizeof(nthp::script::stdVarWidth) * data.globalMemBudget);
+        PRINT_DEBUG("Allocating [%zu] bytes; global stage memory.\n", sizeof(nthp::script::stdVarWidth) * data.globalMemBudget);
 
 
         return 0;
 }
 
-void nthp::script::stage::Stage::checkActions(SDL_Event* event) {
-        switch(event->type) {
+
+void nthp::script::stage::Stage::handleEvents() {
+        int x,y;
+        SDL_GetMouseState(&x, &y);
+        nthp::mousePosition = nthp::generateWorldPosition(nthp::vectGeneric(x, y), &nthp::core.p_coreDisplay);
+        nthp::mousePosition -= nthp::core.p_coreDisplay.cameraWorldPosition;
+
+        while(SDL_PollEvent(&nthp::core.eventList)) {
+                switch(nthp::core.eventList.type) {
+                case SDL_QUIT:
+                        nthp::core.stop();
+                        break;
                 case SDL_KEYDOWN:
                         for(size_t i = 0; i < data.actionListSize; ++i) {
-                                if(event->key.keysym.sym == data.actionList[i].boundKey) {
-                                        data.globalVarSet[data.actionList->varIndex.value] = nthp::intToFixed(1);
+                                if(nthp::core.eventList.key.keysym.sym == data.actionList[i].boundKey) {
+                                        data.globalVarSet[data.actionList[i].varIndex] = nthp::intToFixed(1);
                                 }
                         }
-                        break;
-
+                break;
                 case SDL_KEYUP:
                         for(size_t i = 0; i < data.actionListSize; ++i) {
-                                if(event->key.keysym.sym == data.actionList[i].boundKey) {
-                                        data.globalVarSet[data.actionList->varIndex.value] = ;
+                                if(nthp::core.eventList.key.keysym.sym == data.actionList[i].boundKey) {
+                                        data.globalVarSet[data.actionList[i].varIndex] = 0;
                                 }
                         }
+                break;
+
+                default:
                         break;
+                }
         }
 }
 

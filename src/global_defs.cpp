@@ -79,16 +79,18 @@ int NTHP_GEN_DEBUG_INIT(FILE* fdescriptor) {
 }
 
 void NTHP_GEN_DEBUG_CLOSE(void) {
-        time_t ti = time(NULL);
+        if(NTHP_debug_output != NULL) {        
+                time_t ti = time(NULL);
 
-        // I know how it looks, but 'localtime' is statically allocated,
-        // so this is not a memory leak.
-        struct tm *info = localtime(&ti);
-        fprintf(NTHP_debug_output, "\n\tNTHP Debug Session End : %s", asctime(info));
+                // I know how it looks, but 'localtime' is statically allocated,
+                // so this is not a memory leak.
+                struct tm *info = localtime(&ti);
+                fprintf(NTHP_debug_output, "\n\tNTHP Debug Session End : %s", asctime(info));
 
 
-        if(NTHP_debug_output != stdout) {
-                fclose(NTHP_debug_output);
+                if(NTHP_debug_output != stdout) {
+                        fclose(NTHP_debug_output);
+                }
         }
 }
 
@@ -113,9 +115,12 @@ nthp::RenderRuleSet::RenderRuleSet(FIXED_TYPE x, FIXED_TYPE y, nthp::fixed_t tx,
 }
 
 
+// If you're running this every frame, and need the speed, use nocast_updateScaleFactor() instead.
+// High accuracy, slower calculation.
 void nthp::RenderRuleSet::updateScaleFactor() {
         // Yes yes I know. But the precision is too important here to pass up.
         // It gets converted afterwards back to fixed-point, so overall speed is better.
+        // If you're running this every frame, and need the speed, use nocast_updateScaleFactor() instead.
 	float xs, ys;
 	xs = (float)pxlResolution_x / nthp::fixedToDouble(tunitResolution_x);
 	ys = (float)pxlResolution_y / nthp::fixedToDouble(tunitResolution_y);
@@ -123,4 +128,10 @@ void nthp::RenderRuleSet::updateScaleFactor() {
 
 	scaleFactor.x = nthp::doubleToFixed(xs);
 	scaleFactor.y = nthp::doubleToFixed(ys);
+}
+
+// Low accuracy, faster calculation. Useful for continuous camera scaling.
+// If using a single camera configuration for the whole program, use updateScaleFactor() for higher accuracy.
+void nthp::RenderRuleSet::nocast_updateScaleFactor() {
+        scaleFactor = nthp::vectFixed(nthp::f_fixedQuotient(nthp::intToFixed(pxlResolution_x), tunitResolution_x), nthp::f_fixedQuotient(nthp::intToFixed(pxlResolution_y), tunitResolution_y));
 }

@@ -36,6 +36,7 @@ namespace ID {
                 MUL,\
                 DIV,\
                 SQRT,\
+                LOGIC_IF_TRUE,\
                 LOGIC_EQU,\
                 LOGIC_NOT,\
                 LOGIC_GRT,\
@@ -67,6 +68,7 @@ namespace ID {
                 ENT_SETHITBOXSIZE,\
                 ENT_SETHITBOXOFFSET,\
                 ENT_SETRENDERSIZE,\
+                ENT_CHECKCOLLISION,\
                 CORE_INIT,\
                 CORE_QRENDER,\
                 CORE_ABS_QRENDER,\
@@ -77,9 +79,11 @@ namespace ID {
                 CORE_SETCAMERARES,\
                 CORE_SETCAMERAPOSITION,\
                 CORE_MOVECAMERA,\
+                CORE_STOP,\
                 ACTION_DEFINE,\
                 ACTION_BIND,\
-                ACTION_CLEAR\
+                ACTION_CLEAR,\
+                STAGE_LOAD\
         )
 
         INSTRUCTION_LIST( INSTRUCTION_TOKENS(), numberOfInstructions);
@@ -115,6 +119,8 @@ namespace Size {
                 DIV = sizeof(stdRef) + sizeof(stdRef) + sizeof(indRef),
                 SQRT = sizeof(stdRef) + sizeof(indRef),
 
+
+                LOGIC_IF_TRUE = sizeof(stdRef) + sizeof(uint32_t),
                 LOGIC_EQU = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
                 LOGIC_NOT = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
                 LOGIC_GRT = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
@@ -153,6 +159,7 @@ namespace Size {
                 ENT_SETHITBOXSIZE = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef),
                 ENT_SETHITBOXOFFSET = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef),
                 ENT_SETRENDERSIZE = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef),
+                ENT_CHECKCOLLISION = sizeof(stdRef) + sizeof(stdRef) + sizeof(indRef),
 
                 CORE_QRENDER = sizeof(stdRef),
                 CORE_ABS_QRENDER = sizeof(stdRef),
@@ -163,10 +170,12 @@ namespace Size {
                 CORE_SETCAMERARES = sizeof(stdRef) + sizeof(stdRef),
                 CORE_SETCAMERAPOSITION = sizeof(stdRef) + sizeof(stdRef),
                 CORE_MOVECAMERA = sizeof(stdRef) + sizeof(stdRef),
+                CORE_STOP = 0,
 
                 ACTION_DEFINE = sizeof(stdRef),
-                ACTION_CLEAR = 0,
-                ACTION_BIND =  sizeof(stdRef) + sizeof(indRef) + sizeof(int32_t)
+                ACTION_CLEAR = 0, //
+                ACTION_BIND =  sizeof(stdRef) + sizeof(uint32_t) + sizeof(int32_t), // actionIndex, varIndex, key
+                STAGE_LOAD = DYNAMIC_SIZE
         );
 }
 

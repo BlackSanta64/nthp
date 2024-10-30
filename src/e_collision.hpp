@@ -10,6 +10,6 @@ namespace nthp {
                         nthp::fixed_t h;
                 };
 
-                extern bool checkRectCollision(cRect a,cRect b);
+                extern int checkRectCollision(cRect a,cRect b);
         }
 }

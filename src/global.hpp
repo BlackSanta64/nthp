@@ -34,6 +34,7 @@
 #include <vector>
 #include <fstream>
 #include <stdio.h>
+#include <mutex>
 #include "fixed.hpp"
 
 
@@ -111,7 +112,7 @@ namespace nthp {
                 T x;
                 T y;
         };
-        typedef vector<int> vectGen;
+        typedef vector<int> vectGeneric;
 
         typedef vector<int32_t> vect32;
         typedef vector<int64_t> vect64;
@@ -173,6 +174,11 @@ namespace nthp {
                 RenderRuleSet(FIXED_TYPE x, FIXED_TYPE y, fixed_t tx, fixed_t ty, vectFixed cameraPosition);
                 void updateScaleFactor();
 
+                // Uses the f_fixedQuotient and f_fixedProduct operations instead of converting to
+                // floating point. Faster to compute, but considerably lower in accuracy
+                // (depending on the configuration of the operations, see fixed.hpp).
+                void nocast_updateScaleFactor();
+
 		FIXED_TYPE pxlResolution_x;
 		FIXED_TYPE pxlResolution_y;
 		fixed_t tunitResolution_x;
@@ -184,6 +190,11 @@ namespace nthp {
         };
 
 
+#ifndef PM
+        extern int runtimeBehaviour(int argv, char** argc);
+#else
+        extern int debuggerBehaviour(std::string target, FILE* debugOutputTarget);
+#endif
 
 }
 

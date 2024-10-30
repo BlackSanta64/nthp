@@ -1,13 +1,16 @@
+
 CONST l_include 10
 CONST mt 0
 MACRO setMathTarget { CONST mt }
 
-GLOBAL test1
-GLOBAL test2
-GLOBAL test3
 GLOBAL mathReg
-GLOBAL test4
 GLOBAL returnRegister
+
+GLOBAL upKey
+GLOBAL downKey
+GLOBAL leftKey
+GLOBAL rightKey
+GLOBAL exitKey
 
 
 VAR returnRegister
@@ -24,12 +27,9 @@ VAR value1
 VAR value2
 
 
-
-DEFINE 20
-
 MACRO INIT_FLAGS {
         / x  y  tx  ty  cx cy fs sr title /
-        1600 900 500 500 0 0  0  0  nthp.exe
+        800 800 500 500 0 0  0  0  nthp.exe
 }
 
 CORE_INIT @INIT_FLAGS
@@ -66,11 +66,35 @@ ENT_SETFRAMERANGE #e_tux 0 1
 ENT_SETRENDERSIZE #e_tux 200 300
 ENT_SETCURRENTFRAME #e_tux 0
 ENT_SETPOS #e_tux 150 150
+ENT_SETHITBOXSIZE #e_tux 200 300
+
 
 ENT_SETFRAMERANGE #e_absTux #f0_wall 1
 ENT_SETRENDERSIZE #e_absTux 100 76
 ENT_SETCURRENTFRAME #e_absTux 0
 ENT_SETPOS #e_absTux 0 0
+ENT_SETHITBOXSIZE #e_absTux 100 76
+
+CORE_SETMAXFPS 500
 
 
+
+
+CONST a_up 0
+CONST a_down 1
+CONST a_left 2
+CONST a_right 3
+CONST a_exit 4
+
+ACTION_DEFINE 5
+
+ACTION_BIND #a_up >upKey w
+ACTION_BIND #a_down >downKey s
+ACTION_BIND #a_left >leftKey a
+ACTION_BIND #a_right >rightKey d
+ACTION_BIND #a_exit >exitKey ESCAPE
+
+
+
+CONST CONTEXT_MAINPROG __MAINPROG
 EXIT

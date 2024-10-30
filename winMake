@@ -34,7 +34,7 @@ CONFIG = X64
 
 CFLAGS = -D WINDOWS -D USE_SDLIMG=$(USE_SDLIMAGE) -I $(SDLInclude) $(SDLIMGIncludePath) /EHsc
 DEBUG_CFLAGS = -D WINDOWS -D USE_SDLIMG=$(USE_SDLIMAGE) -D DEBUG=1 -I $(SDLInclude) $(SDLIMGIncludePath) /EHsc
-PM_CFLAGS =  -D WINDOWS -D PM -D USE_SDLIMG=1 -I $(SDLInclude) $(PM_SDLIMGIncludePath) /EHsc
+PM_CFLAGS =  -D WINDOWS -D PM -D DEBUG=1 -D USE_SDLIMG=1 -I $(SDLInclude) $(PM_SDLIMGIncludePath) /EHsc
 
 LINKERFLAGS = shell32.lib SDL2.lib SDL2main.lib $(SDLIMGLibFile) -link -LIBPATH:$(SDLLib) $(SDLIMGLibPath) -SUBSYSTEM:WINDOWS -MACHINE:$(CONFIG)
 DEBUG_LINKERFLAGS = shell32.lib SDL2.lib SDL2main.lib $(SDLIMGLibFile) -link -LIBPATH:$(SDLLib) $(SDLIMGLibPath) -DEBUG -ASSEMBLYDEBUG -SUBSYSTEM:CONSOLE -MACHINE:$(CONFIG)
@@ -42,7 +42,6 @@ PM_LINKERFLAGS = shell32.lib SDL2.lib SDL2main.lib $(PM_SDLIMGLibFile) -link -LI
 
 libTargets = global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj e_collision.obj st_compress.obj s_compiler.obj s_script.obj gtexture.obj s_stage.obj
 debug_libTargets = global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj e_collision_d.obj st_compress_d.obj s_compiler_d.obj s_script_d.obj gtexture_d.obj s_stage_d.obj
-
 lib_srcSymbols = $(SRCDIR)global_defs.cpp $(SRCDIR)core.cpp $(SRCDIR)position.cpp $(SRCDIR)palette.cpp $(SRCDIR)rawsurface.cpp $(SRCDIR)softwaretexture.cpp $(SRCDIR)e_entity.cpp $(SRCDIR)e_collision.cpp $(SRCDIR)st_compress.cpp $(SRCDIR)s_compiler.cpp $(SRCDIR)s_script.cpp $(SRCDIR)gtexture.cpp $(SRCDIR)s_stage.cpp
 
 
@@ -54,10 +53,10 @@ all: release debug pm
 
 
 release: main.obj $(libTargets)
-	$(CC) main.obj global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj e_collision.obj st_compress.obj s_compiler.obj s_script.obj gtexture.obj s_stage.obj -Fe"$(TARGET).exe" $(LINKERFLAGS) 
+	$(CC) main.obj $(libTargets) -Fe"$(TARGET).exe" $(LINKERFLAGS) 
 
 debug: main_d.obj $(debug_libTargets)
-	$(CC) main_d.obj global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj e_collision_d.obj st_compress_d.obj s_compiler_d.obj s_script_d.obj gtexture_d.obj s_stage_d.obj -Fe"$(TARGET)_debug.exe" $(DEBUG_LINKERFLAGS) 
+	$(CC) main_d.obj $(debug_libTargets) -Fe"$(TARGET)_debug.exe" $(DEBUG_LINKERFLAGS) 
 
 pm: $(SRCDIR)pm_core.cpp $(SRCDIR)pm_globals.cpp
 	$(CC) $(PM_CFLAGS) $(SRCDIR)pm_core.cpp $(SRCDIR)pm_globals.cpp $(lib_srcSymbols) -Fe"pm.exe" $(PM_LINKERFLAGS)
@@ -108,6 +107,8 @@ gtexture.obj: $(SRCDIR)gtexture.cpp $(SRCDIR)gtexture.hpp
 s_stage.obj: $(SRCDIR)s_stage.cpp $(SRCDIR)s_stage.hpp
 	$(CC) -c $(SRCDIR)s_stage.cpp -Fo"s_stage.obj" $(CFLAGS)
 
+
+
 #DEBUG DEPENDENCIES GO HERE
 main_d.obj: $(SRCDIR)main.cpp
 	$(CC) -c $(SRCDIR)main.cpp -Fo"main_d.obj" $(DEBUG_CFLAGS)
@@ -151,7 +152,6 @@ gtexture_d.obj: $(SRCDIR)gtexture.cpp $(SRCDIR)gtexture.hpp
 
 s_stage_d.obj: $(SRCDIR)s_stage.cpp $(SRCDIR)s_stage.hpp
 	$(CC) -c $(SRCDIR)s_stage.cpp -Fo"s_stage_d.obj" $(DEBUG_CFLAGS)
-
 
 clean:
 	del *.obj *.pdb *.ilk

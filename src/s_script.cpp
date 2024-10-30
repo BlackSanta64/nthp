@@ -3,7 +3,7 @@
 using namespace nthp::script::instructions;
 #define DEFINE_EXECUTION_BEHAVIOUR(instruction) const int instruction (nthp::script::Script::ScriptDataSet* data)
 
-uint8_t nthp::script::stageMemory[UINT8_MAX];
+char nthp::script::stageMemory[STAGEMEM_MAX];
 nthp::texture::Palette nthp::script::activePalette;
 
 #define EVAL_STDREF(ref)   if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {\
@@ -16,7 +16,11 @@ nthp::texture::Palette nthp::script::activePalette;
                         }
 
 
-
+#ifdef DEBUG
+        nthp::vectGeneric nthp::script::debug::debugInstructionCall = nthp::vectGeneric(-1, -1);
+        bool nthp::script::debug::suspendExecution = false;
+        int nthp::script::debug::currentExecutionPhase = 0;
+#endif
 
 DEFINE_EXECUTION_BEHAVIOUR(EXIT) {
         return 0;
@@ -44,7 +48,7 @@ DEFINE_EXECUTION_BEHAVIOUR(JUMP) {
 
         EVAL_STDREF(label);
 
-        for(size_t i = 0; i < data->currentLabelBlockSize; ++i) {
+        for(uint32_t i = 0; i < data->currentLabelBlockSize; ++i) {
                 if(data->currentLabelBlock[i + i] == static_label) {
                         data->currentNode = data->currentLabelBlock[i + i + 1];
                         break;
@@ -229,6 +233,19 @@ DEFINE_EXECUTION_BEHAVIOUR(SQRT) {
 DEFINE_EXECUTION_BEHAVIOUR(END) {
         return 0;
 }
+
+DEFINE_EXECUTION_BEHAVIOUR(LOGIC_IF_TRUE) {
+        stdRef opA = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+        uint32_t endIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+
+
+        EVAL_STDREF(opA);
+        if(nthp::fixedToInt(opA.value)) return 0;
+        else data->currentNode = endIndex;
+
+        return 0;
+}
+
 
 DEFINE_EXECUTION_BEHAVIOUR(LOGIC_EQU) {
         stdRef opA = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
@@ -440,29 +457,6 @@ DEFINE_EXECUTION_BEHAVIOUR(SET_ACTIVE_PALETTE) {
         return 0;
 }
 
-DEFINE_EXECUTION_BEHAVIOUR(CORE_INIT) {
-        stdRef px = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
-        stdRef py = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 1));
-        stdRef tx = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 2));
-        stdRef ty = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 3));
-        stdRef cx = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 4));
-        stdRef cy = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 5));
-        uint8_t flags = *(uint8_t*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 6));
-
-        EVAL_STDREF(px);
-        EVAL_STDREF(py);
-        EVAL_STDREF(tx);
-        EVAL_STDREF(ty);
-        EVAL_STDREF(cx);
-        EVAL_STDREF(cy);
-
-        const char* title = (char*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 6) + sizeof(uint8_t));
-
-        nthp::core.init(nthp::RenderRuleSet(nthp::fixedToInt(px.value), nthp::fixedToInt(py.value), tx.value, ty.value, nthp::vectFixed(cx.value, cy.value)), title, (flags >> NTHP_CORE_INIT_FULLSCREEN) & 1, (flags >> NTHP_CORE_INIT_SOFTWARE_RENDERING) & 1);
-
-
-        return 0;
-}
 
 DEFINE_EXECUTION_BEHAVIOUR(FRAME_DEFINE) {
         stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
@@ -534,7 +528,7 @@ DEFINE_EXECUTION_BEHAVIOUR(SM_WRITE) {
         EVAL_STDREF(to);
         EVAL_STDREF(from);
 
-        nthp::script::stageMemory[nthp::fixedToInt(to.value)] = (uint8_t)nthp::fixedToInt(from.value);
+        nthp::script::stageMemory[nthp::fixedToInt(to.value)] = nthp::fixedToInt(from.value);
 
         return 0;
 }
@@ -666,6 +660,54 @@ DEFINE_EXECUTION_BEHAVIOUR(ENT_SETRENDERSIZE) {
         return 0;
 }
 
+
+DEFINE_EXECUTION_BEHAVIOUR(ENT_CHECKCOLLISION) {
+        stdRef entA = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+        stdRef entB = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+        indRef output = *(indRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
+        
+        EVAL_STDREF(entA);
+        EVAL_STDREF(entB);
+        if(PR_METADATA_GET(output, nthp::script::flagBits::IS_GLOBAL)) {
+                
+                data->globalVarSet[output.value] = nthp::intToFixed((int)nthp::entity::checkRectCollision(data->entityBlock[nthp::fixedToInt(entA.value)].getHitbox(), data->entityBlock[nthp::fixedToInt(entB.value)].getHitbox()));
+        }
+        else {
+                (*data->currentLocalMemory)[output.value] = nthp::intToFixed((int)nthp::entity::checkRectCollision(data->entityBlock[nthp::fixedToInt(entA.value)].getHitbox(), data->entityBlock[nthp::fixedToInt(entB.value)].getHitbox()));
+        }
+
+        return 0;
+}
+
+
+DEFINE_EXECUTION_BEHAVIOUR(CORE_INIT) {
+        if(nthp::core.getInitSuccess())
+                nthp::core.cleanup();
+
+        stdRef px = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+        stdRef py = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 1));
+        stdRef tx = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 2));
+        stdRef ty = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 3));
+        stdRef cx = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 4));
+        stdRef cy = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 5));
+        uint8_t flags = *(uint8_t*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 6));
+
+        EVAL_STDREF(px);
+        EVAL_STDREF(py);
+        EVAL_STDREF(tx);
+        EVAL_STDREF(ty);
+        EVAL_STDREF(cx);
+        EVAL_STDREF(cy);
+
+        const char* title = (char*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 6) + sizeof(uint8_t));
+
+        nthp::core.init(nthp::RenderRuleSet(nthp::fixedToInt(px.value), nthp::fixedToInt(py.value), tx.value, ty.value, nthp::vectFixed(cx.value, cy.value)), title, (flags >> NTHP_CORE_INIT_FULLSCREEN) & 1, (flags >> NTHP_CORE_INIT_SOFTWARE_RENDERING) & 1);
+
+
+        return 0;
+}
+
+
 DEFINE_EXECUTION_BEHAVIOUR(CORE_QRENDER) {
         stdRef entity = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
 
@@ -749,6 +791,14 @@ DEFINE_EXECUTION_BEHAVIOUR(CORE_MOVECAMERA) {
         return 0;
 }
 
+DEFINE_EXECUTION_BEHAVIOUR(CORE_STOP) {
+        nthp::core.stop();
+        data->isSuspended = true;
+        PRINT_DEBUG("Core SHUTDOWN call with CORE_STOP...\n");
+
+        return 0;
+}
+
 
 DEFINE_EXECUTION_BEHAVIOUR(ACTION_DEFINE) {
         stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
@@ -757,18 +807,19 @@ DEFINE_EXECUTION_BEHAVIOUR(ACTION_DEFINE) {
 
         data->actionList = new nthp::script::Script::Action[nthp::fixedToInt(size.value)];
         data->actionListSize = nthp::fixedToInt(size.value);
+
         return 0;
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(ACTION_BIND) {
-        stdRef output = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
-        indRef var = *(indRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
-        int key = *(int32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(indRef));
+        stdRef target = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+        uint32_t var = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+        int32_t key = *(int32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(uint32_t));
 
-        EVAL_STDREF(output);
+        EVAL_STDREF(target);
 
-        data->actionList[nthp::fixedToInt(output.value)].varIndex = var;  
-        data->actionList[nthp::fixedToInt(output.value)].boundKey = key;      
+        data->actionList[nthp::fixedToInt(target.value)].varIndex = var;  
+        data->actionList[nthp::fixedToInt(target.value)].boundKey = key;      
 
         return 0;
 }
@@ -776,6 +827,15 @@ DEFINE_EXECUTION_BEHAVIOUR(ACTION_BIND) {
 DEFINE_EXECUTION_BEHAVIOUR(ACTION_CLEAR) {
         delete[] data->actionList;
         data->actionListSize = 0;
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(STAGE_LOAD) {
+        data->changeStage = true;
+        // Copies new stage name into stage memory. 
+        memcpy(nthp::script::stageMemory, data->nodeSet[data->currentNode].access.data, data->nodeSet[data->currentNode].access.size);
+        data->isSuspended = true;
 
         return 0;
 }
@@ -877,7 +937,13 @@ int nthp::script::Script::import(const char* filename, ScriptDataSet* dataSet) {
 
 
 int nthp::script::Script::execute() {
-        data->isSuspended = false;
+
+        #ifdef DEBUG
+                data->isSuspended = nthp::script::debug::suspendExecution;
+                std::mutex debug_access;
+        #else
+                data->isSuspended = false;
+        #endif
 
         data->currentLocalMemory = &localVarSet;
         data->currentLabelBlock = localLabelBlock;
@@ -890,13 +956,60 @@ int nthp::script::Script::execute() {
                 data->globalVarSet = localVarSet;
         }
 
-        while(data->currentNode < nodeSet.size() && data->isSuspended == false) {
-                if(exec_func[nodeSet[data->currentNode].access.ID](data)) return 1;
+        #ifdef DEBUG
 
+        debug_access.lock();
+        if(nthp::script::debug::debugInstructionCall.x == nthp::script::debug::CONTINUE) {
+                nthp::script::debug::suspendExecution = false;
+                nthp::script::debug::debugInstructionCall.x = -1;
+        }
+        // Executes next instruction, then breaks.
+        if(nthp::script::debug::debugInstructionCall.x == nthp::script::debug::STEP) {
+                nthp::script::debug::suspendExecution = false;
+        }
+        debug_access.unlock();
+
+        #endif
+
+        while((data->currentNode < nodeSet.size()) && (data->isSuspended == false)) {
+#ifdef DEBUG
+                        debug_access.lock();
+                        switch(nthp::script::debug::debugInstructionCall.x) {
+                                case(nthp::script::debug::JUMP_TO):
+                                        data->currentNode = nthp::script::debug::debugInstructionCall.y;
+                                break;
+
+                                case(nthp::script::debug::BREAK):
+                                        nthp::script::debug::suspendExecution = true;
+                                        nthp::script::debug::debugInstructionCall.x = -1;
+                                        goto SKIP_EXECUTION;
+                                        break;
+
+                                case(nthp::script::debug::CONTINUE):
+                                        nthp::script::debug::suspendExecution = false;
+                                        nthp::script::debug::debugInstructionCall.x = -1;
+                                        break;
+                                
+                                case(nthp::script::debug::STEP):
+                                        // Executes the next instruction, and breaks the next tick.
+                                        nthp::script::debug::debugInstructionCall.x = nthp::script::debug::BREAK;
+                                        break;
+                                default:
+                                        break;
+
+                        }
+                        debug_access.unlock();
+#endif
+                if(exec_func[nodeSet[data->currentNode].access.ID](data)) return 1;
                 ++data->currentNode;
         }
         if(data->currentNode == nodeSet.size()) data->currentNode = 0;
 
+#ifdef DEBUG
+        SKIP_EXECUTION: // Using goto. Hail to the king, baby.
+#endif
+
+        
         localCurrentNode = data->currentNode;
 
         return 0;
@@ -915,7 +1028,11 @@ int nthp::script::Script::execute(uint32_t entryPoint) {
 nthp::script::Script::~Script() {
         if(localVarSetSize > 0)
                 delete[] localVarSet;
-        
+
+        // Make sure NOT to delete the localLabelBlock, as temping as it seems.
+        // it points to the HEADER node data, do it's  freed with the rest of the
+        // nodes. I write this because I made that mistake on Oct. 15, 2024.
+
         if(!inStageContext) {
                 delete data;
         }

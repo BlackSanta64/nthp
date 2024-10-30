@@ -17,7 +17,7 @@ namespace nthp {
 
 #ifndef FIXED_POINT_SCALE
                 // The fixed-point scale factor as a whole-number power of 2
-#define         FIXED_POINT_SCALE       6
+#define         FIXED_POINT_SCALE       12
 
 #endif
 
@@ -28,7 +28,7 @@ namespace nthp {
 
 
         // Size of a fixed point number in bits; Must be a standard width (8,16,32,64).
-#define         FIXED_POINT_WIDTH       32
+#define         FIXED_POINT_WIDTH       64
 
 #endif
 
@@ -99,8 +99,11 @@ namespace nthp {
                 // possible unit that can be accurately represented by the number. Incrementing a fixed_t will result in an
                 // increase of the fixed representation by EPSILON.
                 // If EPSILON = 0.000000533, then
-                // fixed_t++ = (fixed_t + 0.000000533)
+                // fixed_t++ = (fixed_t + 0.000000533).
                 constexpr double FIXED_EPSILON = nthp::fixedToDouble(1);
+
+                // Fast, non-iterative approximation of the scale factor's square root.
+                // Is 100% accurate with even-exponent scale factors. Required for the f_sqrt() function.
                 constexpr FIXED_TYPE sqrt_eval = (1 << (FIXED_POINT_SCALE / 2));
         }
 

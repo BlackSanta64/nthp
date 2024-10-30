@@ -9,15 +9,44 @@
 namespace nthp { 
 namespace script {
 
-        extern uint8_t stageMemory[255];
+                #define STAGEMEM_MAX 255
+
+        extern char stageMemory[STAGEMEM_MAX];
+
+
+        namespace debug {
+        #ifdef DEBUG
+                extern nthp::vectGeneric debugInstructionCall; // Interface with the project manager debug system. x = instruction y = data
+                extern bool suspendExecution;
+                extern int currentExecutionPhase;
+
+                typedef enum {
+                        BREAK,
+                        CONTINUE,
+                        JUMP_TO,
+                        STEP,
+                        NEXT_PHASE
+                } DEBUG_CALLS;
+
+
+                typedef enum {
+                        INIT,
+                        TICK,
+                        LOGIC,
+                        EXIT
+                } EXEC_PHASE;
+        #endif
+        }
+
         extern nthp::texture::Palette activePalette;
 
         class Script {
         public:
 
                 struct Action {
-                        nthp::script::instructions::indRef varIndex;
-                        int boundKey = SDLK_UNKNOWN;
+                        Action() { varIndex = 0; boundKey = SDLK_UNKNOWN; }
+                        uint32_t varIndex;
+                        int boundKey;
                 };
 
         struct ScriptDataSet {
@@ -55,7 +84,7 @@ namespace script {
                         size_t  actionListSize;
 
 
-                        bool isSuspended;
+                        bool isSuspended, changeStage;
 
                 };
 

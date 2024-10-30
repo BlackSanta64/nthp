@@ -29,6 +29,7 @@ namespace nthp {
                 void handleEvents();
                 void handleEvents(void (*handler)(SDL_Event*));
 
+
                 int render(nthp::RenderPacket packet);
                 void clear();
                 void display();
@@ -45,7 +46,9 @@ namespace nthp {
                 inline SDL_Window* getWindow() { return window; }
                 inline SDL_Renderer* getRenderer() { return renderer; }
 
+                inline bool getInitSuccess() { return initSuccess; }
 
+                int cleanup();
 
                 ~EngineCore();
         private:
@@ -53,6 +56,7 @@ namespace nthp {
                 SDL_Renderer* renderer;
         
                 bool running;
+                bool initSuccess;
 
         };
 

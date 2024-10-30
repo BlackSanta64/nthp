@@ -17,7 +17,6 @@ namespace nthp {
                         // Is not an execution trigger; highlights the end of the compiled stage file.
                         #define TRIG_END        0b111
 
-                        extern uint8_t stagemMemory[UINT8_MAX];
 
 
                         struct scriptConfig {
@@ -54,10 +53,14 @@ namespace nthp {
                                 int exit();
                                 int logic();
 
+                                // Uses the global core to parse script actions.
+                                // Global core must exist for this to work. The core doesn't have to be
+                                // initialized.
+                                void handleEvents();
                                 
 
                                 nthp::script::Script& getScript(size_t index) { return scriptBlock[index]; }
-                                const nthp::script::Script::ScriptDataSet& getStageDataSet() { return data; }
+                                nthp::script::Script::ScriptDataSet data;
 
 
                                 ~Stage();
@@ -71,7 +74,7 @@ namespace nthp {
                                 std::vector<uint32_t> exitList;
                                 std::vector<uint32_t> initList;
 
-                                nthp::script::Script::ScriptDataSet data;
+                                
                                 
 
                                 uint32_t globalMemBudget;

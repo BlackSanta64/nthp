@@ -5,6 +5,7 @@
 #include "s_compiler.hpp"
 using namespace nthp::script::instructions;
 
+
 // I love this
 #define DEFINE_COMPILATION_BEHAVIOUR(instruction) int instruction (std::vector<nthp::script::Node>& nodeList,\
                                                                         std::fstream& file,\
@@ -31,6 +32,11 @@ using namespace nthp::script::instructions;
         else nodeList[currentNode].access.data = nullptr
 
 #define VECT_END(vect) vect.size() - 1
+
+bool skipInstructionCheck = false;
+
+
+
 
 #ifdef DEBUG
 
@@ -155,7 +161,7 @@ int EvaluateSymbol(std::fstream& file, std::string& expression, std::vector<nthp
 
 // Substitues a VAR reference or parses numeral references (for compatibility)
 nthp::script::instructions::stdRef EvaluateReference(std::string expression, std::vector<nthp::script::CompilerInstance::VAR_DEF>& varList, std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>& globalList, bool buildSystemContext) {
-        nthp::script::P_Reference<nthp::fixed_t> ref;
+        stdRef ref;
         ref.metadata = 0;
 
         if(expression[0] == '$') {
@@ -695,11 +701,10 @@ DEFINE_COMPILATION_BEHAVIOUR(END) {
 
 DEFINE_COMPILATION_BEHAVIOUR(IF) {
 
-        nthp::script::instructions::stdRef static_opA;
         nthp::script::instructions::stdRef static_opB;
 
         EVAL_SYMBOL();
-        static_opA = EVAL_PREF();
+        auto static_opA = EVAL_PREF();
         CHECK_REF(static_opA);
 
         // God this is wonderful. I love C++
@@ -728,8 +733,25 @@ DEFINE_COMPILATION_BEHAVIOUR(IF) {
                 ADD_NODE(LOGIC_LSTE);
         }
         else {
-                PRINT_COMPILER_ERROR("Invalid Comparison Operator [%s]; Valid operators: EQU, NOT, GRT, LST, GRTE, LSTE\n", fileRead.c_str());
-                return 1;
+                // Completely different compiler behaviour if using the BNE instruction.
+                // opA is the only data parsed here.
+                
+                
+                // Because opA is the only argument, EXPRESSION currently is the next instruction after the IF.
+                // This will make sure the next argument is NOT read at the start of the next pass.
+
+
+                ADD_NODE(LOGIC_IF_TRUE);
+                skipInstructionCheck = true;
+
+
+                ifList.push_back(currentNode);
+                nthp::script::instructions::stdRef* opA = (decltype(opA))(nodeList[currentNode].access.data);
+
+                *opA = static_opA;
+
+                PRINT_NODEDATA();
+                return 0;
         }
 
         EVAL_SYMBOL();
@@ -963,85 +985,6 @@ DEFINE_COMPILATION_BEHAVIOUR(SET_ACTIVE_PALETTE) {
 }
 
 
-DEFINE_COMPILATION_BEHAVIOUR(CORE_INIT) {
-
-        
-
-        EVAL_SYMBOL();
-        auto spx = EVAL_PREF();
-        CHECK_REF(spx);
-
-        EVAL_SYMBOL();
-        auto spy = EVAL_PREF();
-        CHECK_REF(spy);
-
-        EVAL_SYMBOL();
-        auto stx = EVAL_PREF();
-        CHECK_REF(stx);
-
-        EVAL_SYMBOL();
-        auto sty = EVAL_PREF();
-        CHECK_REF(sty);
-
-        EVAL_SYMBOL();
-        auto scx = EVAL_PREF();
-        CHECK_REF(scx);
-
-        EVAL_SYMBOL();
-        auto scy = EVAL_PREF();
-        CHECK_REF(scy);
-
-
-        EVAL_SYMBOL();
-        uint8_t initFlags = 0;
-        try {
-                unsigned int fullscreen = std::stoul(fileRead);
-                if(fullscreen > 0) fullscreen = 1;
-                
-                EVAL_SYMBOL();
-                unsigned int softwareRender = std::stoul(fileRead);
-                if(softwareRender > 0) softwareRender = 1;
-
-                initFlags |= (fullscreen << ((int)NTHP_CORE_INIT_FULLSCREEN));
-                initFlags |= (softwareRender << ((int)NTHP_CORE_INIT_SOFTWARE_RENDERING));
-                
-        }
-        catch(std::invalid_argument) {
-                PRINT_COMPILER_ERROR("Unable to evaluate boolean [%s]; Invalid Argument.\n", fileRead.c_str());
-                return 1;
-        }
-
-        EVAL_SYMBOL();
-        std::string title = fileRead;
-
-        ADD_NODE(CORE_INIT);
-        nodeList[currentNode].access.size = (sizeof(stdRef) * 6) + sizeof(uint8_t) + title.size() + 1;
-        nodeList[currentNode].access.data = (char*)malloc(nodeList[currentNode].access.size);
-
-// px py tx ty cx cy fs sr title
-        nthp::script::instructions::stdRef* px = (decltype(px))(nodeList[currentNode].access.data);
-        nthp::script::instructions::stdRef* py = (decltype(py))(nodeList[currentNode].access.data + sizeof(stdRef));
-        nthp::script::instructions::stdRef* tx = (decltype(tx))(nodeList[currentNode].access.data + (sizeof(stdRef) * 2));
-        nthp::script::instructions::stdRef* ty = (decltype(ty))(nodeList[currentNode].access.data + (sizeof(stdRef) * 3));
-        nthp::script::instructions::stdRef* cx = (decltype(cx))(nodeList[currentNode].access.data + (sizeof(stdRef) * 4));
-        nthp::script::instructions::stdRef* cy = (decltype(cy))(nodeList[currentNode].access.data + (sizeof(stdRef) * 5));
-        uint8_t* flags = (decltype(flags))(nodeList[currentNode].access.data + (sizeof(stdRef) * 6));
-
-        memcpy(nodeList[currentNode].access.data + ((sizeof(stdRef) * 6) + sizeof(uint8_t)), title.c_str(), title.size());
-        nodeList[currentNode].access.data[((sizeof(stdRef) * 6) + sizeof(uint8_t) + title.size())] = '\000';
-
-        *px = spx;
-        *py = spy;
-        *tx = stx;
-        *ty = sty;
-        *cx = scx;
-        *cy = scy;
-        *flags = initFlags;
-
-
-        PRINT_NODEDATA();
-        return 0;
-}
 
 DEFINE_COMPILATION_BEHAVIOUR(FRAME_DEFINE) {
         ADD_NODE(FRAME_DEFINE);
@@ -1405,6 +1348,122 @@ DEFINE_COMPILATION_BEHAVIOUR(ENT_SETRENDERSIZE) {
 }
 
 
+DEFINE_COMPILATION_BEHAVIOUR(ENT_CHECKCOLLISION) {
+        ADD_NODE(ENT_CHECKCOLLISION);
+
+        EVAL_SYMBOL();
+        auto ent_a = EVAL_PREF();
+        CHECK_REF(ent_a);
+
+        EVAL_SYMBOL();
+        auto ent_b = EVAL_PREF();
+        CHECK_REF(ent_b);
+
+        EVAL_SYMBOL();
+        auto _output = EVAL_PREF();
+        CHECK_REF(_output);
+
+
+        if(!PR_METADATA_GET(_output, nthp::script::flagBits::IS_REFERENCE)) {
+                PRINT_COMPILER_ERROR("Last argument of ENT_CHECKCOLLISION invalid. (syn. ENT_CHECKCOLLISION entA entB outputVar)\n");
+                return 1;
+        }
+
+        stdRef* enta = (stdRef*)(nodeList[currentNode].access.data);
+        stdRef* entb = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
+        indRef* output = (indRef*)(nodeList[currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
+
+        *enta = ent_a;
+        *entb = ent_b;
+        output->value = nthp::fixedToInt(_output.value);
+        output->metadata = _output.metadata;
+
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(CORE_INIT) {
+
+        
+
+        EVAL_SYMBOL();
+        auto spx = EVAL_PREF();
+        CHECK_REF(spx);
+
+        EVAL_SYMBOL();
+        auto spy = EVAL_PREF();
+        CHECK_REF(spy);
+
+        EVAL_SYMBOL();
+        auto stx = EVAL_PREF();
+        CHECK_REF(stx);
+
+        EVAL_SYMBOL();
+        auto sty = EVAL_PREF();
+        CHECK_REF(sty);
+
+        EVAL_SYMBOL();
+        auto scx = EVAL_PREF();
+        CHECK_REF(scx);
+
+        EVAL_SYMBOL();
+        auto scy = EVAL_PREF();
+        CHECK_REF(scy);
+
+
+        EVAL_SYMBOL();
+        uint8_t initFlags = 0;
+        try {
+                unsigned int fullscreen = std::stoul(fileRead);
+                if(fullscreen > 0) fullscreen = 1;
+                
+                EVAL_SYMBOL();
+                unsigned int softwareRender = std::stoul(fileRead);
+                if(softwareRender > 0) softwareRender = 1;
+
+                initFlags |= (fullscreen << ((int)NTHP_CORE_INIT_FULLSCREEN));
+                initFlags |= (softwareRender << ((int)NTHP_CORE_INIT_SOFTWARE_RENDERING));
+                
+        }
+        catch(std::invalid_argument) {
+                PRINT_COMPILER_ERROR("Unable to evaluate boolean [%s]; Invalid Argument.\n", fileRead.c_str());
+                return 1;
+        }
+
+        EVAL_SYMBOL();
+        std::string title = fileRead;
+
+        ADD_NODE(CORE_INIT);
+        nodeList[currentNode].access.size = (sizeof(stdRef) * 6) + sizeof(uint8_t) + title.size() + 1;
+        nodeList[currentNode].access.data = (char*)malloc(nodeList[currentNode].access.size);
+
+// px py tx ty cx cy fs sr title
+        nthp::script::instructions::stdRef* px = (decltype(px))(nodeList[currentNode].access.data);
+        nthp::script::instructions::stdRef* py = (decltype(py))(nodeList[currentNode].access.data + sizeof(stdRef));
+        nthp::script::instructions::stdRef* tx = (decltype(tx))(nodeList[currentNode].access.data + (sizeof(stdRef) * 2));
+        nthp::script::instructions::stdRef* ty = (decltype(ty))(nodeList[currentNode].access.data + (sizeof(stdRef) * 3));
+        nthp::script::instructions::stdRef* cx = (decltype(cx))(nodeList[currentNode].access.data + (sizeof(stdRef) * 4));
+        nthp::script::instructions::stdRef* cy = (decltype(cy))(nodeList[currentNode].access.data + (sizeof(stdRef) * 5));
+        uint8_t* flags = (decltype(flags))(nodeList[currentNode].access.data + (sizeof(stdRef) * 6));
+
+        memcpy(nodeList[currentNode].access.data + ((sizeof(stdRef) * 6) + sizeof(uint8_t)), title.c_str(), title.size());
+        nodeList[currentNode].access.data[((sizeof(stdRef) * 6) + sizeof(uint8_t) + title.size())] = '\000';
+
+        *px = spx;
+        *py = spy;
+        *tx = stx;
+        *ty = sty;
+        *cx = scx;
+        *cy = scy;
+        *flags = initFlags;
+
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
 DEFINE_COMPILATION_BEHAVIOUR(CORE_QRENDER) {
         ADD_NODE(CORE_QRENDER);
 
@@ -1579,8 +1638,8 @@ DEFINE_COMPILATION_BEHAVIOUR(ACTION_BIND) {
         ADD_NODE(ACTION_BIND);
 
         EVAL_SYMBOL();
-        auto output = EVAL_PREF();
-        CHECK_REF(output);
+        auto target = EVAL_PREF();
+        CHECK_REF(target);
 
         EVAL_SYMBOL();
         auto var = EVAL_PREF(); // Global to bind it to.
@@ -1594,15 +1653,22 @@ DEFINE_COMPILATION_BEHAVIOUR(ACTION_BIND) {
         EVAL_SYMBOL();
         int32_t key = fileRead[0]; // should correspond to keycode. idk _
 
-        stdRef* _output = (stdRef*)(nodeList[currentNode].access.data);
-        indRef* _varIndex = (indRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
-        int32_t* _key = (int32_t*)(nodeList[currentNode].access.data + sizeof(stdRef) + sizeof(indRef));
+        do {
+                if(fileRead == "ESCAPE")        { key = SDLK_ESCAPE; break; }
+                if(fileRead == "TAB")           { key = SDLK_TAB; break; }
+                if(fileRead == "RSHIFT")        { key = SDLK_RSHIFT; break; }
+                if(fileRead == "LSHIFT")        { key = SDLK_LSHIFT; break; }
+                if(fileRead == "RCTRL")         { key = SDLK_RCTRL; break; }
+                if(fileRead == "LCTRL")         { key = SDLK_LCTRL; break; }
+                if(fileRead == "RETURN")        { key = SDLK_RETURN; break; }
+        } while(0);
 
-        *_output = output;
+        stdRef* _target = (stdRef*)(nodeList[currentNode].access.data);
+        uint32_t* _varIndex = (uint32_t*)(nodeList[currentNode].access.data + sizeof(stdRef));
+        int32_t* _key = (int32_t*)(nodeList[currentNode].access.data + sizeof(stdRef) + sizeof(uint32_t));
 
-        _varIndex->value = (int32_t)var.value;
-        _varIndex->metadata = var.metadata;
-
+        *_target = target;
+        *_varIndex = (uint32_t)nthp::fixedToInt(var.value);
         *_key = key;
 
 
@@ -1610,7 +1676,27 @@ DEFINE_COMPILATION_BEHAVIOUR(ACTION_BIND) {
         return 0;
 }
 
+DEFINE_COMPILATION_BEHAVIOUR(CORE_STOP) {
+        ADD_NODE(CORE_STOP);
 
+        PRINT_NODEDATA();
+        return 0;
+}
+
+DEFINE_COMPILATION_BEHAVIOUR(STAGE_LOAD) {
+        ADD_NODE(STAGE_LOAD);
+
+        EVAL_SYMBOL();
+        std::string stageName = fileRead;
+        nodeList[currentNode].access.size = stageName.size() + 1;
+        nodeList[currentNode].access.data = (char*)malloc(nodeList[currentNode].access.size);
+
+        memcpy(nodeList[currentNode].access.data, stageName.c_str(), stageName.size());
+        nodeList[currentNode].access.data[stageName.size()] = '\000';
+
+        PRINT_NODEDATA();
+        return 0;
+}
 
 
 
@@ -1645,7 +1731,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
         size_t globalAlloc = 0;
 
 
-
+        
         std::vector<size_t> ifLocations;
         std::vector<size_t> endLocations;
 
@@ -1675,8 +1761,15 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
         while(operationOngoing) {
                 COMP_START:
 
+                if(skipInstructionCheck) {
+                        PRINT_COMPILER_WARNING("Skipping EVAL this pass...\n");
 
-                EVAL_SYMBOL();
+                        skipInstructionCheck = false;
+                }
+                else {
+                        EVAL_SYMBOL();
+                }
+
                 if(fileRead == "/") { // Keep cycling arguments until another / is read (for comments)
                        do { EVAL_SYMBOL(); } while(fileRead != "/");
                        continue;
@@ -1992,6 +2085,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                 CHECK_COMP(ENT_SETHITBOXSIZE);
                 CHECK_COMP(ENT_SETHITBOXOFFSET);
                 CHECK_COMP(ENT_SETRENDERSIZE);
+                CHECK_COMP(ENT_CHECKCOLLISION);
 
                 CHECK_COMP(CORE_INIT);
                 CHECK_COMP(CORE_QRENDER);
@@ -2003,12 +2097,14 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                 CHECK_COMP(CORE_SETCAMERARES);
                 CHECK_COMP(CORE_SETCAMERAPOSITION);
                 CHECK_COMP(CORE_MOVECAMERA);
+                CHECK_COMP(CORE_STOP);
 
                 CHECK_COMP(ACTION_BIND);
                 CHECK_COMP(ACTION_DEFINE);
                 CHECK_COMP(ACTION_CLEAR);
 
-                
+                CHECK_COMP(STAGE_LOAD);
+
         }
 
         NOVERB_PRINT_COMPILER("\tSuccessfully compiled source file [%s].\n", inputFile);
@@ -2060,7 +2156,8 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 				nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_GRT ||
 				nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_LST ||
 				nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_GRTE ||
-			        nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_LSTE
+			        nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_LSTE ||
+                                nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_IF_TRUE
 			        ) {
 			numberOfIfsFound++;
 		}
@@ -2073,8 +2170,13 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                 // Important, not a mistake. Don't go blaming this 3 months from now.
                 --finalEndIndex;
-                // Assigns the pointer to the last 4 bytes of the node to store the end index.
-		endIndex = (uint32_t*)(nodeList[ifLocations[i]].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(nthp::script::instructions::stdRef));
+                // Assigns the pointer to the last 4 bytes of the node to store the end index (Unless a BNE instruction).
+                if(nodeList[ifLocations[i]].access.ID == nthp::script::instructions::ID::LOGIC_IF_TRUE) {
+                        endIndex = (uint32_t*)(nodeList[ifLocations[i]].access.data + sizeof(nthp::script::instructions::stdRef));
+                }
+                else {
+		        endIndex = (uint32_t*)(nodeList[ifLocations[i]].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(nthp::script::instructions::stdRef));
+                }
 
                 NOVERB_PRINT_COMPILER("Matched IF to END at [%u].\n", finalEndIndex);
 

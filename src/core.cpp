@@ -2,38 +2,43 @@
 
 
 
-
 nthp::EngineCore::EngineCore(nthp::RenderRuleSet settings, const char* title, bool fullscreen, bool softwareRendering) {
         window = nullptr;
         renderer = nullptr;
         running = false;
+        initSuccess = false;
 
         if(this->init(settings, title, fullscreen, softwareRendering)) { }
 }
 
 int nthp::EngineCore::init(nthp::RenderRuleSet settings, const char* title, bool fullscreen, bool softwareRendering) {
-                p_coreDisplay = settings;
+        p_coreDisplay = settings;
 
-        PRINT_DEBUG("Initializing SDL binaries...\t");
+        // If already initialized, skip the init.
+        if(!initSuccess) {
+                PRINT_DEBUG("Initializing SDL binaries...\t");
 
-        auto flags = SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER;
-        int fullscreenFlag = 0;
-        if(SDL_Init(flags) != 0) {
-                FATAL_PRINT(nthp::FATAL_ERROR::SDL_Failure, SDL_GetError());
+                auto flags = SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER;
+                
+                if(SDL_Init(flags) != 0) {
+                        FATAL_PRINT(nthp::FATAL_ERROR::SDL_Failure, SDL_GetError());
+                }
+
+        #if USE_SDLIMG == 1
+                auto imgFlags = IMG_INIT_JPG | IMG_INIT_PNG;
+
+                if(IMG_Init(imgFlags) != imgFlags) {
+                        FATAL_PRINT(nthp::FATAL_ERROR::SDL_Failure, SDL_GetError());
+                }
+        #endif
+                NOVERB_PRINT_DEBUG("done.\n");
         }
+        PRINT_DEBUG("Setting up window and renderer...\t");
+
+        int fullscreenFlag = 0;
         if(fullscreen) {
                 fullscreenFlag = SDL_WINDOW_FULLSCREEN;
         }
-
-#if USE_SDLIMG == 1
-        auto imgFlags = IMG_INIT_JPG | IMG_INIT_PNG;
-
-        if(IMG_Init(imgFlags) != imgFlags) {
-                FATAL_PRINT(nthp::FATAL_ERROR::SDL_Failure, SDL_GetError());
-        }
-#endif
-        NOVERB_PRINT_DEBUG("done.\n");
-        PRINT_DEBUG("Setting up window and renderer...\t");
 
         window = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, p_coreDisplay.pxlResolution_x, p_coreDisplay.pxlResolution_y, fullscreenFlag);
         if(window == NULL) {
@@ -65,6 +70,9 @@ int nthp::EngineCore::init(nthp::RenderRuleSet settings, const char* title, bool
 		SDL_GetRendererOutputSize(renderer, &w, &h);
 		p_coreDisplay = nthp::RenderRuleSet(w, h, settings.tunitResolution_x, settings.tunitResolution_y, settings.cameraWorldPosition);
 	}
+
+
+        initSuccess = true;
         NOVERB_PRINT_DEBUG("done.\n\n");
 
         return 0;
@@ -74,7 +82,7 @@ int nthp::EngineCore::init(nthp::RenderRuleSet settings, const char* title, bool
 void nthp::EngineCore::handleEvents() {
         int x,y;
         SDL_GetMouseState(&x, &y);
-        nthp::mousePosition = nthp::generateWorldPosition(nthp::vectGen(x, y), &p_coreDisplay);
+        nthp::mousePosition = nthp::generateWorldPosition(nthp::vectGeneric(x, y), &p_coreDisplay);
         nthp::mousePosition -= p_coreDisplay.cameraWorldPosition;
 
         while(SDL_PollEvent(&eventList)) {
@@ -89,7 +97,7 @@ void nthp::EngineCore::handleEvents() {
 void nthp::EngineCore::handleEvents(void (*handler)(SDL_Event*)) {
         int x,y;
         SDL_GetMouseState(&x, &y);
-        nthp::mousePosition = nthp::generateWorldPosition(nthp::vectGen(x, y), &p_coreDisplay);
+        nthp::mousePosition = nthp::generateWorldPosition(nthp::vectGeneric(x, y), &p_coreDisplay);
         nthp::mousePosition -= p_coreDisplay.cameraWorldPosition;
 
         while(SDL_PollEvent(&eventList)) {
@@ -97,13 +105,13 @@ void nthp::EngineCore::handleEvents(void (*handler)(SDL_Event*)) {
                 case SDL_QUIT:
                         running = false;
                         break;
-
                 default:
                         handler(&eventList);
                         break;
                 }
         }
 }
+
 
 
 
@@ -124,7 +132,7 @@ int nthp::EngineCore::render(nthp::RenderPacket packet) {
         switch(packet.state) {
                 case nthp::RenderPacket::C_OPERATE::VALID:
                         {
-                                vectGen offset = nthp::generatePixelPosition(nthp::worldPosition(p_coreDisplay.cameraWorldPosition.x, p_coreDisplay.cameraWorldPosition.y), &p_coreDisplay);
+                                vectGeneric offset = nthp::generatePixelPosition(nthp::worldPosition(p_coreDisplay.cameraWorldPosition.x, p_coreDisplay.cameraWorldPosition.y), &p_coreDisplay);
                                 packet.dstRect.x += offset.x;
                                 packet.dstRect.y += offset.y;
                                 return SDL_RenderCopy(renderer, packet.texture, packet.srcRect, &packet.dstRect);
@@ -188,18 +196,26 @@ void nthp::EngineCore::setVirtualRenderScale(nthp::fixed_t x, nthp::fixed_t y) {
 
 
 
-nthp::EngineCore::~EngineCore() {
+int nthp::EngineCore::cleanup() {
         PRINT_DEBUG("Destroying Core and cleaning up...  ");
 
         SDL_DestroyWindow(window);
         SDL_DestroyRenderer(renderer);
 
+        NOVERB_PRINT_DEBUG("done.\n");
+
+        return 0;
+}
+
+nthp::EngineCore::~EngineCore() {
+        cleanup();
+
         SDL_Quit();
 #if USE_SDLIMG == 1
         IMG_Quit();
 #endif
-        NOVERB_PRINT_DEBUG("done.\n");
 
+        initSuccess = false;
 
 #ifdef DEBUG
         NTHP_GEN_DEBUG_CLOSE();

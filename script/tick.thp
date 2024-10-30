@@ -1,15 +1,45 @@
+DEPEND #CONTEXT_MAINPROG
+
 VAR inc
+VAR collisionReg
+CONST cameraSpeed 1
+CONST -cameraSpeed -1
 
 INC $inc
 IF $inc GRT 254
         SET $inc 0
 END
 
+IF >upKey
+        ENT_MOVE #e_tux 0 #-cameraSpeed
+END
+
+IF >downKey
+        ENT_MOVE #e_tux 0 #cameraSpeed
+END
+
+IF >leftKey
+        ENT_MOVE #e_tux #-cameraSpeed 0
+END
+
+IF >rightKey
+        ENT_MOVE #e_tux #cameraSpeed 0
+END
+
+IF >exitKey
+        CORE_STOP
+END
+
+
+
+ENT_MOVE #e_tux 0.1 0
+
+
 SM_WRITE 1 $inc
 CORE_CLEAR
 
 CORE_QRENDER #e_tux
-CORE_ABS_QRENDER #e_absTux
+CORE_QRENDER #e_absTux
 
 
 CORE_DISPLAY
