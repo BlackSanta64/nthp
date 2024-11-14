@@ -19,7 +19,6 @@ nthp::texture::Palette nthp::script::activePalette;
 #ifdef DEBUG
         nthp::vectGeneric nthp::script::debug::debugInstructionCall = nthp::vectGeneric(-1, -1);
         bool nthp::script::debug::suspendExecution = false;
-        int nthp::script::debug::currentExecutionPhase = 0;
 #endif
 
 DEFINE_EXECUTION_BEHAVIOUR(EXIT) {
@@ -959,14 +958,25 @@ int nthp::script::Script::execute() {
         #ifdef DEBUG
 
         debug_access.lock();
-        if(nthp::script::debug::debugInstructionCall.x == nthp::script::debug::CONTINUE) {
-                nthp::script::debug::suspendExecution = false;
-                nthp::script::debug::debugInstructionCall.x = -1;
-        }
-        // Executes next instruction, then breaks.
-        if(nthp::script::debug::debugInstructionCall.x == nthp::script::debug::STEP) {
-                nthp::script::debug::suspendExecution = false;
-        }
+                switch(nthp::script::debug::debugInstructionCall.x) {
+                        case nthp::script::debug::CONTINUE: {
+                                nthp::script::debug::suspendExecution = false;
+                                nthp::script::debug::debugInstructionCall.x = -1;
+                        }
+                                break;
+                        // Executes next instruction, then breaks.
+                        case nthp::script::debug::STEP: {
+                                nthp::script::debug::suspendExecution = false;
+                        }
+                        case(nthp::script::debug::JUMP_TO): {
+                                data->currentNode = nthp::script::debug::debugInstructionCall.y;
+                                localCurrentNode = nthp::script::debug::debugInstructionCall.y;
+                        }
+                                break;
+
+                        default:
+                                break;
+                }
         debug_access.unlock();
 
         #endif
@@ -977,6 +987,7 @@ int nthp::script::Script::execute() {
                         switch(nthp::script::debug::debugInstructionCall.x) {
                                 case(nthp::script::debug::JUMP_TO):
                                         data->currentNode = nthp::script::debug::debugInstructionCall.y;
+                                        localCurrentNode = nthp::script::debug::debugInstructionCall.y;
                                 break;
 
                                 case(nthp::script::debug::BREAK):

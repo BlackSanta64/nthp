@@ -13,7 +13,6 @@ bool u,d,l,r,inc,dec;
 nthp::EngineCore nthp::core;
 
 nthp::script::stage::Stage currentStage;
-std::string stageFile_load_name;
 
 int nthp::runtimeBehaviour(int argv, char** argc) {
         // The DEBUG_INIT is called at the start of main, and DEBUG_CLOSE
@@ -32,7 +31,7 @@ int nthp::runtimeBehaviour(int argv, char** argc) {
                                         outputName = argc[2];
                                         outputName += ".cstg";
                                         nthp::script::CompilerInstance comp;
-                                        comp.compileStageConfig(argc[2], outputName.c_str(), false);
+                                        comp.compileStageConfig(argc[2], outputName.c_str(), false, false);
                                 }
                                 init = outputName;
                         }

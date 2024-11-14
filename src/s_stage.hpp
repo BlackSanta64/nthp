@@ -3,10 +3,14 @@
 #include "s_script.hpp"
 
 
+
 namespace nthp {
         namespace script {
                 namespace stage {
-                        
+                        #ifdef PM
+                                extern int currentStagePhase;
+                        #endif
+
                         // Trigger IDs; 3 identifier bits.
                         #define TRIG_INIT      0b000
                         #define TRIG_EXIT       0b001
@@ -16,6 +20,8 @@ namespace nthp {
 
                         // Is not an execution trigger; highlights the end of the compiled stage file.
                         #define TRIG_END        0b111
+
+
 
 
 

@@ -59,6 +59,7 @@
                 extern void PRINT_DEBUG_ERROR           (const char* format, ...);
                 extern void PRINT_DEBUG_WARNING         (const char* format, ...);
 
+
                 #else
         // All arguments are substituted out when DEBUG is not defined.
         // The debug build config defines DEBUG in all translation units, but all

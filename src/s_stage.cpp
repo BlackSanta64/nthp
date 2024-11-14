@@ -1,5 +1,7 @@
 #include "s_stage.hpp"
-
+#ifdef PM
+        int nthp::script::stage::currentStagePhase = 0;
+#endif
 
 nthp::script::stage::Stage::Stage() {
         memset(&data, 0, sizeof(nthp::script::Script::ScriptDataSet));

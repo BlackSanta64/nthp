@@ -12,6 +12,12 @@ GLOBAL leftKey
 GLOBAL rightKey
 GLOBAL exitKey
 
+GLOBAL MovementSpeed_Pos
+GLOBAL MovementSpeed_Neg
+
+SET >MovementSpeed_Neg -1
+SET >MovementSpeed_Pos 1
+
 
 VAR returnRegister
 

@@ -10,6 +10,7 @@
 
 nthp::EngineCore nthp::core;
 nthp::script::stage::Stage currentStage;
+nthp::script::CompilerInstance symbolData;
 
 bool debuggingActiveProcess = false;
 bool suspendExecution = false;
@@ -128,7 +129,7 @@ int main(int argv, char** argc) {
                         debugOutput = argc[2];
                 }
                 else {
-                        debugOutput = "stdout";
+                        debugOutput = "debug.log";
                 }
         }
         else {
@@ -227,7 +228,7 @@ int headless_runtime() {
 						continue;
 					}
 					
-					if(!cc.compileSourceFile(args[2].c_str(), args[3].c_str(), false)) {
+					if(!cc.compileSourceFile(args[2].c_str(), args[3].c_str(), false, false)) {
 					        PM_PRINT("Script, Done. %s > %s\n", args[2].c_str(), args[3].c_str());
                                         }
 					continue;
@@ -240,7 +241,7 @@ int headless_runtime() {
 						continue;
 					}
                                         if(args[2] == "-f") { forceBuild = true; sizeTarget = 1; }
-					if(!cc.compileStageConfig(args[2 + sizeTarget].c_str(), args[3 + sizeTarget].c_str(), forceBuild)) {
+					if(!cc.compileStageConfig(args[2 + sizeTarget].c_str(), args[3 + sizeTarget].c_str(), forceBuild, false)) {
 					        PM_PRINT("Stage, Done. %s > %s\n", args[2 + sizeTarget].c_str(), args[3 + sizeTarget].c_str());
                                         }
 					continue;
@@ -350,6 +351,22 @@ int headless_runtime() {
 
                                 }
 
+
+                                // Compiles a stage/source file and saves compiler definitions.
+                                // i.e. reads symbols for debugging. Note that a different stage file can be used for symbols
+                                // than the current debug target. Why you'd want to do that I have no idea.
+                                if(args[0] == "import") {
+                                        if(args.size() < 3) { PM_PRINT("Invalid arguments. syn; import src/stg sourcefile/stageconfig"); continue; }
+                                        if(args[1] == "src") {
+                                                if(symbolData.compileSourceFile(args[2].c_str(), NULL, false, true)) PM_PRINT("ERROR!!!\n");
+                                                PM_PRINT("Imported [%zu] symbols from source file [%s].\n", symbolData.globalList.size() + symbolData.macroList.size() + symbolData.varList.size() + symbolData.constantList.size(), args[2].c_str());
+                                        }
+                                        if(args[1] == "stg") {
+                                                if(symbolData.compileStageConfig(args[2].c_str(), NULL, false, true)) PM_PRINT("ERROR!!!\n");
+                                                PM_PRINT("Imported [%zu] symbols from stage file [%s].\n", symbolData.globalList.size() + symbolData.macroList.size() + symbolData.constantList.size(), args[2].c_str());
+                                        }
+                                }
+
                                 if(args[0] == "jump" || args[0] == "j") {
                                         g_access.lock();
 
@@ -365,7 +382,7 @@ int headless_runtime() {
                                                 continue;
                                         }
 
-                                        PM_PRINT("Continuing from instruction [%zu]; HEAD at [%zu].\n", currentStage.data.currentNode, currentStage.data.currentNode);
+                                        PM_PRINT("Continuing from instruction [%d]; HEAD at [%d].\n", std::stoi(args[1]), std::stoi(args[1]));
                                         g_access.unlock();
                                 }
 
@@ -381,6 +398,60 @@ int headless_runtime() {
                                         nthp::script::debug::debugInstructionCall.x = nthp::script::debug::STEP;
                                         PM_PRINT("Stepping to next instruction [%zu], [%zu] -> [%zu]\n", currentStage.data.currentNode + 1, currentStage.data.currentNode, currentStage.data.currentNode + 1);
 
+                                        g_access.unlock();
+
+                                }
+                                if(args[0] == "getvar" || args[0] == "gv") {
+                                        if(!suspendExecution) {
+                                                PM_PRINT_ERROR("Process must be suspended (break, b) to read memory.\n");
+                                                continue;
+                                        }
+                                        PM_PRINT("GLOBAL List :.\n[index, [>symbol] = [value]]\n");
+                                        g_access.lock();
+
+                                        for(size_t i = 0; i < symbolData.globalList.size(); ++i) {
+                                                std::cout << "\t[" << i << ", [>" << symbolData.globalList[i].varName << "] = [" << nthp::fixedToDouble(currentStage.data.globalVarSet[symbolData.globalList[i].relativeIndex]) << "] ]\n";
+                                        }
+
+                                        g_access.unlock();
+                                }
+
+                                if(args[0] == "setvar" || args[0] == "sv") {
+                                        if(!suspendExecution) {
+                                                PM_PRINT_ERROR("Process must be suspended (break, b) to write memory.\n");
+                                                continue;
+                                        }
+                                        if(args.size() < 3) {
+                                                PM_PRINT_ERROR("Invalid Argument. syn; setvar >symbol/index value");
+                                                continue;
+                                        }
+                                        bool isIndex = false;
+                                        if(args[1][0] != '>')
+                                                isIndex = true;
+                                        g_access.lock();
+                                        
+                                        try {
+                                                if(isIndex) {
+                                                        currentStage.data.globalVarSet[std::stoul(args[1])] = nthp::doubleToFixed(std::stod(args[2]));
+                                                }
+                                                else {
+                                                        std::string reference = args[1];
+                                                        reference.erase(reference.begin());
+                                                        for(size_t i = 0; i < symbolData.globalList.size(); ++i) {
+                                                                if(reference == symbolData.globalList[i].varName) {
+                                                                        currentStage.data.globalVarSet[symbolData.globalList[i].relativeIndex] = nthp::doubleToFixed(std::stod(args[2]));
+                                                                        break;
+                                                                }
+                                                        }
+                                                }
+                                        }
+                                        catch(std::invalid_argument x) {
+                                                PM_PRINT("Invalid argument numeral.\n");
+                                                continue;
+                                        }
+
+                                        PM_PRINT("GLOBAL write success.\n");
+                                        
                                         g_access.unlock();
 
                                 }

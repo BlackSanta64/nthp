@@ -1706,7 +1706,7 @@ DEFINE_COMPILATION_BEHAVIOUR(STAGE_LOAD) {
 
 
 
-int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, const char* outputFile, bool buildSystemContext) {
+int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, const char* outputFile, bool buildSystemContext, const bool ignoreInstructionData) {
         NOVERB_PRINT_COMPILER("\n\tCompiling Source File [%s]...\n\n", inputFile);
         
         std::fstream file(inputFile, std::ios::in);
@@ -1756,10 +1756,11 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
         bool operationOngoing = true;
 
-        COMPILE(HEADER);
+        if(!ignoreInstructionData) COMPILE(HEADER);
 
         while(operationOngoing) {
                 COMP_START:
+                
 
                 if(skipInstructionCheck) {
                         PRINT_COMPILER_WARNING("Skipping EVAL this pass...\n");
@@ -1795,8 +1796,9 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                                 PRINT_COMPILER("CALL/IMPORT Complete.\n");
                         }
                         else {
-                                COMPILE(EXIT);
+                                if(!ignoreInstructionData) COMPILE(EXIT);
                                 operationOngoing = false;
+                                break;
                         }
                 }
 
@@ -2030,10 +2032,13 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
 
 
-
+                if(ignoreInstructionData) {
+                        continue;
+                }
                 if(callStack.size() > 0) {
                         if(callStack.back().importing) continue;
                 }
+                
 
                 CHECK_COMP(LABEL);
                 CHECK_COMP(GOTO);
@@ -2105,135 +2110,140 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                 CHECK_COMP(STAGE_LOAD);
 
-        }
+        } // Main loop
 
         NOVERB_PRINT_COMPILER("\tSuccessfully compiled source file [%s].\n", inputFile);
         file.close();
 
-        if(ifLocations.size() != endLocations.size()) {
-                PRINT_COMPILER_ERROR("Post-Mortem failure; Unequal IF and END statements.\n");
-                return 1;
-        }
-    
-        size_t labelIndex = 0;
+        if(!ignoreInstructionData) {
 
-        // Match GOTOs to LABELs.
-        for(size_t gotoIndex = 0; gotoIndex < gotoList.size(); ++gotoIndex) {
-                for(labelIndex = 0; labelIndex < labelList.size(); ++labelIndex) {
-
-                        if(gotoList[gotoIndex].points_to == labelList[labelIndex].ID) {
-
-                                uint32_t* location = (decltype(location))nodeList[gotoList[gotoIndex].goto_position].access.data;
-                                *location = labelList[labelIndex].label_position;
-                                break;
-                        }
-                        
-                }
-                if(labelIndex == labelList.size()) {
-                        PRINT_DEBUG_ERROR("Failed to link GOTO [%zu] to LABEL block. Broken GOTO created.\n", gotoList[gotoIndex].goto_position);
-                        
-                }
-        }
-        
-        // Match IFs and ENDs
-
-        unsigned int numberOfIfsFound = 1;
-	unsigned int numberOfEndsFound = 0;
-	unsigned int finalEndIndex = 0;
-	uint32_t* endIndex = nullptr;
-
-        for (size_t i = 0; i < ifLocations.size(); i++) {
-                NOVERB_PRINT_COMPILER("Checking IF [%zu]\n", ifLocations[i]);
-		for (finalEndIndex = ifLocations[i] + 1; numberOfIfsFound != numberOfEndsFound && finalEndIndex < nodeList.size(); ++finalEndIndex) {
-
-			// If an IF statement is found before and END statement, the program requires that many more ENDs
-			// to break the loop. The corresponding END will be the one found when there are equal IFs and ENDs found.
-			if (nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::END) {
-				numberOfEndsFound++;
-			}
-			if (nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_EQU ||
-				nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_NOT ||
-				nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_GRT ||
-				nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_LST ||
-				nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_GRTE ||
-			        nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_LSTE ||
-                                nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_IF_TRUE
-			        ) {
-			numberOfIfsFound++;
-		}
-
-		}
-                if(finalEndIndex == nodeList.size()) {
-                        PRINT_COMPILER_ERROR("Unable to find matching END. The only reason this would print is if you put an END before an IF. Absolute moron.\n");
+                if(ifLocations.size() != endLocations.size()) {
+                        PRINT_COMPILER_ERROR("Post-Mortem failure; Unequal IF and END statements.\n");
                         return 1;
                 }
+        
+                size_t labelIndex = 0;
 
-                // Important, not a mistake. Don't go blaming this 3 months from now.
-                --finalEndIndex;
-                // Assigns the pointer to the last 4 bytes of the node to store the end index (Unless a BNE instruction).
-                if(nodeList[ifLocations[i]].access.ID == nthp::script::instructions::ID::LOGIC_IF_TRUE) {
-                        endIndex = (uint32_t*)(nodeList[ifLocations[i]].access.data + sizeof(nthp::script::instructions::stdRef));
+                // Match GOTOs to LABELs.
+                for(size_t gotoIndex = 0; gotoIndex < gotoList.size(); ++gotoIndex) {
+                        for(labelIndex = 0; labelIndex < labelList.size(); ++labelIndex) {
+
+                                if(gotoList[gotoIndex].points_to == labelList[labelIndex].ID) {
+
+                                        uint32_t* location = (decltype(location))nodeList[gotoList[gotoIndex].goto_position].access.data;
+                                        *location = labelList[labelIndex].label_position;
+                                        break;
+                                }
+                                
+                        }
+                        if(labelIndex == labelList.size()) {
+                                PRINT_DEBUG_ERROR("Failed to link GOTO [%zu] to LABEL block. Broken GOTO created.\n", gotoList[gotoIndex].goto_position);
+                                
+                        }
                 }
-                else {
-		        endIndex = (uint32_t*)(nodeList[ifLocations[i]].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(nthp::script::instructions::stdRef));
+                
+                // Match IFs and ENDs
+
+                unsigned int numberOfIfsFound = 1;
+                unsigned int numberOfEndsFound = 0;
+                unsigned int finalEndIndex = 0;
+                uint32_t* endIndex = nullptr;
+
+                for (size_t i = 0; i < ifLocations.size(); i++) {
+                        NOVERB_PRINT_COMPILER("Checking IF [%zu]\n", ifLocations[i]);
+                        for (finalEndIndex = ifLocations[i] + 1; numberOfIfsFound != numberOfEndsFound && finalEndIndex < nodeList.size(); ++finalEndIndex) {
+
+                                // If an IF statement is found before and END statement, the program requires that many more ENDs
+                                // to break the loop. The corresponding END will be the one found when there are equal IFs and ENDs found.
+                                if (nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::END) {
+                                        numberOfEndsFound++;
+                                }
+                                if (nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_EQU ||
+                                        nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_NOT ||
+                                        nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_GRT ||
+                                        nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_LST ||
+                                        nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_GRTE ||
+                                        nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_LSTE ||
+                                        nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_IF_TRUE
+                                        ) {
+                                numberOfIfsFound++;
+                        }
+
+                        }
+                        if(finalEndIndex == nodeList.size()) {
+                                PRINT_COMPILER_ERROR("Unable to find matching END. The only reason this would print is if you put an END before an IF. Absolute moron.\n");
+                                return 1;
+                        }
+
+                        // Important, not a mistake. Don't go blaming this 3 months from now.
+                        --finalEndIndex;
+                        // Assigns the pointer to the last 4 bytes of the node to store the end index (Unless a BNE instruction).
+                        if(nodeList[ifLocations[i]].access.ID == nthp::script::instructions::ID::LOGIC_IF_TRUE) {
+                                endIndex = (uint32_t*)(nodeList[ifLocations[i]].access.data + sizeof(nthp::script::instructions::stdRef));
+                        }
+                        else {
+                                endIndex = (uint32_t*)(nodeList[ifLocations[i]].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(nthp::script::instructions::stdRef));
+                        }
+
+                        NOVERB_PRINT_COMPILER("Matched IF to END at [%u].\n", finalEndIndex);
+
+
+                        *endIndex = finalEndIndex;
+                        numberOfIfsFound = 1;
+                        numberOfEndsFound = 0;
+
+                } // For
+
+
+                // Set up header with:
+                //      - Local Memory Budget
+                //      - Global Memory Budget (if applicable)
+                //      - Label List
+
+                if(nodeList.size() > 0) {
+                        printf("POKE!\n");
+                        nodeList[0].access.size = sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t) + (sizeof(uint32_t) * labelList.size() * 2);
+                        nodeList[0].access.data = (char*)malloc(nodeList[0].access.size);
+
+                        if(nodeList[0].access.data == NULL) {
+                                FATAL_PRINT(nthp::FATAL_ERROR::Memory_Fault, "Memory Fault in Compiler.\n");
+                        }
+
+                        uint32_t* localmem = (decltype(localmem))(nodeList[0].access.data);
+                        uint32_t* globalmem = (decltype(globalmem))(nodeList[0].access.data + sizeof(uint32_t));
+                        uint32_t* labelstart = (decltype(labelstart))(nodeList[0].access.data + (sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t)));
+                        uint32_t* labelSize = (decltype(labelstart))(nodeList[0].access.data + (sizeof(uint32_t) + sizeof(uint32_t)));
+                        *labelSize = labelList.size();
+
+
+                        *localmem = (uint32_t)varList.size();
+                        *globalmem = (uint32_t)globalAlloc;
+
+                        // Writes label data to header. For use in JUMP.
+                        for(size_t i = 0; i < labelList.size(); ++i) {
+                                labelstart[i + i] = labelList[i].ID;
+                                labelstart[(i + i) + 1] = labelList[i].label_position;
+                        }
                 }
 
-                NOVERB_PRINT_COMPILER("Matched IF to END at [%u].\n", finalEndIndex);
+                //file.close();
 
+                if(!buildSystemContext) {
+                        PRINT_COMPILER("Allocating and Copying node data to safe container...");
+                        nodeBlockSize = nodeList.size();
+                        compiledNodes = (decltype(compiledNodes))malloc(NodeSize * nodeBlockSize);
 
-		*endIndex = finalEndIndex;
-		numberOfIfsFound = 1;
-		numberOfEndsFound = 0;
+                        memcpy(compiledNodes, nodeList.data(), NodeSize * nodeBlockSize);
 
-	} // For
+                        NOVERB_PRINT_COMPILER("\t\nAllocated & copied [%zu] bytes at [%p].\n", NodeSize * nodeBlockSize, compiledNodes);
+                }
 
-
-        // Set up header with:
-        //      - Local Memory Budget
-        //      - Global Memory Budget (if applicable)
-        //      - Label List
-
-        nodeList[0].access.size = sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t) + (sizeof(uint32_t) * labelList.size() * 2);
-        nodeList[0].access.data = (char*)malloc(nodeList[0].access.size);
-
-        if(nodeList[0].access.data == NULL) {
-                FATAL_PRINT(nthp::FATAL_ERROR::Memory_Fault, "Memory Fault in Compiler.\n");
-        }
-
-        uint32_t* localmem = (decltype(localmem))(nodeList[0].access.data);
-        uint32_t* globalmem = (decltype(globalmem))(nodeList[0].access.data + sizeof(uint32_t));
-        uint32_t* labelstart = (decltype(labelstart))(nodeList[0].access.data + (sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t)));
-        uint32_t* labelSize = (decltype(labelstart))(nodeList[0].access.data + (sizeof(uint32_t) + sizeof(uint32_t)));
-        *labelSize = labelList.size();
-
-
-        *localmem = (uint32_t)varList.size();
-        *globalmem = (uint32_t)globalAlloc;
-
-        // Writes label data to header. For use in JUMP.
-        for(size_t i = 0; i < labelList.size(); ++i) {
-                labelstart[i + i] = labelList[i].ID;
-                labelstart[(i + i) + 1] = labelList[i].label_position;
-        }
-
-
-        file.close();
-
-        if(!buildSystemContext) {
-                PRINT_COMPILER("Allocating and Copying node data to safe container...");
-                nodeBlockSize = nodeList.size();
-                compiledNodes = (decltype(compiledNodes))malloc(NodeSize * nodeBlockSize);
-
-                memcpy(compiledNodes, nodeList.data(), NodeSize * nodeBlockSize);
-
-                NOVERB_PRINT_COMPILER("\t\nAllocated & copied [%zu] bytes at [%p].\n", NodeSize * nodeBlockSize, compiledNodes);
-        }
-
-        if(outputFile != NULL) {
-                if(buildSystemContext)
-                        return exportToFile(outputFile, &nodeList, buildSystemContext);
-                else
-                        return exportToFile(outputFile, NULL, buildSystemContext);
+                if(outputFile != NULL) {
+                        if(buildSystemContext)
+                                return exportToFile(outputFile, &nodeList, buildSystemContext);
+                        else
+                                return exportToFile(outputFile, NULL, buildSystemContext);
+                }
         }
         
         return 0;
@@ -2268,7 +2278,7 @@ int nthp::script::CompilerInstance::exportToFile(const char* outputFile, std::ve
 
 
 
-int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFile, const char* output, bool forceBuild) {
+int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFile, const char* output, bool forceBuild, const bool ignoreInstructionData) {
         std::fstream file(stageConfigFile, std::ios::in);
         if(file.fail()) {
                 PRINT_COMPILER_ERROR("Failed to compile StageConfig [%s]; File not found.\n", stageConfigFile);
@@ -2357,15 +2367,22 @@ int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFi
                                 std::string output;
                                 file >> output;
 
-
-
-                                if(compileSourceFile(fileRead.c_str(), output.c_str(), true)) {
-                                        if(forceBuild) {
-                                                PRINT_DEBUG_WARNING("Compiler failure in source file [%s]; forcing continue...\n", fileRead.c_str());
-                                        }
-                                        else {
+                                // Ignore output file of compilation; no instructions to write.
+                                if(ignoreInstructionData) {
+                                        if(compileSourceFile(fileRead.c_str(), NULL, true, ignoreInstructionData)) {
                                                 PRINT_DEBUG_ERROR("Compiler failure in source file [%s]; aborting.\n", fileRead.c_str());
                                                 return 1;
+                                        }
+                                }
+                                else {
+                                        if(compileSourceFile(fileRead.c_str(), output.c_str(), true, false)) {
+                                                if(forceBuild) {
+                                                        PRINT_DEBUG_WARNING("Compiler failure in source file [%s]; forcing continue...\n", fileRead.c_str());
+                                                }
+                                                else {
+                                                        PRINT_DEBUG_ERROR("Compiler failure in source file [%s]; aborting.\n", fileRead.c_str());
+                                                        return 1;
+                                                }
                                         }
                                 }
                         }
@@ -2379,8 +2396,14 @@ int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFi
                 }
         } // while(!operationComplete)
 
+        printf("POKE!\n");
+
 
         file.close();
+        if(output == NULL) {
+                return 0;
+        }
+
         file.open(output, std::ios::out | std::ios::binary);
         
         nthp::script::stage::trigger_w primTrig = 0;
