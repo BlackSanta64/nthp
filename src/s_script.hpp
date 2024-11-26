@@ -1,10 +1,18 @@
 #pragma once
 
+
 #include "s_node.hpp"
 #include "s_instructions.hpp"
 #include "e_entity.hpp"
 #include "e_collision.hpp"
 #include "gtexture.hpp"
+
+#ifdef PM
+
+	#define DEBUG
+
+#endif
+
 
 namespace nthp { 
 namespace script {

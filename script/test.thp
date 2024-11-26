@@ -33,7 +33,7 @@ VAR value2
 
 MACRO INIT_FLAGS {
         / x  y  tx  ty  cx cy fs sr title /
-        1920 1080 500 500 0 0  0  0  nthp.exe
+        800 800 500 500 0 0  0  0  nthp.exe
 }
 
 CORE_INIT @INIT_FLAGS
@@ -75,10 +75,11 @@ ENT_SETHITBOXOFFSET #e_tux 0 0
 
 
 ENT_SETFRAMERANGE #e_absTux #f0_wall 1
-ENT_SETRENDERSIZE #e_absTux 500 500
+ENT_SETRENDERSIZE #e_absTux 10 10
 ENT_SETCURRENTFRAME #e_absTux 0
 ENT_SETPOS #e_absTux 0 0
-ENT_SETHITBOXSIZE #e_absTux 100 76
+ENT_SETHITBOXSIZE #e_absTux 2 2
+ENT_SETHITBOXOFFSET #e_absTux 4 4
 
 CORE_SETMAXFPS 500
 

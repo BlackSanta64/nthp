@@ -161,7 +161,7 @@ s_stage_d.o: $(SRCDIR)s_stage.hpp $(SRCDIR)s_stage.cpp
 
 
 
-pm: pm_globals.o pm_core.o 	
+pm: $(SRCDIR)pm_globals.cpp $(SRCDIR)pm_core.cpp
 	$(CC) $(SRCDIR)pm_globals.cpp $(SRCDIR)pm_core.cpp $(lib_srcSymbols) $(CFLAGS) -D PM  -o pm
 
 

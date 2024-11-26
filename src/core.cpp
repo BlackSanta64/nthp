@@ -177,8 +177,16 @@ void nthp::EngineCore::setWindowRenderSize(int x, int y) {
         }
         else {
                 SDL_SetWindowSize(window, x, y);
-                SDL_GetWindowSizeInPixels(window, &x, &y);
-                SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+		#ifdef LINUX // GETWINDOWSIZEINPIXELS is not a valid SDLcall on linux. Although not exactly the same, works in most cases.
+	                SDL_GetWindowSize(window, &x, &y);
+		#endif
+
+		#ifdef WINDOWS
+			SDL_GetWindowSizeInPixels(window, &x, &y);
+		#endif
+
+		
+		SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 
                 p_coreDisplay.pxlResolution_x = x;
                 p_coreDisplay.pxlResolution_y = y;
