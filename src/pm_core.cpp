@@ -133,6 +133,16 @@ int main(int argv, char** argc) {
                 targetName = "prog";
         }
 
+	if(debugOutput != "stdout") {
+		debug_fd = fopen(debugOutput.c_str(), "w+");
+		if(debug_fd == NULL) {
+			PM_PRINT_ERROR("Unable to access debug output file descriptor. Defaulting to standard output.\n");
+			debug_fd = stdout;
+		}
+	}
+	
+	NTHP_GEN_DEBUG_INIT(debug_fd);
+
 
         // Checks every frame if the debugger requests a session.
         do {
@@ -140,13 +150,7 @@ int main(int argv, char** argc) {
                 
                 if(debuggingActiveProcess) {
 
-                        if(debugOutput != "stdout") {
-                                debug_fd = fopen(debugOutput.c_str(), "w+");
-                                if(debug_fd == NULL) { debug_fd = stdout; }
-                        }
-
-                        NTHP_GEN_DEBUG_INIT(debug_fd);
-
+                                               
 
                         int ret = nthp::debuggerBehaviour(targetName, debug_fd);
                         if(ret) {
@@ -156,13 +160,15 @@ int main(int argv, char** argc) {
                                 PM_PRINT("\nCompleted debugging session without critical errors.\n");
                         }
                         
-                        NTHP_GEN_DEBUG_CLOSE();
-
+       
                         nthp::setMaxFPS(15);
                         std::cout << "> ";
                 }
         }
         while(!Kill_main_process);
+       	
+
+	NTHP_GEN_DEBUG_CLOSE();
 
 
         if(debuggerThread.joinable()) debuggerThread.join();
