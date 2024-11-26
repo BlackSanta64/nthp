@@ -6,14 +6,17 @@ using namespace nthp::script::instructions;
 char nthp::script::stageMemory[STAGEMEM_MAX];
 nthp::texture::Palette nthp::script::activePalette;
 
-#define EVAL_STDREF(ref)   if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {\
-                                if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_GLOBAL)) {\
-                                        ref.value = data->globalVarSet[nthp::fixedToInt(ref.value)];\
-                                }\
-                                else {\
-                                        ref.value = (*data->currentLocalMemory)[nthp::fixedToInt(ref.value)];\
-                                }\
-                        }
+#define EVAL_STDREF(ref)        do { if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {\
+                                        if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_GLOBAL)) {\
+                                                ref.value = data->globalVarSet[nthp::fixedToInt(ref.value)];\
+                                        }\
+                                        else {\
+                                                ref.value = (*data->currentLocalMemory)[nthp::fixedToInt(ref.value)];\
+                                        }\
+                                        if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_NEGATED)) ref.value = -(ref.value);\
+                                } }\
+                                while(0);
+
 
 
 #ifdef DEBUG
@@ -334,6 +337,8 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_LSTE) {
 
         EVAL_STDREF(opA);
         EVAL_STDREF(opB);
+
+        
 
         if(opA.value <= opB.value)
                 return 0;
@@ -840,6 +845,146 @@ DEFINE_EXECUTION_BEHAVIOUR(STAGE_LOAD) {
 }
 
 
+DEFINE_EXECUTION_BEHAVIOUR(POLL_ENT_POSITION) {
+        indRef target = *(indRef*)(data->nodeSet[data->currentNode].access.data);
+
+        if(PR_METADATA_GET(target, nthp::script::flagBits::IS_REFERENCE)) {
+                if(PR_METADATA_GET(target, nthp::script::flagBits::IS_GLOBAL)) {
+                        target.value = (nthp::fixedToInt(data->globalVarSet[target.value]));
+                }
+                else {
+                        target.value = (nthp::fixedToInt((*data->currentLocalMemory)[target.value]));
+                }
+        }
+
+        const auto pos = data->entityBlock[target.value].getPosition();
+
+        data->globalVarSet[RPOLL1_GLOBAL_INDEX] = pos.x;
+        data->globalVarSet[RPOLL2_GLOBAL_INDEX] = pos.y;
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(POLL_ENT_CURRENTFRAME) {
+                indRef target = *(indRef*)(data->nodeSet[data->currentNode].access.data);
+
+        if(PR_METADATA_GET(target, nthp::script::flagBits::IS_REFERENCE)) {
+                if(PR_METADATA_GET(target, nthp::script::flagBits::IS_GLOBAL)) {
+                        target.value = (nthp::fixedToInt(data->globalVarSet[target.value]));
+                }
+                else {
+                        target.value = (nthp::fixedToInt((*data->currentLocalMemory)[target.value]));
+                }
+        }
+
+        const auto cf = data->entityBlock[target.value].getCurrentFrameIndex();
+        
+        data->globalVarSet[RPOLL1_GLOBAL_INDEX] = nthp::intToFixed(cf);
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(POLL_ENT_HITBOX) {
+                indRef target = *(indRef*)(data->nodeSet[data->currentNode].access.data);
+
+        if(PR_METADATA_GET(target, nthp::script::flagBits::IS_REFERENCE)) {
+                if(PR_METADATA_GET(target, nthp::script::flagBits::IS_GLOBAL)) {
+                        target.value = (nthp::fixedToInt(data->globalVarSet[target.value]));
+                }
+                else {
+                        target.value = (nthp::fixedToInt((*data->currentLocalMemory)[target.value]));
+                }
+        }
+
+        const auto box = data->entityBlock[target.value].getHitbox();
+
+        data->globalVarSet[RPOLL1_GLOBAL_INDEX] = box.x;
+        data->globalVarSet[RPOLL2_GLOBAL_INDEX] = box.y;
+        data->globalVarSet[RPOLL3_GLOBAL_INDEX] = box.w;
+        data->globalVarSet[RPOLL4_GLOBAL_INDEX] = box.h;
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(POLL_ENT_RENDERSIZE) {
+                indRef target = *(indRef*)(data->nodeSet[data->currentNode].access.data);
+
+        if(PR_METADATA_GET(target, nthp::script::flagBits::IS_REFERENCE)) {
+                if(PR_METADATA_GET(target, nthp::script::flagBits::IS_GLOBAL)) {
+                        target.value = (nthp::fixedToInt(data->globalVarSet[target.value]));
+                }
+                else {
+                        target.value = (nthp::fixedToInt((*data->currentLocalMemory)[target.value]));
+                }
+        }
+
+        const auto rs = data->entityBlock[target.value].getRenderSize();
+
+        data->globalVarSet[RPOLL1_GLOBAL_INDEX] = rs.x;
+        data->globalVarSet[RPOLL2_GLOBAL_INDEX] = rs.y;
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(DRAW_SETCOLOR) {
+        stdRef colorIndex = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+
+        EVAL_STDREF(colorIndex);
+
+        data->penColor = colorIndex.value;
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(DRAW_LINE) {
+        stdRef x1 = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+        stdRef y1 = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+        stdRef x2 = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
+        stdRef y2 = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef));
+
+        EVAL_STDREF(x1);
+        EVAL_STDREF(y1);
+        EVAL_STDREF(x2);
+        EVAL_STDREF(y2);
+
+        const nthp::vectGeneric pointA = nthp::generatePixelPosition(nthp::worldPosition(x1.value, y1.value), &nthp::core.p_coreDisplay);
+        const nthp::vectGeneric pointB = nthp::generatePixelPosition(nthp::worldPosition(x2.value, y2.value), &nthp::core.p_coreDisplay);
+
+        SDL_SetRenderDrawColor(nthp::core.getRenderer(), nthp::script::activePalette.colorSet[data->penColor].R,nthp::script::activePalette.colorSet[data->penColor].G, nthp::script::activePalette.colorSet[data->penColor].B, 255);
+        SDL_RenderDrawLine(nthp::core.getRenderer(), pointA.x, pointA.y, pointB.x, pointB.y);
+        SDL_SetRenderDrawColor(nthp::core.getRenderer(), DEFAULT_RENDER_COLOR);
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(DRAW_RECT) {
+        stdRef x = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+        stdRef y = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+        stdRef w = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
+        stdRef h = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef));
+
+        EVAL_STDREF(x);
+        EVAL_STDREF(y);
+        EVAL_STDREF(w);
+        EVAL_STDREF(h);
+
+
+        const nthp::vectGeneric position = nthp::generatePixelPosition(nthp::worldPosition(x.value, y.value), &nthp::core.p_coreDisplay);
+        const nthp::vectGeneric size = nthp::generateWorldPosition(nthp::worldPosition(w.value, h.value), &nthp::core.p_coreDisplay);
+
+        SDL_Rect render;
+        render.x = position.x;
+        render.y = position.y;
+        render.w = size.x;
+        render.h = size.y;
+
+        SDL_SetRenderDrawColor(nthp::core.getRenderer(), nthp::script::activePalette.colorSet[data->penColor].R,nthp::script::activePalette.colorSet[data->penColor].G, nthp::script::activePalette.colorSet[data->penColor].B, 255);
+        SDL_RenderDrawRect(nthp::core.getRenderer(), &render);
+        SDL_SetRenderDrawColor(nthp::core.getRenderer(), DEFAULT_RENDER_COLOR);
+
+
+        return 0;
+}
+
 
 // Genius design; Automatically updates ID indecies and places functions accordingly. Just add/change stuff in 's_instructions.hpp'.
 // the 'nthp::script::instructions::ID' will correspond with the index of the desired instruction in this array.
@@ -873,7 +1018,7 @@ nthp::script::Script::Script(const char* filename, ScriptDataSet* dataSet) {
 
 
 
-        this->import(filename, dataSet);
+        import(filename, dataSet);
 }
 
 
@@ -967,6 +1112,9 @@ int nthp::script::Script::execute() {
                         // Executes next instruction, then breaks.
                         case nthp::script::debug::STEP: {
                                 nthp::script::debug::suspendExecution = false;
+                                data->isSuspended = false;
+                                
+                                break;
                         }
                         case(nthp::script::debug::JUMP_TO): {
                                 data->currentNode = nthp::script::debug::debugInstructionCall.y;

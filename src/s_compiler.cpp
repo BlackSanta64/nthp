@@ -163,22 +163,36 @@ int EvaluateSymbol(std::fstream& file, std::string& expression, std::vector<nthp
 nthp::script::instructions::stdRef EvaluateReference(std::string expression, std::vector<nthp::script::CompilerInstance::VAR_DEF>& varList, std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>& globalList, bool buildSystemContext) {
         stdRef ref;
         ref.metadata = 0;
+        ref.value = 0;
 
-        if(expression[0] == '$') {
-                PR_METADATA_SET         (ref, nthp::script::flagBits::IS_REFERENCE);
-                PR_METADATA_CLEAR       (ref, nthp::script::flagBits::IS_GLOBAL);
+        do {
+                if(expression[0] == '-') {
+                        if(expression.size() < 2) {
+                                PRINT_COMPILER_ERROR("Unable to evaluate reference [%s]; Invalid Argument.\n", expression.c_str());
+                                return ref;
+                        }
+                        if(expression[1] == '$' || expression[1] == '>') {
+                                PR_METADATA_SET(ref, nthp::script::flagBits::IS_NEGATED);
+                                expression.erase(expression.begin());
+                        }
+                        else break;
+                }
 
-                expression.erase(expression.begin());
-        }
-        else {
+                // No need for 2 compares. Only reaches this point if dereference character is present ($ OR > checked prior).
+                if(expression[0] == '$') {
+                        PR_METADATA_SET         (ref, nthp::script::flagBits::IS_REFERENCE);
+
+                        expression.erase(expression.begin());
+                        break;
+                }
                 if(expression[0] == '>') {
                         PR_METADATA_SET (ref, nthp::script::flagBits::IS_REFERENCE);
-
                         if(buildSystemContext) PR_METADATA_SET (ref, nthp::script::flagBits::IS_GLOBAL);
 
                         expression.erase(expression.begin());
                 }
-        }
+
+        } while(0);
 
         // Evaluate Var.
         // If no VARNAME is referenced, assumes numeral reference type (instead of $VARNAME or >VARNAME, $2 or >2), or constant. Throws
@@ -1261,7 +1275,7 @@ DEFINE_COMPILATION_BEHAVIOUR(ENT_SETFRAMERANGE) {
 
 
 DEFINE_COMPILATION_BEHAVIOUR(ENT_SETHITBOXSIZE) {
-        ADD_NODE(ENT_SETHITBOXOFFSET);
+        ADD_NODE(ENT_SETHITBOXSIZE);
 
         EVAL_SYMBOL();
         auto target = EVAL_PREF();
@@ -1699,7 +1713,125 @@ DEFINE_COMPILATION_BEHAVIOUR(STAGE_LOAD) {
 }
 
 
+DEFINE_COMPILATION_BEHAVIOUR(POLL) {
 
+        EVAL_SYMBOL();
+        auto entity = EVAL_PREF();
+        CHECK_REF(entity);
+
+        // What to check for
+        EVAL_SYMBOL();
+        do {
+                if(fileRead == "POS")           { ADD_NODE(POLL_ENT_POSITION); break; }
+                if(fileRead == "HITBOX")        { ADD_NODE(POLL_ENT_HITBOX); break; }
+                if(fileRead == "CURRENTFRAME")  { ADD_NODE(POLL_ENT_CURRENTFRAME); break; }
+                if(fileRead == "RENDERSIZE")    { ADD_NODE(POLL_ENT_RENDERSIZE); break; }
+
+                PRINT_COMPILER_ERROR("[%s] Invalid POLL request.", fileRead.c_str());
+                return 1;
+
+        } while(0);
+
+        indRef* ent = (indRef*)(nodeList[currentNode].access.data);
+        ent->value = nthp::fixedToInt(entity.value);
+        ent->metadata = entity.metadata;
+
+        PRINT_NODEDATA();
+
+        return 0;
+}
+
+
+
+DEFINE_COMPILATION_BEHAVIOUR(DRAW_SETCOLOR) {
+        ADD_NODE(DRAW_SETCOLOR);
+
+        EVAL_SYMBOL();
+        auto _colorIndex = EVAL_PREF();
+        CHECK_REF(_colorIndex);
+
+        if(nthp::getFixedDecimal(_colorIndex.value) > 0) {
+                PRINT_COMPILER_WARNING("DRAW_SETCOLOR uses an invalid decimal value. Discarding decimal.\n");
+                _colorIndex.value = nthp::getFixedInteger(_colorIndex.value);
+        }
+
+        stdRef* colorIndex = (stdRef*)(nodeList[currentNode].access.data);
+        *colorIndex = _colorIndex;
+
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(DRAW_LINE) {
+        ADD_NODE(DRAW_LINE);
+
+        EVAL_SYMBOL();
+        auto _x1 = EVAL_PREF();
+        CHECK_REF(_x1);
+
+        EVAL_SYMBOL();
+        auto _y1 = EVAL_PREF();
+        CHECK_REF(_y1);
+
+        EVAL_SYMBOL();
+        auto _x2 = EVAL_PREF();
+        CHECK_REF(_x2);
+
+        EVAL_SYMBOL();
+        auto _y2 = EVAL_PREF();
+        CHECK_REF(_y2);
+
+        stdRef* x1 = (stdRef*)(nodeList[currentNode].access.data);
+        stdRef* y1 = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
+        stdRef* x2 = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
+        stdRef* y2 = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef));
+
+        *x1 = _x1;
+        *y1 = _y1;
+        *x2 = _x2;
+        *y2 = _y2;
+
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(DRAW_RECT) {
+                ADD_NODE(DRAW_RECT);
+
+        EVAL_SYMBOL();
+        auto _x = EVAL_PREF();
+        CHECK_REF(_x);
+
+        EVAL_SYMBOL();
+        auto _y = EVAL_PREF();
+        CHECK_REF(_y);
+
+        EVAL_SYMBOL();
+        auto _w = EVAL_PREF();
+        CHECK_REF(_w);
+
+        EVAL_SYMBOL();
+        auto _h = EVAL_PREF();
+        CHECK_REF(_h);
+
+        stdRef* x = (stdRef*)(nodeList[currentNode].access.data);
+        stdRef* y = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
+        stdRef* w = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
+        stdRef* h = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef));
+
+        *x = _x;
+        *y = _y;
+        *w = _w;
+        *h = _h;
+
+
+        PRINT_NODEDATA();
+        return 0;
+}
 
 // COMPILER INSTANCE BEHAVIOUR GOES HERE                ||
 //                                                      VV
@@ -2110,6 +2242,13 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                 CHECK_COMP(STAGE_LOAD);
 
+                CHECK_COMP(POLL);
+
+
+                CHECK_COMP(DRAW_SETCOLOR);
+                CHECK_COMP(DRAW_LINE);
+                CHECK_COMP(DRAW_RECT);
+
         } // Main loop
 
         NOVERB_PRINT_COMPILER("\tSuccessfully compiled source file [%s].\n", inputFile);
@@ -2138,9 +2277,10 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                         }
                         if(labelIndex == labelList.size()) {
                                 PRINT_DEBUG_ERROR("Failed to link GOTO [%zu] to LABEL block. Broken GOTO created.\n", gotoList[gotoIndex].goto_position);
-                                
+                                return 1;
                         }
                 }
+
                 
                 // Match IFs and ENDs
 
@@ -2201,7 +2341,6 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                 //      - Label List
 
                 if(nodeList.size() > 0) {
-                        printf("POKE!\n");
                         nodeList[0].access.size = sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t) + (sizeof(uint32_t) * labelList.size() * 2);
                         nodeList[0].access.data = (char*)malloc(nodeList[0].access.size);
 
@@ -2360,6 +2499,22 @@ int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFi
                 if(fileRead == "BUILD_SYSTEM") {
                         globalList.clear();
 
+
+                        
+
+                        // Add constant runtime globals.
+                        addGlobalDef("mousepos_x");
+                        addGlobalDef("mousepos_y");
+                        addGlobalDef("deltatime");
+                        addGlobalDef("mouse1");
+                        addGlobalDef("mouse2");
+                        addGlobalDef("mouse3");
+                        addGlobalDef("r_poll1");
+                        addGlobalDef("r_poll2");
+                        addGlobalDef("r_poll3");
+                        addGlobalDef("r_poll4");
+
+
                         while(!file.eof()) {
                                 file >> fileRead;
                                 if(fileRead == "END") { break; }
@@ -2395,9 +2550,6 @@ int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFi
                         operationComplete = true;
                 }
         } // while(!operationComplete)
-
-        printf("POKE!\n");
-
 
         file.close();
         if(output == NULL) {

@@ -79,6 +79,8 @@ void nthp::entity::gEntity::setCurrentFrame(size_t cf) {
 
 
 void nthp::entity::gEntity::setHtiboxSize(nthp::vectFixed newSize) {
+        hitbox.x = wPosition.x + hbOffset.x;
+	hitbox.y = wPosition.y + hbOffset.y;
 	hitbox.w = newSize.x;
 	hitbox.h = newSize.y;
 }

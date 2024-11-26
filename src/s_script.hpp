@@ -68,22 +68,24 @@ namespace script {
                         nthp::script::stdVarWidth** currentLocalMemory; // Changes when different scripts are executed.
 
 
-                        nthp::texture::gTexture* textureBlock;
+                        nthp::texture::gTexture* textureBlock; // Context texture data.
                         size_t textureBlockSize;
 
-                        nthp::entity::gEntity* entityBlock;
+                        nthp::entity::gEntity* entityBlock; // Context entity data
                         size_t entityBlockSize;
 
-                        nthp::texture::Frame* frameBlock;
+                        nthp::texture::Frame* frameBlock; // Context frame data.
                         size_t frameBlockSize;
 
-                        nthp::script::scriptTriggerComplex currentTriggerConfig;
+                        nthp::script::scriptTriggerComplex currentTriggerConfig; // Just some data on the current stage.
 
-                        Action* actionList;
+                        Action* actionList; // Tracks keypresses; created with ACTION_DEFINE and ACTION_BIND to configure.
                         size_t  actionListSize;
 
+                        short penColor; // stores a color as an index to the palette to draw primitives with the DRAW instruction.
 
-                        bool isSuspended, changeStage;
+
+                        bool isSuspended, changeStage; // Stage stuff.
 
                 };
 

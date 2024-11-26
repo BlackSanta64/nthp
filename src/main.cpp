@@ -68,6 +68,7 @@ int nthp::runtimeBehaviour(int argv, char** argc) {
                                         SDL_Delay(nthp::fixedToInt(nthp::frameDelay - nthp::deltaTime));
                                         nthp::deltaTime = nthp::frameDelay;
                                 }
+                                currentStage.data.globalVarSet[DELTATIME_GLOBAL_INDEX] = nthp::deltaTime;
                         }
 
                         // Exit Phase

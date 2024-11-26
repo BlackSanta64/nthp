@@ -1,6 +1,21 @@
 #pragma once
 #include "s_node.hpp"
 
+typedef enum {
+        MOUSEPOS_X_GLOBAL_INDEX,
+        MOUSEPOS_Y_GLOBAL_INDEX,
+        DELTATIME_GLOBAL_INDEX,
+        MOUSE1_GLOBAL_INDEX,
+        MOUSE2_GLOBAL_INDEX,
+        MOUSE3_GLOBAL_INDEX,
+        RPOLL1_GLOBAL_INDEX,
+        RPOLL2_GLOBAL_INDEX,
+        RPOLL3_GLOBAL_INDEX,
+        RPOLL4_GLOBAL_INDEX,
+
+        COUNT_PREDEFINED_GLOBALS
+} predefined_globals;
+
 namespace nthp { namespace script { namespace instructions {
 
 
@@ -83,7 +98,14 @@ namespace ID {
                 ACTION_DEFINE,\
                 ACTION_BIND,\
                 ACTION_CLEAR,\
-                STAGE_LOAD\
+                STAGE_LOAD,\
+                POLL_ENT_POSITION,\
+                POLL_ENT_HITBOX,\
+                POLL_ENT_RENDERSIZE,\
+                POLL_ENT_CURRENTFRAME,\
+                DRAW_SETCOLOR,\
+                DRAW_LINE,\
+                DRAW_RECT\
         )
 
         INSTRUCTION_LIST( INSTRUCTION_TOKENS(), numberOfInstructions);
@@ -140,8 +162,7 @@ namespace Size {
 		TEXTURE_CLEAR = 0,
 		TEXTURE_LOAD = DYNAMIC_SIZE, 
 		SET_ACTIVE_PALETTE = DYNAMIC_SIZE, 
-                
-                CORE_INIT = DYNAMIC_SIZE,
+
 
                 FRAME_DEFINE = sizeof(stdRef),
                 FRAME_CLEAR = 0,
@@ -161,6 +182,8 @@ namespace Size {
                 ENT_SETRENDERSIZE = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef),
                 ENT_CHECKCOLLISION = sizeof(stdRef) + sizeof(stdRef) + sizeof(indRef),
 
+
+                CORE_INIT = DYNAMIC_SIZE,
                 CORE_QRENDER = sizeof(stdRef),
                 CORE_ABS_QRENDER = sizeof(stdRef),
                 CORE_CLEAR = 0,
@@ -175,7 +198,16 @@ namespace Size {
                 ACTION_DEFINE = sizeof(stdRef),
                 ACTION_CLEAR = 0, //
                 ACTION_BIND =  sizeof(stdRef) + sizeof(uint32_t) + sizeof(int32_t), // actionIndex, varIndex, key
-                STAGE_LOAD = DYNAMIC_SIZE
+                STAGE_LOAD = DYNAMIC_SIZE,
+
+                POLL_ENT_POSITION = sizeof(stdRef),
+                POLL_ENT_HITBOX = sizeof(stdRef),
+                POLL_ENT_RENDERSIZE = sizeof(stdRef),
+                POLL_ENT_CURRENTFRAME = sizeof(stdRef),
+
+                DRAW_SETCOLOR = sizeof(stdRef),
+                DRAW_LINE = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef),
+                DRAW_RECT = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef)
         );
 }
 

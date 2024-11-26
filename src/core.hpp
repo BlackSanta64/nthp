@@ -5,6 +5,9 @@
 
 namespace nthp {
 
+
+        #define DEFAULT_RENDER_COLOR 144, 144, 144, 255
+
         struct RenderPacket {
                 SDL_Texture* texture;
                 SDL_Rect* srcRect;

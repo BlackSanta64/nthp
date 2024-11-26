@@ -58,7 +58,7 @@ int nthp::EngineCore::init(nthp::RenderRuleSet settings, const char* title, bool
         NOVERB_PRINT_DEBUG("done.\n");
         PRINT_DEBUG("Configuring defaults...\t");
 
-        SDL_SetRenderDrawColor(renderer, 144, 144, 144, SDL_ALPHA_OPAQUE);
+        SDL_SetRenderDrawColor(renderer, DEFAULT_RENDER_COLOR);
         running = true;
 	
 	// This ensures the correct render resolution context when calculating scale factors.

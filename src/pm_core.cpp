@@ -42,20 +42,10 @@ int nthp::debuggerBehaviour(std::string target, FILE* debugOutputTarget) {
                         // Init phase.
                         PRINT_DEBUG("Beginning INIT phase...\n");
                
-                        do {
-                                
-                                frameStart = SDL_GetTicks();
+                    
 
-                                if(currentStage.init()) return 1;
-
-                                nthp::deltaTime = nthp::intToFixed(SDL_GetTicks() - frameStart);
-                        
-                                if(nthp::deltaTime < nthp::frameDelay) {
-                                        SDL_Delay(nthp::fixedToInt(nthp::frameDelay - nthp::deltaTime));
-                                        nthp::deltaTime = nthp::frameDelay;
-                                }
-
-                        } while(!nthp::core.isRunning());
+                        if(currentStage.init()) return 1;
+ 
                         
                         while((nthp::core.isRunning()) && (!currentStage.data.changeStage) && debuggingActiveProcess) {
                                 frameStart = SDL_GetTicks();
@@ -68,7 +58,6 @@ int nthp::debuggerBehaviour(std::string target, FILE* debugOutputTarget) {
                                         // Tick phase.
                                 currentStage.tick();
                                 currentStage.logic();
-                                
 
 
                                 nthp::deltaTime = nthp::intToFixed(SDL_GetTicks() - frameStart);
@@ -77,6 +66,10 @@ int nthp::debuggerBehaviour(std::string target, FILE* debugOutputTarget) {
                                         SDL_Delay(nthp::fixedToInt(nthp::frameDelay - nthp::deltaTime));
                                         nthp::deltaTime = nthp::frameDelay;
                                 }
+                                
+                                g_access.lock();
+                                        currentStage.data.globalVarSet[DELTATIME_GLOBAL_INDEX] = nthp::deltaTime;
+                                g_access.unlock();
                         }
 
                         // Exit Phase
@@ -98,9 +91,13 @@ int nthp::debuggerBehaviour(std::string target, FILE* debugOutputTarget) {
                         }
                 }
         }
+        g_access.lock();
 
-
+        currentStage.clean();
         nthp::core.cleanup();
+
+        g_access.unlock();
+        
         return 0;
 }
 
@@ -110,7 +107,7 @@ bool Kill_main_process = false;
 bool inHeadlessMode = false;
 
 int main(int argv, char** argc) {
-        nthp::setMaxFPS(30);
+        nthp::setMaxFPS(15);
         std::mutex g_access;
 
         std::thread debuggerThread(headless_runtime);
@@ -149,13 +146,7 @@ int main(int argv, char** argc) {
                         }
 
                         NTHP_GEN_DEBUG_INIT(debug_fd);
-                        
-                        g_access.lock();
-                        
-                        nthp::script::debug::debugInstructionCall.x = nthp::script::debug::BREAK;
-                        suspendExecution = true;
-                        
-                        g_access.unlock();
+
 
                         int ret = nthp::debuggerBehaviour(targetName, debug_fd);
                         if(ret) {
@@ -167,7 +158,7 @@ int main(int argv, char** argc) {
                         
                         NTHP_GEN_DEBUG_CLOSE();
 
-                        nthp::setMaxFPS(30);
+                        nthp::setMaxFPS(15);
                         std::cout << "> ";
                 }
         }

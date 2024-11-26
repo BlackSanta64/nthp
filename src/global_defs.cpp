@@ -91,6 +91,8 @@ void NTHP_GEN_DEBUG_CLOSE(void) {
                 if(NTHP_debug_output != stdout) {
                         fclose(NTHP_debug_output);
                 }
+
+                NTHP_debug_output = stdout;
         }
 }
 

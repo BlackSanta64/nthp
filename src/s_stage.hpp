@@ -4,6 +4,7 @@
 
 
 
+
 namespace nthp {
         namespace script {
                 namespace stage {
@@ -68,6 +69,7 @@ namespace nthp {
                                 nthp::script::Script& getScript(size_t index) { return scriptBlock[index]; }
                                 nthp::script::Script::ScriptDataSet data;
 
+                                void clean();
 
                                 ~Stage();
                         private:

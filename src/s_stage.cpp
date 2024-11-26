@@ -44,6 +44,7 @@ int nthp::script::stage::Stage::loadStage(const char* stageFile) {
         }
 
         memset(&data, 0, sizeof(nthp::script::Script::ScriptDataSet));
+        data.globalMemBudget = COUNT_PREDEFINED_GLOBALS;
         
         std::vector<nthp::script::stage::scriptConfig> configs;
         nthp::script::stage::scriptConfig temp;
@@ -116,11 +117,15 @@ void nthp::script::stage::Stage::handleEvents() {
         nthp::mousePosition = nthp::generateWorldPosition(nthp::vectGeneric(x, y), &nthp::core.p_coreDisplay);
         nthp::mousePosition -= nthp::core.p_coreDisplay.cameraWorldPosition;
 
+        data.globalVarSet[MOUSEPOS_X_GLOBAL_INDEX] = nthp::mousePosition.x;
+        data.globalVarSet[MOUSEPOS_Y_GLOBAL_INDEX] = nthp::mousePosition.y;
+
         while(SDL_PollEvent(&nthp::core.eventList)) {
                 switch(nthp::core.eventList.type) {
                 case SDL_QUIT:
                         nthp::core.stop();
-                        break;
+                break;
+
                 case SDL_KEYDOWN:
                         for(size_t i = 0; i < data.actionListSize; ++i) {
                                 if(nthp::core.eventList.key.keysym.sym == data.actionList[i].boundKey) {
@@ -128,6 +133,7 @@ void nthp::script::stage::Stage::handleEvents() {
                                 }
                         }
                 break;
+                
                 case SDL_KEYUP:
                         for(size_t i = 0; i < data.actionListSize; ++i) {
                                 if(nthp::core.eventList.key.keysym.sym == data.actionList[i].boundKey) {
@@ -135,6 +141,38 @@ void nthp::script::stage::Stage::handleEvents() {
                                 }
                         }
                 break;
+
+                case SDL_MOUSEBUTTONDOWN:
+                        if(nthp::core.eventList.button.button == SDL_BUTTON_LEFT) {
+                                data.globalVarSet[MOUSE1_GLOBAL_INDEX] = nthp::intToFixed(1);
+                                break;
+                        }
+                        if(nthp::core.eventList.button.button == SDL_BUTTON_RIGHT) {
+                                data.globalVarSet[MOUSE2_GLOBAL_INDEX] = nthp::intToFixed(1);
+                                break;
+                        }
+                        if(nthp::core.eventList.button.button == SDL_BUTTON_MIDDLE) {
+                                data.globalVarSet[MOUSE3_GLOBAL_INDEX] = nthp::intToFixed(1);
+                                break;
+                        }
+                        
+                break;
+
+                case SDL_MOUSEBUTTONUP:
+                        if(nthp::core.eventList.button.button == SDL_BUTTON_LEFT) {
+                                data.globalVarSet[MOUSE1_GLOBAL_INDEX] = 0;
+                                break;
+                        }
+                        if(nthp::core.eventList.button.button == SDL_BUTTON_RIGHT) {
+                                data.globalVarSet[MOUSE2_GLOBAL_INDEX] = 0;
+                                break;
+                        }
+                        if(nthp::core.eventList.button.button == SDL_BUTTON_MIDDLE) {
+                                data.globalVarSet[MOUSE3_GLOBAL_INDEX] = 0;
+                                break;
+                        }
+                break;
+
 
                 default:
                         break;
@@ -189,12 +227,9 @@ int nthp::script::stage::Stage::exit() {
 }
 
 
-
-
-
-
-
-nthp::script::stage::Stage::~Stage() {
+// Cleanly erases the whole stage; scripts, triggers, and any shared script data.
+// After calling, stage object is safe to use again (i.e. load another stage file)
+void nthp::script::stage::Stage::clean() {
         if(stageSize > 0) {
                 delete[] scriptBlock;
                 delete[] triggerBlock;
@@ -202,6 +237,23 @@ nthp::script::stage::Stage::~Stage() {
         if(data.textureBlockSize > 0) delete[] data.textureBlock;
         if(data.entityBlockSize > 0) delete[] data.entityBlock;
         if(data.frameBlockSize > 0) delete[] data.frameBlock;
-        if(data.varSetSize > 0) delete[] data.globalVarSet;
+        if(data.globalMemBudget > 0) delete[] data.globalVarSet;
+        if(data.actionListSize > 0) delete[] data.actionList;
 
+        memset(&data, 0, sizeof(data));
+
+        initList.clear();
+        tickList.clear();
+        logicList.clear();
+        exitList.clear();
+
+        globalMemBudget = 0;
+        stageSize = 0;
+}
+
+
+
+
+nthp::script::stage::Stage::~Stage() {
+        clean();
 }

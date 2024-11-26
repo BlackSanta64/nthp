@@ -12,11 +12,9 @@ GLOBAL leftKey
 GLOBAL rightKey
 GLOBAL exitKey
 
-GLOBAL MovementSpeed_Pos
-GLOBAL MovementSpeed_Neg
+GLOBAL MovementSpeed
 
-SET >MovementSpeed_Neg -1
-SET >MovementSpeed_Pos 1
+SET >MovementSpeed 1
 
 
 VAR returnRegister
@@ -35,7 +33,7 @@ VAR value2
 
 MACRO INIT_FLAGS {
         / x  y  tx  ty  cx cy fs sr title /
-        800 800 500 500 0 0  0  0  nthp.exe
+        1920 1080 500 500 0 0  0  0  nthp.exe
 }
 
 CORE_INIT @INIT_FLAGS
@@ -73,10 +71,11 @@ ENT_SETRENDERSIZE #e_tux 200 300
 ENT_SETCURRENTFRAME #e_tux 0
 ENT_SETPOS #e_tux 150 150
 ENT_SETHITBOXSIZE #e_tux 200 300
+ENT_SETHITBOXOFFSET #e_tux 0 0
 
 
 ENT_SETFRAMERANGE #e_absTux #f0_wall 1
-ENT_SETRENDERSIZE #e_absTux 100 76
+ENT_SETRENDERSIZE #e_absTux 500 500
 ENT_SETCURRENTFRAME #e_absTux 0
 ENT_SETPOS #e_absTux 0 0
 ENT_SETHITBOXSIZE #e_absTux 100 76

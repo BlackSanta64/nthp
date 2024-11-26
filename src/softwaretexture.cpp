@@ -197,7 +197,6 @@ int nthp::texture::tools::generateSoftwareTextureFromImage(const char* inputImag
                 pixelData[i] = (smallestElement << 4) | (baseImage.getPixel(i).A / nthp::texture::SoftwareTexture::alphaLevelSize);
                 smallestElement = 0;
                 progress = ((double)i / (double)surfaceSize) * (double)100;
-                NOVERB_PRINT_DEBUG("Progress: [%lf%%]...\n", progress);
         }
   
 
