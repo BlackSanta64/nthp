@@ -8,9 +8,9 @@
 #include "gtexture.hpp"
 
 #ifdef PM
-
-	#define DEBUG
-
+        #ifndef DEBUG
+	        #define DEBUG
+        #endif
 #endif
 
 
@@ -90,7 +90,7 @@ namespace script {
                         Action* actionList; // Tracks keypresses; created with ACTION_DEFINE and ACTION_BIND to configure.
                         size_t  actionListSize;
 
-                        short penColor; // stores a color as an index to the palette to draw primitives with the DRAW instruction.
+                        unsigned short penColor; // stores a color as an index to the palette to draw primitives with the DRAW instruction.
 
 
                         bool isSuspended, changeStage; // Stage stuff.

@@ -1,6 +1,6 @@
 DEPEND #CONTEXT_MAINPROG
 
-GLOBAL inc
+VAR inc
 VAR collisionReg
 
 / Saves #e_tux hitbox data into r_poll1-r_poll4 /
@@ -9,11 +9,12 @@ POLL #e_tux HITBOX
 
 
 
-INC >inc
-IF >inc GRT 254
-        SET >inc 0
+INC $inc
+IF $inc GRT 4095
+        SET $inc 0
 END
 
+DRAW_SETCOLOR $inc
 
 
 IF >upKey
@@ -40,13 +41,28 @@ IF >mouse1
         ENT_SETPOS #e_tux >mousepos_x >mousepos_y
 END
 
+IF >cam_up
+        CORE_MOVECAMERA 0 >MovementSpeed
+END
+IF >cam_down
+        CORE_MOVECAMERA 0 ->MovementSpeed
+END
+IF >cam_left
+        CORE_MOVECAMERA >MovementSpeed 0
+END
+IF >cam_right
+        CORE_MOVECAMERA ->MovementSpeed 0
+END
+
+
+
 ENT_CHECKCOLLISION #e_tux #e_absTux $collisionReg
 IF $collisionReg
         ENT_SETPOS #e_tux 500 500
 END
 
 
-SM_WRITE 1 >inc
+SM_WRITE 1 $inc
 CORE_CLEAR
 
 

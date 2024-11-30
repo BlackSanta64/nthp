@@ -12,6 +12,11 @@ GLOBAL leftKey
 GLOBAL rightKey
 GLOBAL exitKey
 
+GLOBAL cam_up
+GLOBAL cam_down
+GLOBAL cam_right
+GLOBAL cam_left
+
 GLOBAL MovementSpeed
 
 SET >MovementSpeed 1
@@ -92,13 +97,23 @@ CONST a_left 2
 CONST a_right 3
 CONST a_exit 4
 
-ACTION_DEFINE 5
+CONST a_moveCamera_up 5
+CONST a_moveCamera_down 6
+CONST a_moveCamera_left 7
+CONST a_moveCamera_right 8
+
+ACTION_DEFINE 9
 
 ACTION_BIND #a_up >upKey w
 ACTION_BIND #a_down >downKey s
 ACTION_BIND #a_left >leftKey a
 ACTION_BIND #a_right >rightKey d
 ACTION_BIND #a_exit >exitKey ESCAPE
+
+ACTION_BIND #a_moveCamera_up >cam_up UP
+ACTION_BIND #a_moveCamera_down >cam_down DOWN
+ACTION_BIND #a_moveCamera_left >cam_left LEFT
+ACTION_BIND #a_moveCamera_right >cam_right RIGHT
 
 
 

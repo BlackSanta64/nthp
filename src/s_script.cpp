@@ -823,7 +823,9 @@ DEFINE_EXECUTION_BEHAVIOUR(ACTION_BIND) {
         EVAL_STDREF(target);
 
         data->actionList[nthp::fixedToInt(target.value)].varIndex = var;  
-        data->actionList[nthp::fixedToInt(target.value)].boundKey = key;      
+        data->actionList[nthp::fixedToInt(target.value)].boundKey = key;
+
+        printf("bound ACTION [%d] key index [%d] to GLOBAL [%u]\n", nthp::fixedToInt(target.value), key, var);
 
         return 0;
 }
@@ -907,7 +909,7 @@ DEFINE_EXECUTION_BEHAVIOUR(POLL_ENT_HITBOX) {
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(POLL_ENT_RENDERSIZE) {
-                indRef target = *(indRef*)(data->nodeSet[data->currentNode].access.data);
+        indRef target = *(indRef*)(data->nodeSet[data->currentNode].access.data);
 
         if(PR_METADATA_GET(target, nthp::script::flagBits::IS_REFERENCE)) {
                 if(PR_METADATA_GET(target, nthp::script::flagBits::IS_GLOBAL)) {
@@ -931,7 +933,9 @@ DEFINE_EXECUTION_BEHAVIOUR(DRAW_SETCOLOR) {
 
         EVAL_STDREF(colorIndex);
 
-        data->penColor = colorIndex.value;
+        data->penColor = (decltype(data->penColor))nthp::fixedToInt(colorIndex.value);
+
+
         return 0;
 }
 
@@ -946,44 +950,18 @@ DEFINE_EXECUTION_BEHAVIOUR(DRAW_LINE) {
         EVAL_STDREF(x2);
         EVAL_STDREF(y2);
 
-        const nthp::vectGeneric pointA = nthp::generatePixelPosition(nthp::worldPosition(x1.value, y1.value), &nthp::core.p_coreDisplay);
-        const nthp::vectGeneric pointB = nthp::generatePixelPosition(nthp::worldPosition(x2.value, y2.value), &nthp::core.p_coreDisplay);
+        const nthp::vectGeneric pointA = nthp::generatePixelPosition(nthp::worldPosition(x1.value, y1.value), &nthp::core.p_coreDisplay) + nthp::generatePixelPosition(nthp::vectGeneric(nthp::core.p_coreDisplay.cameraWorldPosition), &nthp::core.p_coreDisplay);
+        const nthp::vectGeneric pointB = nthp::generatePixelPosition(nthp::worldPosition(x2.value, y2.value), &nthp::core.p_coreDisplay) + nthp::generatePixelPosition(nthp::vectGeneric(nthp::core.p_coreDisplay.cameraWorldPosition), &nthp::core.p_coreDisplay);
 
         SDL_SetRenderDrawColor(nthp::core.getRenderer(), nthp::script::activePalette.colorSet[data->penColor].R,nthp::script::activePalette.colorSet[data->penColor].G, nthp::script::activePalette.colorSet[data->penColor].B, 255);
+        
         SDL_RenderDrawLine(nthp::core.getRenderer(), pointA.x, pointA.y, pointB.x, pointB.y);
+
         SDL_SetRenderDrawColor(nthp::core.getRenderer(), DEFAULT_RENDER_COLOR);
 
         return 0;
 }
 
-DEFINE_EXECUTION_BEHAVIOUR(DRAW_RECT) {
-        stdRef x = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
-        stdRef y = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
-        stdRef w = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
-        stdRef h = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef));
-
-        EVAL_STDREF(x);
-        EVAL_STDREF(y);
-        EVAL_STDREF(w);
-        EVAL_STDREF(h);
-
-
-        const nthp::vectGeneric position = nthp::generatePixelPosition(nthp::worldPosition(x.value, y.value), &nthp::core.p_coreDisplay);
-        const nthp::vectGeneric size = nthp::generateWorldPosition(nthp::worldPosition(w.value, h.value), &nthp::core.p_coreDisplay);
-
-        SDL_Rect render;
-        render.x = position.x;
-        render.y = position.y;
-        render.w = size.x;
-        render.h = size.y;
-
-        SDL_SetRenderDrawColor(nthp::core.getRenderer(), nthp::script::activePalette.colorSet[data->penColor].R,nthp::script::activePalette.colorSet[data->penColor].G, nthp::script::activePalette.colorSet[data->penColor].B, 255);
-        SDL_RenderDrawRect(nthp::core.getRenderer(), &render);
-        SDL_SetRenderDrawColor(nthp::core.getRenderer(), DEFAULT_RENDER_COLOR);
-
-
-        return 0;
-}
 
 
 // Genius design; Automatically updates ID indecies and places functions accordingly. Just add/change stuff in 's_instructions.hpp'.

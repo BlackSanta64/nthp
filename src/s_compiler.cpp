@@ -1,5 +1,7 @@
 #ifdef PM
-	#define DEBUG
+        #ifndef DEBUG
+	        #define DEBUG
+        #endif
 #endif
 
 #include "s_compiler.hpp"
@@ -1675,6 +1677,10 @@ DEFINE_COMPILATION_BEHAVIOUR(ACTION_BIND) {
                 if(fileRead == "RCTRL")         { key = SDLK_RCTRL; break; }
                 if(fileRead == "LCTRL")         { key = SDLK_LCTRL; break; }
                 if(fileRead == "RETURN")        { key = SDLK_RETURN; break; }
+                if(fileRead == "UP")            { key = SDLK_UP; break; }
+                if(fileRead == "DOWN")          { key = SDLK_DOWN; break; }
+                if(fileRead == "LEFT")          { key = SDLK_LEFT; break; }
+                if(fileRead == "RIGHT")         { key = SDLK_RIGHT; break; }
         } while(0);
 
         stdRef* _target = (stdRef*)(nodeList[currentNode].access.data);
@@ -1799,39 +1805,6 @@ DEFINE_COMPILATION_BEHAVIOUR(DRAW_LINE) {
 }
 
 
-DEFINE_COMPILATION_BEHAVIOUR(DRAW_RECT) {
-                ADD_NODE(DRAW_RECT);
-
-        EVAL_SYMBOL();
-        auto _x = EVAL_PREF();
-        CHECK_REF(_x);
-
-        EVAL_SYMBOL();
-        auto _y = EVAL_PREF();
-        CHECK_REF(_y);
-
-        EVAL_SYMBOL();
-        auto _w = EVAL_PREF();
-        CHECK_REF(_w);
-
-        EVAL_SYMBOL();
-        auto _h = EVAL_PREF();
-        CHECK_REF(_h);
-
-        stdRef* x = (stdRef*)(nodeList[currentNode].access.data);
-        stdRef* y = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
-        stdRef* w = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
-        stdRef* h = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef));
-
-        *x = _x;
-        *y = _y;
-        *w = _w;
-        *h = _h;
-
-
-        PRINT_NODEDATA();
-        return 0;
-}
 
 // COMPILER INSTANCE BEHAVIOUR GOES HERE                ||
 //                                                      VV
@@ -2247,7 +2220,6 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                 CHECK_COMP(DRAW_SETCOLOR);
                 CHECK_COMP(DRAW_LINE);
-                CHECK_COMP(DRAW_RECT);
 
         } // Main loop
 

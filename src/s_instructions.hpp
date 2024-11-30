@@ -104,8 +104,7 @@ namespace ID {
                 POLL_ENT_RENDERSIZE,\
                 POLL_ENT_CURRENTFRAME,\
                 DRAW_SETCOLOR,\
-                DRAW_LINE,\
-                DRAW_RECT\
+                DRAW_LINE\
         )
 
         INSTRUCTION_LIST( INSTRUCTION_TOKENS(), numberOfInstructions);
@@ -206,8 +205,7 @@ namespace Size {
                 POLL_ENT_CURRENTFRAME = sizeof(stdRef),
 
                 DRAW_SETCOLOR = sizeof(stdRef),
-                DRAW_LINE = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef),
-                DRAW_RECT = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef)
+                DRAW_LINE = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef)
         );
 }
 
