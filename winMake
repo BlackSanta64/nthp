@@ -3,6 +3,9 @@ TARGET=run
 SDLInclude=C:\CppLibs\SDL\SDL2\include
 SDLLib=C:\CppLibs\SDL\SDL2\lib\x64
 
+SDLMixerInclude=C:\CppLibs\SDL\SDL2\SDL2_mixer\include
+SDLMixerLib=C:\CppLibs\SDL\SDL2\SDL2_mixer\lib\x64
+
 USE_SDLIMAGE = 0
 
 # SDL_Image is not required for the engine runtime; It's only used for
@@ -32,13 +35,13 @@ PM_SDLIMGIncludePath=-I C:\CppLibs\SDL\SDL2\SDL2_image\SDL2_image-2.6.2\include
 CONFIG = X64
 
 
-CFLAGS = -D WINDOWS -D USE_SDLIMG=$(USE_SDLIMAGE) -I $(SDLInclude) $(SDLIMGIncludePath) /EHsc
-DEBUG_CFLAGS = -D WINDOWS -D USE_SDLIMG=$(USE_SDLIMAGE) -D DEBUG=1 -I $(SDLInclude) $(SDLIMGIncludePath) /EHsc
-PM_CFLAGS =  -D WINDOWS -D PM -D DEBUG=1 -D USE_SDLIMG=1 -I $(SDLInclude) $(PM_SDLIMGIncludePath) /EHsc
+CFLAGS = -D WINDOWS -D USE_SDLIMG=$(USE_SDLIMAGE) -I $(SDLInclude) $(SDLIMGIncludePath) -I $(SDLMixerInclude) /EHsc
+DEBUG_CFLAGS = -D WINDOWS -D USE_SDLIMG=$(USE_SDLIMAGE) -D DEBUG=1 -I $(SDLInclude) $(SDLIMGIncludePath) -I $(SDLMixerInclude) /EHsc
+PM_CFLAGS =  -D WINDOWS -D PM -D DEBUG=1 -D USE_SDLIMG=1 -I $(SDLInclude) $(PM_SDLIMGIncludePath) -I $(SDLMixerInclude) /EHsc
 
-LINKERFLAGS = shell32.lib SDL2.lib SDL2main.lib $(SDLIMGLibFile) -link -LIBPATH:$(SDLLib) $(SDLIMGLibPath) -SUBSYSTEM:WINDOWS -MACHINE:$(CONFIG)
-DEBUG_LINKERFLAGS = shell32.lib SDL2.lib SDL2main.lib $(SDLIMGLibFile) -link -LIBPATH:$(SDLLib) $(SDLIMGLibPath) -DEBUG -ASSEMBLYDEBUG -SUBSYSTEM:CONSOLE -MACHINE:$(CONFIG)
-PM_LINKERFLAGS = shell32.lib SDL2.lib SDL2main.lib $(PM_SDLIMGLibFile) -link -LIBPATH:$(SDLLib) $(PM_SDLIMGLibPath) -SUBSYSTEM:CONSOLE -MACHINE:$(CONFIG)
+LINKERFLAGS = shell32.lib SDL2.lib SDL2main.lib SDL2_mixer.lib $(SDLIMGLibFile) -link -LIBPATH:$(SDLLib) -LIBPATH:$(SDLMixerLib) $(SDLIMGLibPath) -SUBSYSTEM:WINDOWS -MACHINE:$(CONFIG)
+DEBUG_LINKERFLAGS = shell32.lib SDL2.lib SDL2main.lib SDL2_mixer.lib $(SDLIMGLibFile) -link -LIBPATH:$(SDLLib) -LIBPATH:$(SDLMixerLib) $(SDLIMGLibPath) -DEBUG -ASSEMBLYDEBUG -SUBSYSTEM:CONSOLE -MACHINE:$(CONFIG)
+PM_LINKERFLAGS = shell32.lib SDL2.lib SDL2main.lib SDL2_mixer.lib $(PM_SDLIMGLibFile) -link -LIBPATH:$(SDLLib) -LIBPATH:$(SDLMixerLib) $(PM_SDLIMGLibPath) -SUBSYSTEM:CONSOLE -MACHINE:$(CONFIG)
 
 libTargets = global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj e_collision.obj st_compress.obj s_compiler.obj s_script.obj gtexture.obj s_stage.obj
 debug_libTargets = global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj e_collision_d.obj st_compress_d.obj s_compiler_d.obj s_script_d.obj gtexture_d.obj s_stage_d.obj

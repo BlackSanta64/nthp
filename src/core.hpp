@@ -1,7 +1,7 @@
 #pragma once
 #include "global.hpp"
 #include "position.hpp"
-
+#include "audiosystem.hpp"
 
 namespace nthp {
 
@@ -52,6 +52,13 @@ namespace nthp {
                 inline bool getInitSuccess() { return initSuccess; }
 
                 int cleanup();
+
+                nthp::audio::MusicChannel music;
+
+                nthp::audio::SoundChannel sound_a;
+                nthp::audio::SoundChannel sound_b;
+                nthp::audio::SoundChannel sound_c;
+
 
                 ~EngineCore();
         private:

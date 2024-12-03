@@ -9,7 +9,6 @@
 #include "s_compiler.hpp"
 
 
-bool u,d,l,r,inc,dec;
 nthp::EngineCore nthp::core;
 
 nthp::script::stage::Stage currentStage;
@@ -17,6 +16,7 @@ nthp::script::stage::Stage currentStage;
 int nthp::runtimeBehaviour(int argv, char** argc) {
         // The DEBUG_INIT is called at the start of main, and DEBUG_CLOSE
         // is called after the destruction of the main core.
+
 
 #ifdef DEBUG
         NTHP_GEN_DEBUG_INIT(stdout);
@@ -50,6 +50,9 @@ int nthp::runtimeBehaviour(int argv, char** argc) {
 
                         // Init phase.
                         if(currentStage.init()) return -1;
+
+                        nthp::core.music.load("am.wav");
+                        nthp::core.music.start();
   
                         
                         while(nthp::core.isRunning() && (!currentStage.data.changeStage)) {

@@ -1,5 +1,6 @@
 #include "core.hpp"
 
+std::vector<std::string> nthp::audio::audioDeviceNames;
 
 
 nthp::EngineCore::EngineCore(nthp::RenderRuleSet settings, const char* title, bool fullscreen, bool softwareRendering) {
@@ -74,6 +75,25 @@ int nthp::EngineCore::init(nthp::RenderRuleSet settings, const char* title, bool
 
         initSuccess = true;
         NOVERB_PRINT_DEBUG("done.\n\n");
+
+
+        if(Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 4096) == -1) {
+                PRINT_DEBUG_ERROR("Unable to initialize audio systems. Disabling audio system until restart.\n");
+
+                // TODO
+
+                return 0;
+        }
+
+        const size_t deviceCount = SDL_GetNumAudioDevices(0);
+        PRINT_DEBUG("Searching for audio devices...");
+        for(size_t i = 0; i < deviceCount; ++i) {
+                nthp::audio::audioDeviceNames.push_back(std::string(SDL_GetAudioDeviceName(i, 0)));
+                NOVERB_PRINT_DEBUG("\n\tDetected audio device: %s...", nthp::audio::audioDeviceNames[i].c_str());
+        }
+        NOVERB_PRINT_DEBUG("Done.\n");
+
+
 
         return 0;
 }
@@ -209,6 +229,7 @@ int nthp::EngineCore::cleanup() {
 
         SDL_DestroyWindow(window);
         SDL_DestroyRenderer(renderer);
+        Mix_CloseAudio();
 
         NOVERB_PRINT_DEBUG("done.\n");
 

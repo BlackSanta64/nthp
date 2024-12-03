@@ -5,11 +5,13 @@
 
 #ifdef LINUX
 	#include <SDL2/SDL.h>
+        #include <SDL2/SDL_mixer.h>
 #endif
 
 #ifdef WINDOWS
 	#include <SDL.h>
         #include <SDL_audio.h>
+        #include <SDL_mixer.h>
 #endif
 
 #if USE_SDLIMG == 1
