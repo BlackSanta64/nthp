@@ -950,9 +950,13 @@ DEFINE_COMPILATION_BEHAVIOUR(TEXTURE_CLEAR) {
 
 DEFINE_COMPILATION_BEHAVIOUR(TEXTURE_LOAD) {
 	
-	EVAL_SYMBOL(); // file
+	EVAL_SYMBOL(); // output
+        auto ref = EVAL_PREF();
+        CHECK_REF(ref);
 
-	std::string textureFile = fileRead;;
+        EVAL_SYMBOL(); // file
+        std::string textureFile = fileRead;
+
 
 	if(textureFile.size() > UINT8_MAX - sizeof(nthp::script::instructions::stdRef)) {
 		PRINT_COMPILER_ERROR("File path name in TEXTURE_LOAD at [%zu] too large. Must be less than [%u] characters.", currentNode, UINT8_MAX - sizeof(nthp::script::instructions::stdRef));
@@ -968,9 +972,7 @@ DEFINE_COMPILATION_BEHAVIOUR(TEXTURE_LOAD) {
 	memcpy(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef), textureFile.c_str(), textureFile.size());
         nodeList[currentNode].access.data[nodeList[currentNode].access.size - 1] = '\000';
         
-        EVAL_SYMBOL(); // output
-        auto ref = EVAL_PREF();
-        CHECK_REF(ref);
+       
 
         ref.value = nthp::getFixedInteger(ref.value);
         *output = ref;
@@ -1805,6 +1807,176 @@ DEFINE_COMPILATION_BEHAVIOUR(DRAW_LINE) {
 }
 
 
+DEFINE_COMPILATION_BEHAVIOUR(SOUND_DEFINE) {
+        ADD_NODE(SOUND_DEFINE);
+
+        EVAL_SYMBOL();
+        auto size = EVAL_PREF();
+        CHECK_REF(size);
+
+        stdRef* s = (stdRef*)(nodeList[currentNode].access.data);
+
+        *s = size;
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+DEFINE_COMPILATION_BEHAVIOUR(SOUND_CLEAR) {
+        ADD_NODE(SOUND_CLEAR);
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(MUSIC_DEFINE) {
+        ADD_NODE(MUSIC_DEFINE);
+
+        EVAL_SYMBOL();
+        auto size = EVAL_PREF();
+        CHECK_REF(size);
+
+        stdRef* s = (stdRef*)(nodeList[currentNode].access.data);
+
+        *s = size;
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+DEFINE_COMPILATION_BEHAVIOUR(MUSIC_CLEAR) {
+        ADD_NODE(MUSIC_CLEAR);
+
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(MUSIC_LOAD) {
+
+        EVAL_SYMBOL();
+        auto output_i = EVAL_PREF();
+        CHECK_REF(output_i);
+
+
+        EVAL_SYMBOL();
+        std::string audioFile = fileRead;
+
+        if(audioFile.size() > UINT8_MAX - sizeof(nthp::script::instructions::stdRef)) {
+		PRINT_COMPILER_ERROR("File path name in MUSIC_LOAD at [%zu] too large. Must be less than [%u] characters.", currentNode, UINT8_MAX - sizeof(nthp::script::instructions::stdRef));
+		return 1;
+	}
+
+        ADD_NODE(MUSIC_LOAD);
+        nodeList[currentNode].access.size = sizeof(stdRef) + audioFile.size() + 1;
+        nodeList[currentNode].access.data = (char*)(malloc(nodeList[currentNode].access.size));
+
+        stdRef* output = (stdRef*)(nodeList[currentNode].access.data);
+
+        memcpy(nodeList[currentNode].access.data + sizeof(stdRef), audioFile.c_str(), audioFile.size());
+        nodeList[currentNode].access.data[nodeList[currentNode].access.size - 1] = '\000';
+
+        *output = output_i;
+        output->value = nthp::getFixedInteger(output->value);
+
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(SOUND_LOAD) {
+
+        EVAL_SYMBOL();
+        auto output_i = EVAL_PREF();
+        CHECK_REF(output_i);
+
+
+        EVAL_SYMBOL();
+        std::string audioFile = fileRead;
+
+        if(audioFile.size() > UINT8_MAX - sizeof(nthp::script::instructions::stdRef)) {
+		PRINT_COMPILER_ERROR("File path name in SOUND_LOAD at [%zu] too large. Must be less than [%u] characters.", currentNode, UINT8_MAX - sizeof(nthp::script::instructions::stdRef));
+		return 1;
+	}
+
+        ADD_NODE(SOUND_LOAD);
+        nodeList[currentNode].access.size = sizeof(stdRef) + audioFile.size() + 1;
+        nodeList[currentNode].access.data = (char*)(malloc(nodeList[currentNode].access.size));
+
+        stdRef* output = (stdRef*)(nodeList[currentNode].access.data);
+
+        memcpy(nodeList[currentNode].access.data + sizeof(stdRef), audioFile.c_str(), audioFile.size());
+        nodeList[currentNode].access.data[nodeList[currentNode].access.size - 1] = '\000';
+
+        *output = output_i;
+        output->value = nthp::getFixedInteger(output->value);
+
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+DEFINE_COMPILATION_BEHAVIOUR(SOUND_PLAY) {
+        ADD_NODE(SOUND_PLAY);
+
+        EVAL_SYMBOL();
+        auto index = EVAL_PREF();
+        CHECK_REF(index);
+
+        stdRef* output = (stdRef*)nodeList[currentNode].access.data;
+
+        *output = index;
+        
+        PRINT_NODEDATA();
+        return 0;
+}
+
+DEFINE_COMPILATION_BEHAVIOUR(MUSIC_START) {
+        ADD_NODE(MUSIC_START);
+
+        EVAL_SYMBOL();
+        auto index = EVAL_PREF();
+        CHECK_REF(index);
+
+        stdRef* output = (stdRef*)nodeList[currentNode].access.data;
+
+        *output = index;
+        
+        PRINT_NODEDATA();
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(MUSIC_STOP) {
+        ADD_NODE(MUSIC_STOP);
+
+        
+        PRINT_NODEDATA();
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(MUSIC_PAUSE) {
+        ADD_NODE(MUSIC_PAUSE);
+
+        
+        PRINT_NODEDATA();
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(MUSIC_RESUME) {
+        ADD_NODE(MUSIC_RESUME);
+
+        
+        PRINT_NODEDATA();
+        return 0;
+}
+
+
 
 // COMPILER INSTANCE BEHAVIOUR GOES HERE                ||
 //                                                      VV
@@ -2220,6 +2392,20 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                 CHECK_COMP(DRAW_SETCOLOR);
                 CHECK_COMP(DRAW_LINE);
+
+
+                CHECK_COMP(SOUND_DEFINE);
+                CHECK_COMP(SOUND_CLEAR);
+                CHECK_COMP(MUSIC_DEFINE);
+                CHECK_COMP(MUSIC_CLEAR);
+                CHECK_COMP(MUSIC_LOAD);
+                CHECK_COMP(SOUND_LOAD);
+                CHECK_COMP(SOUND_PLAY);
+                CHECK_COMP(MUSIC_START);
+                CHECK_COMP(MUSIC_STOP);
+                CHECK_COMP(MUSIC_PAUSE);
+                CHECK_COMP(MUSIC_RESUME);
+                
 
         } // Main loop
 

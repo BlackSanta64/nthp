@@ -53,12 +53,7 @@ namespace nthp {
 
                 int cleanup();
 
-                nthp::audio::MusicChannel music;
-
-                nthp::audio::SoundChannel sound_a;
-                nthp::audio::SoundChannel sound_b;
-                nthp::audio::SoundChannel sound_c;
-
+                nthp::audio::defaultAudioSystem audioSystem;
 
                 ~EngineCore();
         private:

@@ -54,6 +54,15 @@ IF >cam_right
         CORE_MOVECAMERA ->MovementSpeed 0
 END
 
+IF >start_music
+        MUSIC_RESUME
+        SET >start_music 0
+END
+
+IF >stop_music
+        MUSIC_PAUSE
+        SET >stop_music 0
+END
 
 
 ENT_CHECKCOLLISION #e_tux #e_absTux $collisionReg

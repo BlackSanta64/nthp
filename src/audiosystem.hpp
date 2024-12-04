@@ -53,7 +53,7 @@ namespace nthp {
                         }
 
                         int resumeMusic() {
-                                if(!Mix_PlayingMusic()) {
+                                if(Mix_PlayingMusic()) {
                                         Mix_ResumeMusic();
                                 }
 
@@ -77,28 +77,51 @@ namespace nthp {
                 public:
                         SoundChannel() { soundData = NULL; }
                         SoundChannel(const char* file) {
+                                isAllocated = false;
                                 load(file);
                         }
                         
+                        // Returns 1 on failure.
                         int load(const char* file) {
                                 soundData = Mix_LoadWAV(file);
                                 if(soundData == NULL) {
                                         PRINT_DEBUG_ERROR("Unable to load sound [%s].\n", file);
+                                        return 1;
                                 }
+
+                                isAllocated = true;
+                                return 0;
                         }
 
+                        // Returns -1 on failure.
                         int playSound() {
-                                Mix_PlayChannel(-1, soundData, 0);
+                                return Mix_PlayChannel(-1, soundData, 0);
+                        }
+
+                        void free() {
+                                Mix_FreeChunk(soundData);
+                                soundData = NULL;
+                                isAllocated = false;
                         }
 
 
                         ~SoundChannel() {
-                                Mix_FreeChunk(soundData);
+                                free();
                         }
                         Mix_Chunk* soundData;
+                        bool isAllocated;
                 };
 
 
+
+                struct defaultAudioSystem {
+                        nthp::audio::MusicChannel* music;
+                        nthp::audio::SoundChannel* soundEffects;
+                        
+                        size_t soundSize;
+                        size_t musicSize;
+
+                };
 
 
         }

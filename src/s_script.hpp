@@ -92,6 +92,7 @@ namespace script {
 
                         unsigned short penColor; // stores a color as an index to the palette to draw primitives with the DRAW instruction.
 
+                        int currentMusicTrack;
 
                         bool isSuspended, changeStage; // Stage stuff.
 

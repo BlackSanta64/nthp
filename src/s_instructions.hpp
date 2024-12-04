@@ -104,7 +104,18 @@ namespace ID {
                 POLL_ENT_RENDERSIZE,\
                 POLL_ENT_CURRENTFRAME,\
                 DRAW_SETCOLOR,\
-                DRAW_LINE\
+                DRAW_LINE,\
+                SOUND_DEFINE,\
+                SOUND_CLEAR,\
+                MUSIC_DEFINE,\
+                MUSIC_CLEAR,\
+                MUSIC_LOAD,\
+                SOUND_LOAD,\
+                SOUND_PLAY,\
+                MUSIC_START,\
+                MUSIC_STOP,\
+                MUSIC_PAUSE,\
+                MUSIC_RESUME\
         )
 
         INSTRUCTION_LIST( INSTRUCTION_TOKENS(), numberOfInstructions);
@@ -205,7 +216,19 @@ namespace Size {
                 POLL_ENT_CURRENTFRAME = sizeof(stdRef),
 
                 DRAW_SETCOLOR = sizeof(stdRef),
-                DRAW_LINE = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef)
+                DRAW_LINE = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef),
+                
+                SOUND_DEFINE = sizeof(stdRef),
+                SOUND_CLEAR = 0,
+                MUSIC_DEFINE = sizeof(stdRef),
+                MUSIC_CLEAR = 0,
+                MUSIC_LOAD = DYNAMIC_SIZE,
+                SOUND_LOAD = DYNAMIC_SIZE,
+                SOUND_PLAY = sizeof(stdRef),
+                MUSIC_START = sizeof(stdRef),
+                MUSIC_STOP = 0,
+                MUSIC_PAUSE = 0,
+                MUSIC_RESUME = 0
         );
 }
 

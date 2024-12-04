@@ -17,6 +17,10 @@ GLOBAL cam_down
 GLOBAL cam_right
 GLOBAL cam_left
 
+GLOBAL stop_music
+GLOBAL start_music
+
+
 GLOBAL MovementSpeed
 
 SET >MovementSpeed 1
@@ -48,8 +52,8 @@ SET_ACTIVE_PALETTE resource/genericPalette.pal
 CONST t_tux 0
 CONST t_wall 1
 TEXTURE_DEFINE 2
-TEXTURE_LOAD resource/c_tux.cst #t_tux
-TEXTURE_LOAD resource/wall.cst #t_wall
+TEXTURE_LOAD #t_tux resource/c_tux.cst
+TEXTURE_LOAD #t_wall resource/wall.cst
 
 CONST f0_tux 0
 CONST f0_wall 1
@@ -88,7 +92,10 @@ ENT_SETHITBOXOFFSET #e_absTux 4 4
 
 CORE_SETMAXFPS 500
 
-
+CONST mus_aria 0
+MUSIC_DEFINE 1
+MUSIC_LOAD #mus_aria am.wav
+MUSIC_START #mus_aria
 
 
 CONST a_up 0
@@ -96,13 +103,14 @@ CONST a_down 1
 CONST a_left 2
 CONST a_right 3
 CONST a_exit 4
-
 CONST a_moveCamera_up 5
 CONST a_moveCamera_down 6
 CONST a_moveCamera_left 7
 CONST a_moveCamera_right 8
+CONST a_stopMusic 9
+CONST a_startMusic 10
 
-ACTION_DEFINE 9
+ACTION_DEFINE 11
 
 ACTION_BIND #a_up >upKey w
 ACTION_BIND #a_down >downKey s
@@ -114,6 +122,10 @@ ACTION_BIND #a_moveCamera_up >cam_up UP
 ACTION_BIND #a_moveCamera_down >cam_down DOWN
 ACTION_BIND #a_moveCamera_left >cam_left LEFT
 ACTION_BIND #a_moveCamera_right >cam_right RIGHT
+
+ACTION_BIND #a_startMusic >start_music o
+ACTION_BIND #a_stopMusic >stop_music p
+
 
 
 

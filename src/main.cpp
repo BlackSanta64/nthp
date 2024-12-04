@@ -50,9 +50,6 @@ int nthp::runtimeBehaviour(int argv, char** argc) {
 
                         // Init phase.
                         if(currentStage.init()) return -1;
-
-                        nthp::core.music.load("am.wav");
-                        nthp::core.music.start();
   
                         
                         while(nthp::core.isRunning() && (!currentStage.data.changeStage)) {

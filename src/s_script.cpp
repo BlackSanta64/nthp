@@ -963,6 +963,120 @@ DEFINE_EXECUTION_BEHAVIOUR(DRAW_LINE) {
 }
 
 
+DEFINE_EXECUTION_BEHAVIOUR(SOUND_DEFINE) {
+        stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+
+        EVAL_STDREF(size);
+
+        nthp::core.audioSystem.soundEffects = new (std::nothrow) nthp::audio::SoundChannel[nthp::fixedToInt(size.value)];
+        if(nthp::core.audioSystem.soundEffects == nullptr) {
+                PRINT_DEBUG_ERROR("SOUND_LOAD call failed to allocate sound data.\n");
+                nthp::core.audioSystem.soundSize = 0;
+        }
+        else
+                nthp::core.audioSystem.soundSize = nthp::fixedToInt(size.value);
+
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(SOUND_CLEAR) {
+        if(nthp::core.audioSystem.soundSize > 0)
+                delete[] nthp::core.audioSystem.soundEffects;
+
+        nthp::core.audioSystem.soundSize = 0;
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(MUSIC_DEFINE) {
+        stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+
+        EVAL_STDREF(size);
+
+        nthp::core.audioSystem.music = new (std::nothrow) nthp::audio::MusicChannel[nthp::fixedToInt(size.value)];
+        if(nthp::core.audioSystem.music == nullptr) {
+                PRINT_DEBUG_ERROR("MUSIC_DEFINE call failed to allocate sound data. [%d] is not valid.\n", nthp::fixedToInt(size.value));
+                nthp::core.audioSystem.musicSize = 0;
+        }
+        else
+                nthp::core.audioSystem.musicSize = nthp::fixedToInt(size.value);
+
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(MUSIC_CLEAR) {
+        Mix_HaltMusic();
+
+        if(nthp::core.audioSystem.musicSize > 0)
+                delete[] nthp::core.audioSystem.music;
+
+        nthp::core.audioSystem.musicSize = 0;
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(MUSIC_LOAD) {
+        stdRef objectIndex = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+        const char* filename = (data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+
+        EVAL_STDREF(objectIndex);
+
+        int ret = nthp::core.audioSystem.music[nthp::fixedToInt(objectIndex.value)].load(filename);
+        return ret;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(SOUND_LOAD) {
+        stdRef objectIndex = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+        const char* filename = (data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+
+        EVAL_STDREF(objectIndex);
+
+        int ret = nthp::core.audioSystem.soundEffects[nthp::fixedToInt(objectIndex.value)].load(filename);
+        return ret;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(SOUND_PLAY) {
+        stdRef obj = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+
+        EVAL_STDREF(obj);
+
+        nthp::core.audioSystem.soundEffects[nthp::fixedToInt(obj.value)].playSound();
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(MUSIC_START) {
+        stdRef obj = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+
+        EVAL_STDREF(obj);
+
+        data->currentMusicTrack = nthp::fixedToInt(obj.value);
+        nthp::core.audioSystem.music[nthp::fixedToInt(obj.value)].start();
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(MUSIC_STOP) {
+        Mix_HaltMusic();
+        data->currentMusicTrack = -1;
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(MUSIC_PAUSE) {
+        if(data->currentMusicTrack > -1)
+                nthp::core.audioSystem.music[data->currentMusicTrack].pauseMusic();
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(MUSIC_RESUME) {
+        if(data->currentMusicTrack > -1)
+                nthp::core.audioSystem.music[data->currentMusicTrack].resumeMusic();
+
+        return 0;
+}
 
 // Genius design; Automatically updates ID indecies and places functions accordingly. Just add/change stuff in 's_instructions.hpp'.
 // the 'nthp::script::instructions::ID' will correspond with the index of the desired instruction in this array.
