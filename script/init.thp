@@ -1,0 +1,42 @@
+/
+LSBSFA INIT SCRIPT
+Should be assigned in the TICK phase.
+/
+
+IMPORT script/stageutils.b
+IMPORT script/textures.b
+
+
+
+
+MACRO INIT_FLAGS {
+/       x       y       tx      ty      cx      cy      fs      sr      title   /
+        800     800     200     200     0       0       0       0       LSBSFA
+}
+
+CORE_INIT @INIT_FLAGS
+
+CONST e_player  0
+CONST e_pan     1
+
+
+
+CONST a_moveLeft        0       GLOBAL moveLeftAction
+CONST a_moveRight       1       GLOBAL moveRightAction
+CONST a_jump            2       GLOBAL jumpAction
+CONST a_panThrow        3       GLOBAL panThrowAction
+
+CONST actionSize        4
+
+
+
+ACTION_DEFINE #actionSize
+
+ACTION_BIND #a_moveLeft >moveLeftAction a
+ACTION_BIND #a_moveRight >moveRightAction d
+ACTION_BIND #a_jump >jumpAction SPACE
+ACTION_BIND #a_panThrow >panThrowAction LCTRL
+
+
+CONST CONTEXT_INIT_PROG __END
+EXIT

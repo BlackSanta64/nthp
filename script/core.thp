@@ -1,0 +1,10 @@
+DEPEND #CONTEXT_INIT_PROG
+
+/ 
+Control station for stage and menu transitions.
+See the INIT script for stage_memory locations.
+/
+
+IMPORT script/stageutils.b
+
+
