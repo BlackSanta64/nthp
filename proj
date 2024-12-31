@@ -1,0 +1,21 @@
+BUILD_SYSTEM
+        script/init.thp script/init.thpcs
+        script/stage_1.thp script/stage_1.thpcs
+END
+
+
+
+SCRIPT_CONFIG
+        FILE script/init.thpcs
+        TYPE T_INIT
+        GPR 0
+        MEMORY 0
+END
+
+
+SCRIPT_CONFIG
+        FILE script/stage_1.thpcs
+        TYPE T_TICK
+        GPR 0
+        MEMORY 0
+END

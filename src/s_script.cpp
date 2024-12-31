@@ -69,7 +69,10 @@ DEFINE_EXECUTION_BEHAVIOUR(RETURN) {
         stdRef index = *(stdRef*)data->nodeSet[data->currentNode].access.data;
 
         EVAL_STDREF(index);
-        data->currentNode = index.value;
+
+
+
+        data->currentNode = nthp::fixedToInt(index.value) - 1;
 
         return 0;
 }
@@ -576,6 +579,7 @@ DEFINE_EXECUTION_BEHAVIOUR(ENT_CLEAR) {
 DEFINE_EXECUTION_BEHAVIOUR(ENT_SETCURRENTFRAME) {
         stdRef target = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
         stdRef frame = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+        
 
         EVAL_STDREF(target);
         EVAL_STDREF(frame);
@@ -950,8 +954,8 @@ DEFINE_EXECUTION_BEHAVIOUR(DRAW_LINE) {
         EVAL_STDREF(x2);
         EVAL_STDREF(y2);
 
-        const nthp::vectGeneric pointA = nthp::generatePixelPosition(nthp::worldPosition(x1.value, y1.value), &nthp::core.p_coreDisplay) + nthp::generatePixelPosition(nthp::vectGeneric(nthp::core.p_coreDisplay.cameraWorldPosition), &nthp::core.p_coreDisplay);
-        const nthp::vectGeneric pointB = nthp::generatePixelPosition(nthp::worldPosition(x2.value, y2.value), &nthp::core.p_coreDisplay) + nthp::generatePixelPosition(nthp::vectGeneric(nthp::core.p_coreDisplay.cameraWorldPosition), &nthp::core.p_coreDisplay);
+        const nthp::vectGeneric pointA = nthp::generatePixelPosition(nthp::worldPosition(x1.value, y1.value), &nthp::core.p_coreDisplay) + nthp::generatePixelPosition(nthp::core.p_coreDisplay.cameraWorldPosition, &nthp::core.p_coreDisplay);
+        const nthp::vectGeneric pointB = nthp::generatePixelPosition(nthp::worldPosition(x2.value, y2.value), &nthp::core.p_coreDisplay) + nthp::generatePixelPosition(nthp::core.p_coreDisplay.cameraWorldPosition, &nthp::core.p_coreDisplay);
 
         SDL_SetRenderDrawColor(nthp::core.getRenderer(), nthp::script::activePalette.colorSet[data->penColor].R,nthp::script::activePalette.colorSet[data->penColor].G, nthp::script::activePalette.colorSet[data->penColor].B, 255);
         
@@ -1078,7 +1082,122 @@ DEFINE_EXECUTION_BEHAVIOUR(MUSIC_RESUME) {
         return 0;
 }
 
-// Genius design; Automatically updates ID indecies and places functions accordingly. Just add/change stuff in 's_instructions.hpp'.
+
+DEFINE_EXECUTION_BEHAVIOUR(CACHE_CREATE) {
+        stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+
+        EVAL_STDREF(size);
+
+        data->cache = (nthp::script::stdVarWidth*)(malloc(nthp::fixedToInt(size.value) * sizeof(nthp::script::stdVarWidth)));
+        if(data->cache == NULL) {
+                PRINT_DEBUG_ERROR("Failed to allocate cache; size = [%u].\n", nthp::fixedToInt(size.value));
+                return 1;
+        }
+
+        printf("allocated [%zu] bytes.\n", nthp::fixedToInt(size.value) * sizeof(nthp::script::stdVarWidth));
+        data->cacheSize = nthp::fixedToInt(size.value);
+        memset(data->cache, 0, nthp::fixedToInt(size.value) * sizeof(nthp::script::stdVarWidth));
+
+        return 0;
+}
+
+
+DEFINE_EXECUTION_BEHAVIOUR(CACHE_RESIZE) {
+        stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+
+        EVAL_STDREF(size);
+
+        nthp::script::stdVarWidth* temp = (nthp::script::stdVarWidth*)realloc(data->cache, nthp::fixedToInt(size.value) * sizeof(nthp::script::stdVarWidth));
+        if(temp == NULL) {
+                PRINT_DEBUG_ERROR("Failed to reallocate cache; size = [%u].\n", size.value);
+                return 1;
+        }
+
+        data->cache = temp;
+        data->cacheSize = nthp::fixedToInt(size.value);
+        memset(data->cache, 0, nthp::fixedToInt(size.value) * sizeof(nthp::script::stdVarWidth));
+
+        return 0;
+}
+
+
+DEFINE_EXECUTION_BEHAVIOUR(CACHE_OPEN) {
+        const char* filename = data->nodeSet[data->currentNode].access.data;
+
+        std::fstream file;
+        file.open(filename, std::ios::binary | std::ios::in);
+        if(file.fail()) {
+                PRINT_DEBUG_ERROR("Unable to open cache file [%s].\n", filename);
+                return 1;
+        }
+
+        nthp::script::stdVarWidth fileRead;
+        file.read((char*)&fileRead, sizeof(fileRead));
+
+        data->cache = (nthp::script::stdVarWidth*)(malloc(nthp::fixedToInt(fileRead) * sizeof(nthp::script::stdVarWidth)));
+        data->cacheSize = nthp::fixedToInt(fileRead);
+        file.read((char*)data->cache, nthp::fixedToInt(fileRead) * sizeof(nthp::script::stdVarWidth));
+        file.close();
+
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(CACHE_CLEAR) {
+        if(data->cacheSize > 0) {
+                free(data->cache);
+                data->cacheSize = 0;
+        }
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(CACHE_WRITE) {
+        stdRef target = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+        stdRef value = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+
+        EVAL_STDREF(target);
+        EVAL_STDREF(value);
+
+        data->cache[nthp::fixedToInt(target.value)] = value.value;
+        printf("wrote [%lf] to [%u]\n", nthp::fixedToDouble(value.value), nthp::fixedToInt(target.value));
+        return 0;
+}
+
+
+DEFINE_EXECUTION_BEHAVIOUR(CACHE_READ) {
+        stdRef target = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+        indRef var = *(indRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+
+        if(PR_METADATA_GET(var, nthp::script::flagBits::IS_GLOBAL)) {
+                data->globalVarSet[var.value] = data->cache[nthp::fixedToInt(target.value)];
+        }
+        else {
+                *(data->currentLocalMemory)[var.value] = data->cache[nthp::fixedToInt(target.value)];
+        }
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(CACHE_SAVE) {
+        const char* filename = (data->nodeSet[data->currentNode].access.data);
+
+        std::fstream file;
+        file.open(filename, std::ios::binary | std::ios::out);
+        if(file.fail()) {
+                PRINT_DEBUG_ERROR("Unable to open file target [%s].\n", filename);
+                return 1;
+        }
+
+        const nthp::script::stdVarWidth size = nthp::intToFixed(data->cacheSize);
+        file.write((char*)&size, sizeof(nthp::script::stdVarWidth));
+        file.write((char*)data->cache, sizeof(nthp::script::stdVarWidth) * data->cacheSize);
+
+        file.close();
+        return 0;
+}
+
+// Automatically updates ID indecies and places functions accordingly. Just add/change stuff in 's_instructions.hpp'.
 // the 'nthp::script::instructions::ID' will correspond with the index of the desired instruction in this array.
 static const int (*exec_func[nthp::script::instructions::ID::numberOfInstructions])(nthp::script::Script::ScriptDataSet* data) { INSTRUCTION_TOKENS() };
 
@@ -1175,7 +1294,8 @@ int nthp::script::Script::import(const char* filename, ScriptDataSet* dataSet) {
 int nthp::script::Script::execute() {
 
         #ifdef DEBUG
-                data->isSuspended = nthp::script::debug::suspendExecution;
+                if(nthp::script::debug::suspendExecution) data->isSuspended = true;
+                else { data->isSuspended = false; }
                 std::mutex debug_access;
         #else
                 data->isSuspended = false;
@@ -1221,7 +1341,8 @@ int nthp::script::Script::execute() {
 
         #endif
 
-        while((data->currentNode < nodeSet.size()) && (data->isSuspended == false)) {
+        while((data->currentNode < nodeSet.size()) && 
+                (data->isSuspended == false)) {
 #ifdef DEBUG
                         debug_access.lock();
                         switch(nthp::script::debug::debugInstructionCall.x) {
@@ -1251,6 +1372,7 @@ int nthp::script::Script::execute() {
                         }
                         debug_access.unlock();
 #endif
+
                 if(exec_func[nodeSet[data->currentNode].access.ID](data)) return 1;
                 ++data->currentNode;
         }

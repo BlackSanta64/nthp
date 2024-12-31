@@ -74,6 +74,7 @@ void nthp::entity::gEntity::move(nthp::vectFixed offset) {
 }
 
 void nthp::entity::gEntity::setCurrentFrame(size_t cf) {
+        if(cf > frameSize) cf -= frameSize;
         currentFrame = cf;
 }
 

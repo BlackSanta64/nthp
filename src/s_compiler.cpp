@@ -35,6 +35,8 @@ using namespace nthp::script::instructions;
 
 #define VECT_END(vect) vect.size() - 1
 
+#define READ_FILE() (file >> fileRead)
+
 bool skipInstructionCheck = false;
 
 
@@ -394,14 +396,12 @@ DEFINE_COMPILATION_BEHAVIOUR(JUMP) {
 DEFINE_COMPILATION_BEHAVIOUR(RETURN) {
         ADD_NODE(RETURN);
 
-        indRef* instruction = decltype(instruction)(nodeList[currentNode].access.data);
         EVAL_SYMBOL();
-
         auto static_ref = EVAL_PREF();
         CHECK_REF(static_ref);
 
-        instruction->metadata = static_ref.metadata;
-        instruction->value = nthp::fixedToInt(static_ref.value);
+        stdRef* instruction = decltype(instruction)(nodeList[currentNode].access.data);
+        *instruction = static_ref;
 
         PRINT_NODEDATA();
         return 0;
@@ -1672,6 +1672,7 @@ DEFINE_COMPILATION_BEHAVIOUR(ACTION_BIND) {
         int32_t key = fileRead[0]; // should correspond to keycode. idk _
 
         do {
+                
                 if(fileRead == "ESCAPE")        { key = SDLK_ESCAPE; break; }
                 if(fileRead == "TAB")           { key = SDLK_TAB; break; }
                 if(fileRead == "RSHIFT")        { key = SDLK_RSHIFT; break; }
@@ -1683,6 +1684,8 @@ DEFINE_COMPILATION_BEHAVIOUR(ACTION_BIND) {
                 if(fileRead == "DOWN")          { key = SDLK_DOWN; break; }
                 if(fileRead == "LEFT")          { key = SDLK_LEFT; break; }
                 if(fileRead == "RIGHT")         { key = SDLK_RIGHT; break; }
+                if(fileRead == "SPACE")         { key = SDLK_SPACE; break; }
+
         } while(0);
 
         stdRef* _target = (stdRef*)(nodeList[currentNode].access.data);
@@ -1977,6 +1980,133 @@ DEFINE_COMPILATION_BEHAVIOUR(MUSIC_RESUME) {
 }
 
 
+DEFINE_COMPILATION_BEHAVIOUR(CACHE_CREATE) {
+        ADD_NODE(CACHE_CREATE);
+
+        EVAL_SYMBOL();
+        auto size = EVAL_PREF();
+        CHECK_REF(size);
+
+        stdRef* _size = (stdRef*)(nodeList[currentNode].access.data);
+
+        *_size = size;
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+DEFINE_COMPILATION_BEHAVIOUR(CACHE_RESIZE) {
+        ADD_NODE(CACHE_CREATE);
+
+        EVAL_SYMBOL();
+        auto size = EVAL_PREF();
+        CHECK_REF(size);
+
+        stdRef* _size = (stdRef*)(nodeList[currentNode].access.data);
+
+        *_size = size;
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+DEFINE_COMPILATION_BEHAVIOUR(CACHE_OPEN) {
+        ADD_NODE(CACHE_OPEN);
+        EVAL_SYMBOL();
+
+
+        nodeList[currentNode].access.size = fileRead.size() + 1;
+        nodeList[currentNode].access.data = (char*)malloc(nodeList[currentNode].access.size);
+
+        memcpy(nodeList[currentNode].access.data, fileRead.c_str(), fileRead.size());
+        nodeList[currentNode].access.data[nodeList[currentNode].access.size - 1] = '\000';
+
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(CACHE_CLEAR) {
+        ADD_NODE(CACHE_CLEAR);
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(CACHE_WRITE) {
+        ADD_NODE(CACHE_WRITE);
+
+        EVAL_SYMBOL();
+        auto cache_target = EVAL_PREF();
+        CHECK_REF(cache_target);
+
+        EVAL_SYMBOL();
+        auto value = EVAL_PREF();
+        CHECK_REF(value);
+
+
+        stdRef* _cache_target = (stdRef*)(nodeList[currentNode].access.data);
+        stdRef* _value = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
+
+        *_cache_target = cache_target;
+        *_value = value;
+
+
+        PRINT_NODEDATA();
+        return 0;        
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(CACHE_READ) {
+        ADD_NODE(CACHE_READ);
+
+
+        EVAL_SYMBOL();
+        auto cache_target = EVAL_PREF();
+        CHECK_REF(cache_target);
+
+
+        EVAL_SYMBOL();
+        auto var_target = EVAL_PREF();
+        CHECK_REF(var_target);
+
+        if(!PR_METADATA_GET(var_target, nthp::script::flagBits::IS_REFERENCE)) {
+                PRINT_COMPILER_ERROR("Argument 2 CACHE_READ; Must be a reference.\n");
+                return 1;
+        }
+
+        stdRef* _cache_target = (stdRef*)(nodeList[currentNode].access.data);
+        indRef* _var_target = (indRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
+
+
+        *_cache_target = cache_target;
+        _var_target->metadata = var_target.metadata;
+        _var_target->value = nthp::fixedToInt(var_target.value);
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(CACHE_SAVE) {
+        ADD_NODE(CACHE_SAVE);
+        EVAL_SYMBOL();
+
+
+        nodeList[currentNode].access.size = fileRead.size() + 1;
+        nodeList[currentNode].access.data = (char*)malloc(nodeList[currentNode].access.size);
+
+        memcpy(nodeList[currentNode].access.data, fileRead.c_str(), fileRead.size());
+        nodeList[currentNode].access.data[nodeList[currentNode].access.size - 1] = '\000';
+
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+
 
 // COMPILER INSTANCE BEHAVIOUR GOES HERE                ||
 //                                                      VV
@@ -2086,7 +2216,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                         for(size_t i = 0; i < varList.size(); ++i) {
                                 if(fileRead == varList[i].varName) {
-                                        PRINT_COMPILER_WARNING("VAR [$%s] already declared; Ignoring redefinition.\n");
+                                        PRINT_COMPILER_WARNING("VAR [$%s] already declared; Ignoring redefinition.\n", fileRead.c_str());
                                         goto COMP_START; // thank god.
                                 }
                         }
@@ -2106,7 +2236,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                                 for(size_t i = 0; i < varList.size(); ++i) {
                                         if(fileRead == varList[i].varName) {
-                                                PRINT_COMPILER_WARNING("VAR [$%s] already declared; Ignoring redefinition.\n");
+                                                PRINT_COMPILER_WARNING("VAR [$%s] already declared; Ignoring redefinition.\n", fileRead.c_str());
                                                 goto COMP_START; // thank god.
                                         }
                                 }
@@ -2182,10 +2312,10 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                         PRINT_COMPILER("Defining new MACRO [%s]...", fileRead.c_str());
 
-                        (file) >> fileRead;     // Gets rid of the '{'
+                        READ_FILE();     // Gets rid of the '{'
                         for(size_t i = 0; fileRead != "}"; ++i) {
-                                EVAL_SYMBOL();
-                                if(fileRead == "/") { do { EVAL_SYMBOL(); } while(fileRead != "/"); EVAL_SYMBOL(); }
+                                READ_FILE();
+                                if(fileRead == "/") { do { READ_FILE(); } while(fileRead != "/"); EVAL_SYMBOL(); }
                                 newDef.macroData.push_back(fileRead);
                                 
                                 if((i % 5) == 0) { NOVERB_PRINT_COMPILER("\n\t"); }
@@ -2405,7 +2535,15 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                 CHECK_COMP(MUSIC_STOP);
                 CHECK_COMP(MUSIC_PAUSE);
                 CHECK_COMP(MUSIC_RESUME);
-                
+
+                CHECK_COMP(CACHE_CREATE);
+                CHECK_COMP(CACHE_RESIZE);
+                CHECK_COMP(CACHE_OPEN);
+                CHECK_COMP(CACHE_CLEAR);
+                CHECK_COMP(CACHE_WRITE);
+                CHECK_COMP(CACHE_READ);
+                CHECK_COMP(CACHE_SAVE);
+
 
         } // Main loop
 

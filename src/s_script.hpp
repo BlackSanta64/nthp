@@ -87,6 +87,9 @@ namespace script {
 
                         nthp::script::scriptTriggerComplex currentTriggerConfig; // Just some data on the current stage.
 
+                        nthp::script::stdVarWidth* cache;
+                        size_t cacheSize;
+
                         Action* actionList; // Tracks keypresses; created with ACTION_DEFINE and ACTION_BIND to configure.
                         size_t  actionListSize;
 

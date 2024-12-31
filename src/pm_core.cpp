@@ -20,7 +20,7 @@ bool suspendExecution = false;
 int headless_runtime();
 int help_headless(std::vector<std::string>& args);
 inline void help_output() {
-        PM_PRINT("NTHP Project Manager Help --\n\tNomenclature: [expression] = optional flag/argument.\n\tCommands: compile, gt, ct, debug, exit, help\ngt [-c (compress output)] palette_file input_image output_texture\nct input_texture output_compressed_texture\ncompile (src or stg) [-f (force)] input_file output_file\ndebug input_prog_directive_file [debug_log_output_file]\nexit\n");
+        PM_PRINT("NTHP Project Manager Help --\n\t  [expression] = optional flag/argument.\n\tCommands: compile, gt, ct, debug, exit, help\ngt [-c (compress output)] palette_file input_image output_texture\nct input_texture output_compressed_texture\ncompile (src or stg) [-f (force)] input_file output_file\ndebug input_prog_directive_file [debug_log_output_file]\nexit\n");
 }
 
 
@@ -45,7 +45,13 @@ int nthp::debuggerBehaviour(std::string target, FILE* debugOutputTarget) {
                     
 
                         if(currentStage.init()) return 1;
- 
+                        g_access.lock();
+
+                        nthp::script::debug::debugInstructionCall.x = nthp::script::debug::DEBUG_CALLS::BREAK;
+                        PM_PRINT("Ready. Waiting for continue (c)...\n");
+
+                        g_access.unlock();
+
                         
                         while((nthp::core.isRunning()) && (!currentStage.data.changeStage) && debuggingActiveProcess) {
                                 frameStart = SDL_GetTicks();
@@ -335,6 +341,7 @@ int headless_runtime() {
                                         PM_PRINT("Breakpoint read at instruction [%zu]; HEAD at [%zu], waiting for continue.\n", currentStage.data.currentNode, currentStage.data.currentNode);
 
                                         g_access.unlock();
+                                        continue;
 
                                 }
                                 if(args[0] == "continue" || args[0] == "c") {
@@ -345,6 +352,7 @@ int headless_runtime() {
                                         PM_PRINT("Continuing from instruction [%zu]; HEAD at [%zu].\n", currentStage.data.currentNode, currentStage.data.currentNode);
 
                                         g_access.unlock();
+                                        continue;
 
                                 }
 
@@ -362,6 +370,7 @@ int headless_runtime() {
                                                 if(symbolData.compileStageConfig(args[2].c_str(), NULL, false, true)) PM_PRINT("ERROR!!!\n");
                                                 PM_PRINT("Imported [%zu] symbols from stage file [%s].\n", symbolData.globalList.size() + symbolData.macroList.size() + symbolData.constantList.size(), args[2].c_str());
                                         }
+                                        continue;
                                 }
 
                                 if(args[0] == "jump" || args[0] == "j") {
@@ -381,6 +390,7 @@ int headless_runtime() {
 
                                         PM_PRINT("Continuing from instruction [%d]; HEAD at [%d].\n", std::stoi(args[1]), std::stoi(args[1]));
                                         g_access.unlock();
+                                        continue;
                                 }
 
                                 if(args[0] == "step" || args[0] == "s") {
@@ -396,6 +406,7 @@ int headless_runtime() {
                                         PM_PRINT("Stepping to next instruction [%zu], [%zu] -> [%zu]\n", currentStage.data.currentNode + 1, currentStage.data.currentNode, currentStage.data.currentNode + 1);
 
                                         g_access.unlock();
+                                        continue;
 
                                 }
                                 if(args[0] == "getvar" || args[0] == "gv") {
@@ -411,6 +422,7 @@ int headless_runtime() {
                                         }
 
                                         g_access.unlock();
+                                        continue;
                                 }
 
                                 if(args[0] == "setvar" || args[0] == "sv") {
@@ -450,7 +462,27 @@ int headless_runtime() {
                                         PM_PRINT("GLOBAL write success.\n");
                                         
                                         g_access.unlock();
+                                        continue;
+                                }
+                                if(args[0] == "getcache" || args[0] == "gc") {
+                                        if(!suspendExecution) {
+                                                PM_PRINT_ERROR("Process must be suspended (break, b) to access cache memory.\n");
+                                                continue;
+                                        }
 
+                                        g_access.lock();
+                                        if(currentStage.data.cacheSize <= 0) {
+                                                PM_PRINT("Cache not allocated.\n");
+                                                continue;
+                                        }
+                                        PM_PRINT("\tCache data;;\n");
+                                        for(size_t i = 0; i < currentStage.data.cacheSize; ++i) {
+                                                PM_PRINT("I %zu = %lf\n", i, nthp::fixedToDouble(currentStage.data.cache[i]));
+                                        }
+                                        PM_PRINT("done.\n");
+
+                                        g_access.unlock();
+                                        continue;
                                 }
 
                         }

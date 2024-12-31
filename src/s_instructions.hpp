@@ -23,8 +23,7 @@ namespace nthp { namespace script { namespace instructions {
         __VA_ARGS__\
         } Instruction
 
-#define INSTRUCTION_SIZE_LIST(...) constexpr decltype(nthp::script::Node::n_binary_t::size)\
-        __VA_ARGS__
+#define INSTRUCTION_SIZE_LIST(...) constexpr decltype(nthp::script::Node::n_binary_t::size) __VA_ARGS__
 
 #define ____INSTRUCTION_TOKENS(...) __VA_ARGS__
 
@@ -115,7 +114,14 @@ namespace ID {
                 MUSIC_START,\
                 MUSIC_STOP,\
                 MUSIC_PAUSE,\
-                MUSIC_RESUME\
+                MUSIC_RESUME,\
+                CACHE_CREATE,\
+                CACHE_RESIZE,\
+                CACHE_OPEN,\
+                CACHE_CLEAR,\
+                CACHE_WRITE,\
+                CACHE_READ,\
+                CACHE_SAVE\
         )
 
         INSTRUCTION_LIST( INSTRUCTION_TOKENS(), numberOfInstructions);
@@ -228,7 +234,15 @@ namespace Size {
                 MUSIC_START = sizeof(stdRef),
                 MUSIC_STOP = 0,
                 MUSIC_PAUSE = 0,
-                MUSIC_RESUME = 0
+                MUSIC_RESUME = 0,
+
+                CACHE_CREATE = sizeof(stdRef),
+                CACHE_RESIZE = sizeof(stdRef),
+                CACHE_OPEN = DYNAMIC_SIZE,
+                CACHE_CLEAR = 0,
+                CACHE_WRITE = sizeof(stdRef) + sizeof(stdRef),
+                CACHE_READ = sizeof(stdRef) + sizeof(indRef),
+                CACHE_SAVE = DYNAMIC_SIZE
         );
 }
 
