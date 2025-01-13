@@ -98,12 +98,14 @@ void PRINT_COMPILER_DEPEND_ERROR(const char* format, ...) {
 #define PRINT_NODEDATA() NOVERB_PRINT_COMPILER("[%zu] [%p] Node ID: %u ; s=%u d[%p]\n", currentNode, (nodeList.data() + (currentNode)), nodeList[currentNode].access.ID, nodeList[currentNode].access.size, nodeList[currentNode].access.data) 
 
 
+
 int EvaluateConst(std::string& expression, std::vector<nthp::script::CompilerInstance::CONST_DEF>& list) {
         if(expression[0] == '#') {
 
                 for(size_t i = 0; i < list.size(); ++i) {
                         if(expression == list[i].constName) {
                                 expression = list[i].value;
+                                PRINT_COMPILER("Substituted main expression to [%s].\n", list[i].value.c_str());
                                 return 0;
                         }
                 }
@@ -114,15 +116,75 @@ int EvaluateConst(std::string& expression, std::vector<nthp::script::CompilerIns
         return 0;
 }
 
-int EvaluateMacro(std::string& expression, std::vector<nthp::script::CompilerInstance::MACRO_DEF>& list, size_t& mp, size_t& targetMacro, bool& beginMacroEval) {
+// Fucking hell. I suck at this.
+void destroyArgumentConsts(std::vector<nthp::script::CompilerInstance::CONST_DEF>& constantList) {
+        std::string search;
+        for(size_t i = 0; i < constantList.size(); ++i) {
+                search = constantList[i].constName;
+                search.erase(search.begin() + 3, search.end()); // Keeps the first 3 characters.
+                if(search == "#ar") {
+                        nthp::script::CompilerInstance::undefConstant(i, constantList);
+                }
+        }
+
+        PRINT_DEBUG("Purged temporary CONSTs.\n");
+}
+
+
+
+
+
+int EvaluateMacro(std::fstream& file, std::string& expression, std::vector<nthp::script::CompilerInstance::MACRO_DEF>& list, std::vector<nthp::script::CompilerInstance::CONST_DEF>& constantList, size_t& mp, size_t& targetMacro, bool& beginMacroEval) {
         if(expression[0] == '@') {
+                auto initialPosition = file.tellg();
+
                 for(size_t i = 0; i < list.size(); ++i) {
                         if(expression == list[i].macroName) {
                                 targetMacro = i;
-                                expression = list[i].macroData[0];
 
+                                
+                                (file >> expression);
+                                nthp::script::CompilerInstance::portable_evalConst(expression, constantList);
+                                if(expression == "(") {
+                                        // Evaluate Arguments
+                                        std::string argument_const;
+                                        size_t argumentsFound = 0;
+                                        do {
+                                                (file >> expression);
+                                                nthp::script::CompilerInstance::portable_evalConst(expression, constantList);
+                                                if(expression != ")") {        
+                                                        ++argumentsFound;
+                                                        if(argumentsFound > 500) {
+                                                                PRINT_COMPILER_ERROR("Macro Argument data is too large; no ARG_END character found.\n");
+                                                                return 1;
+                                                        }
+
+                                                        argument_const = ("#ar" + std::to_string(argumentsFound - 1));
+
+                                                        constantList.push_back(nthp::script::CompilerInstance::CONST_DEF());
+                                                        constantList[constantList.size() - 1].constName = argument_const;
+                                                        constantList[constantList.size() - 1].value = expression;
+                                                        PRINT_COMPILER("Detected argument name[%s] = [%s];\n", constantList[constantList.size() - 1].constName.c_str(), constantList[constantList.size() - 1].value.c_str());
+
+                                                }
+                                        }
+                                        while(expression != ")");
+                                        PRINT_COMPILER("Evaluated Arguments.\n");
+
+                                }
+                                else {
+                                        file.seekg(initialPosition);
+                                }
+                                // TODO: Test this shit
+
+
+
+
+                                expression = list[i].macroData[0];
                                 mp = 0;
                                 beginMacroEval = true;
+
+
                                 PRINT_COMPILER("Beginning Expansion of Macro [%s]...\n", list[targetMacro].macroName.c_str());
                                 
                                 return 0;
@@ -147,10 +209,12 @@ int EvaluateSymbol(std::fstream& file, std::string& expression, std::vector<nthp
                 if(currentMacroPosition == macroList[targetMacro].macroData.size()) {
                         evaluatingMacro = false;
                         NOVERB_PRINT_COMPILER("\tCompleted expansion of macro [%s].\n", macroList[targetMacro].macroName.c_str());
+                        destroyArgumentConsts(constList);
                 }
                 else {
                         expression = macroList[targetMacro].macroData[currentMacroPosition];
                         if(EvaluateConst(expression, constList)) return 1;
+                        
 
                         return 0;
                 }
@@ -158,7 +222,7 @@ int EvaluateSymbol(std::fstream& file, std::string& expression, std::vector<nthp
 
         (file) >> (expression);
         if(EvaluateConst(expression, constList)) return 1;
-        if(EvaluateMacro(expression, macroList, currentMacroPosition, targetMacro, evaluatingMacro)) return 1;
+        if(EvaluateMacro(file, expression, macroList, constList, currentMacroPosition, targetMacro, evaluatingMacro)) return 1;
         return 0;
 }
 
@@ -2265,6 +2329,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                         addGlobalDef(fileRead.c_str());
                         ++globalAlloc;
+                        continue;
                 }
 
 
@@ -2273,7 +2338,6 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                         EVAL_SYMBOL();  // Name
                         CONST_DEF newDef;
-                        size_t target = constantList.size();
 
                         fileRead = '#' + fileRead;
                         newDef.constName = fileRead;
@@ -2296,12 +2360,19 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                         PRINT_COMPILER("New CONST Definition; n=%s sub=%s\n", newDef.constName.c_str(), newDef.value.c_str());
                 }
 
+                if(fileRead == "UNDEF") {
+                        EVAL_SYMBOL();
+                        undefConstant(fileRead.c_str(), constantList);
+                }
+
                 if(fileRead == "MACRO") {
                         // Define new Macro.
                         EVAL_SYMBOL();          // Name
                         MACRO_DEF newDef;
 
                         newDef.macroName = '@' + fileRead;
+
+
                         for(size_t i = 0; i < macroList.size(); ++i) {
                                 if(macroList[i].macroName == newDef.macroName) {
                                         PRINT_COMPILER_WARNING("Duplicate MACRO [%s] at [~%zu]; Ignoring Definition.\n", macroList[i].macroName.c_str(), nodeList.size());
@@ -2327,6 +2398,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                         NOVERB_PRINT_COMPILER("\n");
                         PRINT_COMPILER("Added MACRO [%s] to MACRO list.\n", macroList.back().macroName.c_str());
+                        continue;
 
                 }
 
@@ -2351,6 +2423,8 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                         }
                         currentFile = fileRead;
                         inCalledFile = true;
+
+                        continue;
                 }
 
                 if(fileRead == "IMPORT") {
@@ -2375,6 +2449,8 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                         currentFile = fileRead;
                         inCalledFile = true;
+
+                        continue;
                 }
                 
 
@@ -2661,7 +2737,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                         }
                 }
 
-                //file.close();
+
 
                 if(!buildSystemContext) {
                         PRINT_COMPILER("Allocating and Copying node data to safe container...");
@@ -2669,6 +2745,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                         compiledNodes = (decltype(compiledNodes))malloc(NodeSize * nodeBlockSize);
 
                         memcpy(compiledNodes, nodeList.data(), NodeSize * nodeBlockSize);
+                        nodeList.clear(); // Destroys node headers, but data is untouched and copied to the raw memory above.
 
                         NOVERB_PRINT_COMPILER("\t\nAllocated & copied [%zu] bytes at [%p].\n", NodeSize * nodeBlockSize, compiledNodes);
                 }
@@ -2885,7 +2962,7 @@ int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFi
 
 
 nthp::script::CompilerInstance::~CompilerInstance() {
-        // Nodes tokens are copied into script objects when loaded;
+        // Node tokens are copied into script objects when loaded;
         // the stored symbols of the compiler is purely for debugging.
         // Free to destroy.
         nthp::script::cleanNodeSet(nodeList);
@@ -2895,7 +2972,11 @@ nthp::script::CompilerInstance::~CompilerInstance() {
                         if(compiledNodes[i].access.size > 0)
                                 free(compiledNodes[i].access.data);
                 }
-
+                
+                
                 free(compiledNodes);
+                
         }
+
+        
 }

@@ -829,8 +829,9 @@ DEFINE_EXECUTION_BEHAVIOUR(ACTION_BIND) {
         data->actionList[nthp::fixedToInt(target.value)].varIndex = var;  
         data->actionList[nthp::fixedToInt(target.value)].boundKey = key;
 
-        printf("bound ACTION [%d] key index [%d] to GLOBAL [%u]\n", nthp::fixedToInt(target.value), key, var);
-
+#ifdef PM
+        GENERIC_PRINT("bound ACTION [%d] key index [%d] to GLOBAL [%u]\n", nthp::fixedToInt(target.value), key, var);
+#endif
         return 0;
 }
 
@@ -1094,7 +1095,7 @@ DEFINE_EXECUTION_BEHAVIOUR(CACHE_CREATE) {
                 return 1;
         }
 
-        printf("allocated [%zu] bytes.\n", nthp::fixedToInt(size.value) * sizeof(nthp::script::stdVarWidth));
+        PRINT_DEBUG("allocated [%zu] bytes.\n", nthp::fixedToInt(size.value) * sizeof(nthp::script::stdVarWidth));
         data->cacheSize = nthp::fixedToInt(size.value);
         memset(data->cache, 0, nthp::fixedToInt(size.value) * sizeof(nthp::script::stdVarWidth));
 
@@ -1160,7 +1161,6 @@ DEFINE_EXECUTION_BEHAVIOUR(CACHE_WRITE) {
         EVAL_STDREF(value);
 
         data->cache[nthp::fixedToInt(target.value)] = value.value;
-        printf("wrote [%lf] to [%u]\n", nthp::fixedToDouble(value.value), nthp::fixedToInt(target.value));
         return 0;
 }
 

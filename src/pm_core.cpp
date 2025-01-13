@@ -234,7 +234,10 @@ int headless_runtime() {
 					if(!cc.compileSourceFile(args[2].c_str(), args[3].c_str(), false, false)) {
 					        PM_PRINT("Script, Done. %s > %s\n", args[2].c_str(), args[3].c_str());
                                         }
-					continue;
+                                        else {
+                                                PM_PRINT_ERROR("Failure in CompilerInstance [%p].\n", &cc);
+                                        }
+                                        continue;
 				}
 				if(args[1] == "stg") {
                                         bool forceBuild = false;
@@ -374,6 +377,10 @@ int headless_runtime() {
                                 }
 
                                 if(args[0] == "jump" || args[0] == "j") {
+                                        if(args.size() < 2) {
+                                                PM_PRINT_ERROR("jump failed; no jump location.\n");
+                                                continue;
+                                        }
                                         g_access.lock();
 
                                         nthp::script::debug::debugInstructionCall.x = nthp::script::debug::JUMP_TO;

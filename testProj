@@ -1,0 +1,15 @@
+BUILD_SYSTEM
+        script/testScript.thp script/testScript.thpcs
+END
+
+
+SCRIPT_CONFIG
+        FILE script/testScript.thpcs
+
+        TYPE T_TICK
+        MEMORY 0
+        GPR 15
+END
+
+
+EXIT

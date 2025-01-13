@@ -1,0 +1,20 @@
+
+VAR xVelocity
+VAR yVelocity
+
+
+MACRO testMacro {
+        SET $xVelocity #ar0
+        SET $yVelocity #ar1
+
+        ENT_MOVE 0 $xVelocity $yVelocity
+}
+
+
+CONST test 700
+
+
+@testMacro ( 1000 1402 )
+
+
+EXIT

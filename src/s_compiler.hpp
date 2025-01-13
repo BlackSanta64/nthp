@@ -56,6 +56,7 @@ namespace nthp {
                         std::vector<std::string> macroData;
                 };
 
+
                 struct GOTO_DEF {
                         size_t goto_position;
                         uint32_t points_to;
@@ -88,6 +89,27 @@ namespace nthp {
                 std::vector<nthp::script::CompilerInstance::VAR_DEF>    varList;
                 std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>    globalList;  
 
+                static inline void undefConstant(const char* constName, std::vector<nthp::script::CompilerInstance::CONST_DEF>& constantList) {
+                        size_t i = 0;
+                        for(; i < constantList.size(); ++i) {
+                                if(constName == constantList[i].constName) {
+                                        constantList.erase(constantList.begin() + i);
+                                        break;
+                                }
+                        }
+                }
+                static inline void undefConstant(size_t index, std::vector<nthp::script::CompilerInstance::CONST_DEF>& constantList) {
+                        constantList.erase(constantList.begin() + index);
+                }
+                static inline void portable_evalConst(std::string& expression, std::vector<nthp::script::CompilerInstance::CONST_DEF>& constantList) {
+                        for(size_t i = 0; i < constantList.size(); ++i) {
+                                if(expression == constantList[i].constName) {
+                                        expression = constantList[i].value;
+                                        break;
+                                }
+                        }
+                }
+
                 ~CompilerInstance();
                 private:
 
@@ -110,6 +132,9 @@ namespace nthp {
 
                                 globalList.push_back(def);
                         }
+
+                        
+                        
                 
                 
                 };
