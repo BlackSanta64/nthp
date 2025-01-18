@@ -223,7 +223,7 @@ int headless_runtime() {
 				return 0;
 			}
 
-			if(args[0] == "compile") {
+			if(args[0] == "compile" || args[0] == "cc") {
 				nthp::script::CompilerInstance cc;
 				if(args[1] == "src") {
 					if(args.size() < 4) {

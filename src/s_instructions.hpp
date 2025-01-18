@@ -121,7 +121,8 @@ namespace ID {
                 CACHE_CLEAR,\
                 CACHE_WRITE,\
                 CACHE_READ,\
-                CACHE_SAVE\
+                CACHE_SAVE,\
+                PRINT\
         )
 
         INSTRUCTION_LIST( INSTRUCTION_TOKENS(), numberOfInstructions);
@@ -242,7 +243,9 @@ namespace Size {
                 CACHE_CLEAR = 0,
                 CACHE_WRITE = sizeof(stdRef) + sizeof(stdRef),
                 CACHE_READ = sizeof(stdRef) + sizeof(indRef),
-                CACHE_SAVE = DYNAMIC_SIZE
+                CACHE_SAVE = DYNAMIC_SIZE,
+
+                PRINT = sizeof(stdRef)
         );
 }
 

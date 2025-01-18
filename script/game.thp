@@ -10,7 +10,7 @@ LABEL #l_include
 
 
 @loadStage ( stage1.ch )
-
+@f_initStageObjects
 
 
 
@@ -18,10 +18,15 @@ LABEL #l_include
 LABEL #l_mainLoop
 
 
+        POLL 2 RENDERSIZE
 
 
-
-
+        CORE_CLEAR
+        CORE_QRENDER 2
+        CORE_QRENDER 3
+        CORE_QRENDER 4
+        CORE_QRENDER 5
+        CORE_DISPLAY
 
 
         SUSPEND

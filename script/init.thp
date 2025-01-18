@@ -22,6 +22,9 @@ MACRO initFlags {
 }
 
 CORE_INIT @initFlags
+CORE_SETMAXFPS 60
+
+SET_ACTIVE_PALETTE resource/genericPalette.pal
 
 TEXTURE_DEFINE 3
 CONST t_player  0

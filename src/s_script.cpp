@@ -1169,11 +1169,13 @@ DEFINE_EXECUTION_BEHAVIOUR(CACHE_READ) {
         stdRef target = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
         indRef var = *(indRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
 
+        EVAL_STDREF(target);
+
         if(PR_METADATA_GET(var, nthp::script::flagBits::IS_GLOBAL)) {
                 data->globalVarSet[var.value] = data->cache[nthp::fixedToInt(target.value)];
         }
         else {
-                *(data->currentLocalMemory)[var.value] = data->cache[nthp::fixedToInt(target.value)];
+                (*data->currentLocalMemory)[var.value] = data->cache[nthp::fixedToInt(target.value)];
         }
 
         return 0;
@@ -1194,6 +1196,19 @@ DEFINE_EXECUTION_BEHAVIOUR(CACHE_SAVE) {
         file.write((char*)data->cache, sizeof(nthp::script::stdVarWidth) * data->cacheSize);
 
         file.close();
+        return 0;
+}
+
+
+DEFINE_EXECUTION_BEHAVIOUR(PRINT) {
+#ifdef DEBUG
+        stdRef output = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+
+        EVAL_STDREF(output);
+
+        GENERIC_PRINT("%lf\n", nthp::fixedToDouble(output.value));
+#endif
+
         return 0;
 }
 

@@ -2172,6 +2172,21 @@ DEFINE_COMPILATION_BEHAVIOUR(CACHE_SAVE) {
 }
 
 
+DEFINE_COMPILATION_BEHAVIOUR(PRINT) {
+        ADD_NODE(PRINT);
+
+        EVAL_SYMBOL();
+        auto output = EVAL_PREF();
+        CHECK_REF(output);
+
+        stdRef* out = (stdRef*)(nodeList[currentNode].access.data);
+        *out = output;
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+
 
 // COMPILER INSTANCE BEHAVIOUR GOES HERE                ||
 //                                                      VV
@@ -2621,6 +2636,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                 CHECK_COMP(CACHE_READ);
                 CHECK_COMP(CACHE_SAVE);
 
+                CHECK_COMP(PRINT);
 
         } // Main loop
 

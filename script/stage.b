@@ -78,13 +78,19 @@ LABEL #l_initStageObjects
 
         LABEL 625
 
+
         CACHE_READ $ptr_object $r_x
+                PRINT $ptr_object
         INC $ptr_object
         CACHE_READ $ptr_object $r_y
+                PRINT $ptr_object
         INC $ptr_object
         CACHE_READ $ptr_object $r_w
+                PRINT $ptr_object
         INC $ptr_object
         CACHE_READ $ptr_object $r_h
+                PRINT $ptr_object
+
 
         ENT_SETHITBOXSIZE $entity_counter $r_w $r_h
         ENT_SETPOS $entity_counter $r_x $r_y
@@ -94,7 +100,7 @@ LABEL #l_initStageObjects
 
         INC $ptr_object
         INC $entity_counter
-        IF $entity_counter LST >stageSize
+        IF $entity_counter LST >mathReg1
                 GOTO 625
         END
 
