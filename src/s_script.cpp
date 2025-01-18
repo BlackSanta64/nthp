@@ -448,7 +448,7 @@ DEFINE_EXECUTION_BEHAVIOUR(TEXTURE_LOAD) {
         EVAL_STDREF(output);
 
 	if(nthp::fixedToInt(output.value) > data->textureBlockSize) {
-		PRINT_DEBUG_ERROR("Output index of LOAD_TEXTURE instuction out of bounds.\n");		
+		PRINT_DEBUG_ERROR("Output index of TEXTURE_LOAD instuction out of bounds.\n");		
 		return 1;
 	}
 	
@@ -570,7 +570,7 @@ DEFINE_EXECUTION_BEHAVIOUR(ENT_DEFINE) {
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(ENT_CLEAR) {
-        delete[] data->entityBlock;
+        if(data->entityBlockSize > 0) delete[] data->entityBlock;
         data->entityBlockSize = 0;
 
         return 0;
@@ -1108,7 +1108,7 @@ DEFINE_EXECUTION_BEHAVIOUR(CACHE_RESIZE) {
 
         EVAL_STDREF(size);
 
-        nthp::script::stdVarWidth* temp = (nthp::script::stdVarWidth*)realloc(data->cache, nthp::fixedToInt(size.value) * sizeof(nthp::script::stdVarWidth));
+        nthp::script::stdVarWidth* temp = (nthp::script::stdVarWidth*)(realloc(data->cache, nthp::fixedToInt(size.value) * sizeof(nthp::script::stdVarWidth)));
         if(temp == NULL) {
                 PRINT_DEBUG_ERROR("Failed to reallocate cache; size = [%u].\n", size.value);
                 return 1;
@@ -1116,7 +1116,6 @@ DEFINE_EXECUTION_BEHAVIOUR(CACHE_RESIZE) {
 
         data->cache = temp;
         data->cacheSize = nthp::fixedToInt(size.value);
-        memset(data->cache, 0, nthp::fixedToInt(size.value) * sizeof(nthp::script::stdVarWidth));
 
         return 0;
 }
@@ -1159,6 +1158,7 @@ DEFINE_EXECUTION_BEHAVIOUR(CACHE_WRITE) {
 
         EVAL_STDREF(target);
         EVAL_STDREF(value);
+
 
         data->cache[nthp::fixedToInt(target.value)] = value.value;
         return 0;

@@ -1,14 +1,34 @@
 BUILD_SYSTEM
-        script/testScript.thp script/testScript.thpcs
+        script/init.thp script/init.thpcs
+        script/core.thp script/core.thpcs
+        script/game.thp script/game.thpcs
 END
 
 
 SCRIPT_CONFIG
-        FILE script/testScript.thpcs
+        FILE script/init.thpcs
+
+        TYPE T_INIT
+        MEMORY 0
+        GPR 1
+END
+
+SCRIPT_CONFIG
+        FILE script/core.thpcs 
 
         TYPE T_TICK
         MEMORY 0
-        GPR 15
+        GPR 2
+END
+
+
+SCRIPT_CONFIG
+        FILE script/game.thpcs
+
+        TYPE T_LOGIC
+        MEMORY 1
+        GPR 3
+
 END
 
 

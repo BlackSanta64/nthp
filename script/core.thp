@@ -1,0 +1,35 @@
+/                       CORE.THP
+        The core switches the gamestate. Stagememory indecies are stored here.
+        Set >gameStateFlag to trigger a switch. Logic is defined below. 
+/
+
+CONST l_end 20
+CONST sm_mainGameRuntime 1
+VAR getSM
+
+
+
+
+
+        LABEL 1
+
+IF >gameStateFlag
+        SM_READ #sm_mainGameRuntime $getSM
+        IF $getSM
+                SM_WRITE #sm_mainGameRuntime 0
+                SET >gameStateFlag 0
+                GOTO #l_end
+        END
+        SM_WRITE #sm_mainGameRuntime 1
+        SET >gameStateFlag 0
+END
+
+
+LABEL #l_end
+
+        SUSPEND
+        GOTO 1
+
+
+
+EXIT

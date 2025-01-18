@@ -250,6 +250,9 @@ int headless_runtime() {
 					if(!cc.compileStageConfig(args[2 + sizeTarget].c_str(), args[3 + sizeTarget].c_str(), forceBuild, false)) {
 					        PM_PRINT("Stage, Done. %s > %s\n", args[2 + sizeTarget].c_str(), args[3 + sizeTarget].c_str());
                                         }
+                                        else {
+                                                PM_PRINT_ERROR("Failure in CompilerInstance [%p].\n", &cc);
+                                        }
 					continue;
 				}
 				

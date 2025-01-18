@@ -124,6 +124,7 @@ void destroyArgumentConsts(std::vector<nthp::script::CompilerInstance::CONST_DEF
                 search.erase(search.begin() + 3, search.end()); // Keeps the first 3 characters.
                 if(search == "#ar") {
                         nthp::script::CompilerInstance::undefConstant(i, constantList);
+                        --i;
                 }
         }
 
@@ -2060,7 +2061,7 @@ DEFINE_COMPILATION_BEHAVIOUR(CACHE_CREATE) {
 }
 
 DEFINE_COMPILATION_BEHAVIOUR(CACHE_RESIZE) {
-        ADD_NODE(CACHE_CREATE);
+        ADD_NODE(CACHE_RESIZE);
 
         EVAL_SYMBOL();
         auto size = EVAL_PREF();

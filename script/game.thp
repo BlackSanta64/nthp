@@ -1,0 +1,31 @@
+CONST l_include 1
+CONST l_mainLoop 2
+
+GOTO #l_include
+/ CALL game logic branches here. /
+        
+        CALL script/stage.b
+
+LABEL #l_include
+
+
+@loadStage ( stage1.ch )
+
+
+
+
+
+LABEL #l_mainLoop
+
+
+
+
+
+
+
+
+        SUSPEND
+        GOTO #l_mainLoop
+
+
+EXIT
