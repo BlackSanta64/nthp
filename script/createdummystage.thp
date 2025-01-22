@@ -1,0 +1,23 @@
+CONST core_context __SHARED
+GOTO 100
+        CALL script/stage.b
+LABEL 100
+
+@createStage
+
+
+@f_addObject ( 100 700 100 100 )
+@f_addObject ( 200 700 100 100 )
+@f_addObject ( 300 700 100 100 )
+@f_addObject ( 400 700 100 100 )
+@f_addObject ( 500 700 100 100 )
+@f_addObject ( 600 700 100 100 )
+@f_addObject ( 700 700 100 100 ) 
+@f_addObject ( 800 700 100 100 )
+@f_addObject ( 900 700 100 100 )
+
+@saveStage ( stage1.ch )
+
+SM_WRITE 2 0
+
+EXIT

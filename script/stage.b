@@ -12,8 +12,7 @@ STAGE CACHE STRUCTURE:
 
 /
 DEPEND #core_context
-CONST l_initStageObjects        25
-CONST l_addObject               26
+
 
 
 VAR entity_counter
@@ -53,6 +52,12 @@ MACRO f_initStageObjects {
         GETINDEX >returnRegister
         ADD 3 >returnRegister >returnRegister
         GOTO #l_initStageObjects
+}
+
+MACRO f_renderStageGeometry {
+        GETINDEX >returnRegister
+        ADD 3 >returnRegister >returnRegister
+        GOTO #l_renderStageGeometry
 }
 
 
@@ -102,7 +107,13 @@ LABEL #l_initStageObjects
         INC $entity_counter
         IF $entity_counter LST >mathReg1
                 GOTO 625
+        
         END
+
+        ENT_SETHITBOXSIZE #e_player 24 24
+        ENT_SETPOS #e_player 0 0
+        ENT_SETFRAMERANGE #e_player #f0_player 1
+        ENT_SETRENDERSIZE #e_player 24 24
 
         RETURN >returnRegister
 
@@ -127,6 +138,24 @@ LABEL #l_addObject
 
 
         RETURN >returnRegister
+
+
+
+LABEL #l_renderStageGeometry
+        ADD 2 >stageSize >mathReg0
+        SET $entity_counter 2
+
+        LABEL #l_renderLoop
+
+                CORE_QRENDER $entity_counter
+
+                INC $entity_counter
+        IF $entity_counter LST >mathReg0
+                GOTO #l_renderLoop
+        END
+        
+        RETURN >returnRegister
+
 
 
 

@@ -58,6 +58,9 @@ namespace ID {
                 LOGIC_GRTE,\
                 LOGIC_LSTE,\
                 END,\
+                ELSE,\
+                SKIP,\
+                SKIP_END,\
                 SET,\
                 SET_BINARY,\
                 CLEAR,\
@@ -159,15 +162,18 @@ namespace Size {
                 SQRT = sizeof(stdRef) + sizeof(indRef),
 
 
-                LOGIC_IF_TRUE = sizeof(stdRef) + sizeof(uint32_t),
-                LOGIC_EQU = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
-                LOGIC_NOT = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
-                LOGIC_GRT = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
-                LOGIC_LST = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
-                LOGIC_GRTE = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
-                LOGIC_LSTE = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t),
+                LOGIC_IF_TRUE = sizeof(stdRef) + sizeof(uint32_t) + sizeof(uint32_t),
+                LOGIC_EQU = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t) + sizeof(uint32_t), // OpA OpB EndLocation ElseLocation
+                LOGIC_NOT = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t) + sizeof(uint32_t),
+                LOGIC_GRT = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t) + sizeof(uint32_t),
+                LOGIC_LST = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t) + sizeof(uint32_t),
+                LOGIC_GRTE = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t) + sizeof(uint32_t),
+                LOGIC_LSTE = sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t) + sizeof(uint32_t),
 
                 END = 0,
+                ELSE = sizeof(uint32_t), // endLocation
+                SKIP = sizeof(uint32_t),
+                SKIP_END = 0,
 
                 SET = sizeof(indRef) + sizeof(nthp::script::stdVarWidth),
                 SET_BINARY = sizeof(indRef) + sizeof(nthp::script::stdVarWidth),

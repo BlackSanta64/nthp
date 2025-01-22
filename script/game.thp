@@ -1,10 +1,10 @@
-CONST l_include 1
-CONST l_mainLoop 2
+IMPORT script/labels.b
 
 GOTO #l_include
 / CALL game logic branches here. /
         
         CALL script/stage.b
+        CALL script/control.b
 
 LABEL #l_include
 
@@ -12,20 +12,27 @@ LABEL #l_include
 @loadStage ( stage1.ch )
 @f_initStageObjects
 
+SET >playerAcceleration 0.009
+SET >friction 0.005
+SET >onSolidGround 1
+SET >playerXVelocity 0
+SET >playerYVelocity 0
 
+ENT_SETPOS #e_player 0 0
 
 
 LABEL #l_mainLoop
 
 
-        POLL 2 RENDERSIZE
+        @f_playerControl
+        @f_playerLogic
+
+        @f_applyPlayerMotion
 
 
         CORE_CLEAR
-        CORE_QRENDER 2
-        CORE_QRENDER 3
-        CORE_QRENDER 4
-        CORE_QRENDER 5
+        CORE_QRENDER 0
+        @f_renderStageGeometry
         CORE_DISPLAY
 
 

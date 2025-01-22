@@ -239,14 +239,35 @@ DEFINE_EXECUTION_BEHAVIOUR(END) {
         return 0;
 }
 
+DEFINE_EXECUTION_BEHAVIOUR(ELSE) {
+        uint32_t endLocation = *(uint32_t*)(data->nodeSet[data->currentNode].access.data);
+
+        data->currentNode = endLocation;
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(SKIP) {
+        uint32_t skip_to = *(uint32_t*)(data->nodeSet[data->currentNode].access.data);
+
+        data->currentNode = skip_to;
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(SKIP_END) {
+        return 0;
+}
+
 DEFINE_EXECUTION_BEHAVIOUR(LOGIC_IF_TRUE) {
         stdRef opA = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
         uint32_t endIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+        uint32_t elseIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(uint32_t));
 
 
         EVAL_STDREF(opA);
         if(nthp::fixedToInt(opA.value)) return 0;
-        else data->currentNode = endIndex;
+        if(elseIndex) { data->currentNode = elseIndex; return 0; }
+        
+        data->currentNode = endIndex;
 
         return 0;
 }
@@ -256,14 +277,15 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_EQU) {
         stdRef opA = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
         stdRef opB = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
         uint32_t endIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
+        uint32_t elseIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t)));
 
         EVAL_STDREF(opA);
         EVAL_STDREF(opB);
 
-        if(opA.value == opB.value)
-                return 0;
-        else 
-                data->currentNode = endIndex;
+        if(opA.value == opB.value) return 0;
+        if(elseIndex) { data->currentNode = elseIndex; return 0; }
+
+        data->currentNode = endIndex;
 
         return 0;
 }
@@ -272,14 +294,15 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_NOT) {
         stdRef opA = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
         stdRef opB = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
         uint32_t endIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
+        uint32_t elseIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t)));
 
         EVAL_STDREF(opA);
         EVAL_STDREF(opB);
-        
-        if(opA.value != opB.value)
-                return 0;
-        else 
-                data->currentNode = endIndex;
+
+        if(opA.value != opB.value) return 0;
+        if(elseIndex) { data->currentNode = elseIndex; return 0; }
+
+        data->currentNode = endIndex;
 
         return 0;
 }
@@ -288,14 +311,15 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_GRT) {
         stdRef opA = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
         stdRef opB = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
         uint32_t endIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
+        uint32_t elseIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t)));
 
         EVAL_STDREF(opA);
         EVAL_STDREF(opB);
 
-        if(opA.value > opB.value)
-                return 0;
-        else 
-                data->currentNode = endIndex;
+        if(opA.value > opB.value) return 0;
+        if(elseIndex) { data->currentNode = elseIndex; return 0; }
+
+        data->currentNode = endIndex;
 
         return 0;
 }
@@ -304,14 +328,15 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_LST) {
         stdRef opA = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
         stdRef opB = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
         uint32_t endIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
+        uint32_t elseIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t)));
 
         EVAL_STDREF(opA);
         EVAL_STDREF(opB);
 
-        if(opA.value < opB.value)
-                return 0;
-        else 
-                data->currentNode = endIndex;
+        if(opA.value < opB.value) return 0;
+        if(elseIndex) { data->currentNode = elseIndex; return 0; }
+
+        data->currentNode = endIndex;
 
         return 0;
 }
@@ -320,14 +345,15 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_GRTE) {
         stdRef opA = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
         stdRef opB = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
         uint32_t endIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
+        uint32_t elseIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t)));
 
         EVAL_STDREF(opA);
         EVAL_STDREF(opB);
 
-        if(opA.value >= opB.value)
-                return 0;
-        else 
-                data->currentNode = endIndex;
+        if(opA.value >= opB.value) return 0;
+        if(elseIndex) { data->currentNode = elseIndex; return 0; }
+
+        data->currentNode = endIndex;
 
         return 0;
 }
@@ -337,16 +363,15 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_LSTE) {
         stdRef opA = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
         stdRef opB = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
         uint32_t endIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
+        uint32_t elseIndex = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) + sizeof(stdRef) + sizeof(uint32_t)));
 
         EVAL_STDREF(opA);
         EVAL_STDREF(opB);
 
-        
+        if(opA.value <= opB.value) return 0;
+        if(elseIndex) { data->currentNode = elseIndex; return 0; }
 
-        if(opA.value <= opB.value)
-                return 0;
-        else 
-                data->currentNode = endIndex;
+        data->currentNode = endIndex;
 
         return 0;
 }
@@ -382,7 +407,7 @@ DEFINE_EXECUTION_BEHAVIOUR(SET_BINARY) {
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(CLEAR) {
-        delete[] data->currentLocalMemory;
+        free((*data->currentLocalMemory));
         data->varSetSize = 0;
 
         return 0;
@@ -390,9 +415,13 @@ DEFINE_EXECUTION_BEHAVIOUR(CLEAR) {
 
 DEFINE_EXECUTION_BEHAVIOUR(DEFINE) {
         uint32_t size = *(uint32_t*)(data->nodeSet[data->currentNode].access.data);
-        (*data->currentLocalMemory) = new (std::nothrow) nthp::script::stdVarWidth[size];
-        
-        if((*data->currentLocalMemory) == nullptr) return 1;
+        if(data->varSetSize > 0) 
+                (*data->currentLocalMemory) = (nthp::script::stdVarWidth*)realloc((*data->currentLocalMemory), size * sizeof(nthp::script::stdVarWidth));
+        else
+                (*data->currentLocalMemory) = (nthp::script::stdVarWidth*)malloc(size * sizeof(nthp::script::stdVarWidth));
+
+        if((*data->currentLocalMemory) == NULL) return 1;
+        data->varSetSize = size;
 
 
         return 0;
@@ -1295,8 +1324,7 @@ int nthp::script::Script::import(const char* filename, ScriptDataSet* dataSet) {
         localLabelBlock = (uint32_t*)(nodeSet[0].access.data + (sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t)));
         localLabelBlockSize = *(uint32_t*)(nodeSet[0].access.data + (sizeof(uint32_t) + sizeof(uint32_t)));
 
-        localVarSet = (decltype(localVarSet))malloc(sizeof(nthp::fixed_t) * localVarSetSize);;
-
+        localVarSet = (decltype(localVarSet))malloc(sizeof(nthp::fixed_t) * localVarSetSize);
         memset(localVarSet, 0, sizeof(nthp::fixed_t) * localVarSetSize);
         
 
@@ -1317,15 +1345,11 @@ int nthp::script::Script::execute() {
         #endif
 
         data->currentLocalMemory = &localVarSet;
+        data->varSetSize = localVarSetSize;
         data->currentLabelBlock = localLabelBlock;
         data->currentLabelBlockSize = localLabelBlockSize;
         data->currentNode = localCurrentNode;
         data->nodeSet = nodeSet.data();
-
-        // Could leave this to rot, but might be important later.
-        if(!inStageContext) {
-                data->globalVarSet = localVarSet;
-        }
 
         #ifdef DEBUG
 

@@ -2,6 +2,7 @@ BUILD_SYSTEM
         script/init.thp script/init.thpcs
         script/core.thp script/core.thpcs
         script/game.thp script/game.thpcs
+        script/createdummystage.thp script/createdummystage.thpcs
 END
 
 
@@ -21,6 +22,15 @@ SCRIPT_CONFIG
         GPR 2
 END
 
+SCRIPT_CONFIG
+
+        FILE script/createdummystage.thpcs
+
+        TYPE T_LOGIC
+        MEMORY 2
+        GPR 3
+
+END
 
 SCRIPT_CONFIG
         FILE script/game.thpcs
@@ -30,6 +40,7 @@ SCRIPT_CONFIG
         GPR 3
 
 END
+
 
 
 EXIT

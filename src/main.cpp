@@ -10,8 +10,8 @@
 
 
 nthp::EngineCore nthp::core;
-
 nthp::script::stage::Stage currentStage;
+
 
 int nthp::runtimeBehaviour(int argv, char** argc) {
         // The DEBUG_INIT is called at the start of main, and DEBUG_CLOSE

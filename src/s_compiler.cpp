@@ -20,6 +20,7 @@ using namespace nthp::script::instructions;
                                                                         std::vector<nthp::script::CompilerInstance::GOTO_DEF>& gotoList,\
                                                                         std::vector<size_t>& ifList,\
                                                                         std::vector<size_t>& endList,\
+                                                                        std::vector<size_t>& skipList,\
                                                                         size_t& currentMacroPosition,\
                                                                         size_t& targetMacro,\
                                                                         bool& evaluateMacro,\
@@ -288,6 +289,12 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
 
         try {
                 double value = std::stod(expression);
+                if((std::abs(value) < nthp::fixedTypeConstants::FIXED_EPSILON) && (value != 0)) {
+                        PRINT_COMPILER_WARNING("Expression [%s] cannot be expressed/approximated in current fixed point system configuration. Expression will be rounded to 0.\n", expression.c_str());
+                }
+
+
+
                 ref.value = nthp::doubleToFixed(value);
 
                 // A reference cannot have a decimal value.
@@ -447,8 +454,6 @@ DEFINE_COMPILATION_BEHAVIOUR(JUMP) {
         if(!PR_METADATA_GET(static_label, nthp::script::flagBits::IS_REFERENCE)) {
                 PRINT_COMPILER_WARNING("JUMP Node at [%zu] uses constant expression as label reference; Consider using GOTO instead.\n", currentNode);
         }
-
-
 
         labelID->metadata = static_label.metadata;
         labelID->value = nthp::fixedToInt(static_label.value);
@@ -779,6 +784,28 @@ DEFINE_COMPILATION_BEHAVIOUR(END) {
         return 0;
 }
 
+DEFINE_COMPILATION_BEHAVIOUR(ELSE) {
+        ADD_NODE(ELSE);
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+DEFINE_COMPILATION_BEHAVIOUR(SKIP) {
+        ADD_NODE(SKIP);
+
+        skipList.push_back(currentNode);
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+DEFINE_COMPILATION_BEHAVIOUR(SKIP_END) {
+        ADD_NODE(SKIP_END);
+
+        PRINT_NODEDATA();
+        return 0;
+}
 
 DEFINE_COMPILATION_BEHAVIOUR(IF) {
 
@@ -883,6 +910,10 @@ DEFINE_COMPILATION_BEHAVIOUR(SET) {
 
         try {
                 double conv = std::stod(fileRead);
+                if((std::abs(conv) < nthp::fixedTypeConstants::FIXED_EPSILON) && (conv != 0)) {
+                        PRINT_COMPILER_WARNING("Expression [%s] cannot be expressed/approximated in current fixed point system configuration. Expression will be rounded to 0.\n", fileRead.c_str());
+                }
+
                 static_value = nthp::doubleToFixed(conv);
         }
         catch(std::invalid_argument) {
@@ -2221,6 +2252,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
         
         std::vector<size_t> ifLocations;
         std::vector<size_t> endLocations;
+        std::vector<size_t> skipList;
 
 
         struct callStackObj {
@@ -2238,7 +2270,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
         bool evaluateMacro = false;
 
 
-        #define COMPILE(instruction) if( instruction ( nodeList, file, fileRead, constantList, macroList, varList, globalList, labelList, gotoList, ifLocations, endLocations, currentMacroPosition, targetMacro, evaluateMacro, buildSystemContext) ) return 1
+        #define COMPILE(instruction) if( instruction ( nodeList, file, fileRead, constantList, macroList, varList, globalList, labelList, gotoList, ifLocations, endLocations, skipList, currentMacroPosition, targetMacro, evaluateMacro, buildSystemContext) ) return 1
         #define CHECK_COMP(instruction) if(fileRead == #instruction) { COMPILE(instruction); continue; }
 
         bool operationOngoing = true;
@@ -2310,36 +2342,20 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                         PRINT_COMPILER("Defined VAR [%s].\n", fileRead.c_str());
                 }
                 if(fileRead == "GLOBAL") {
-                        if(!buildSystemContext) {
-                                PRINT_COMPILER_WARNING("GLOBAL definitions are invalid outside of buildsystem. Evaluating as VAR\n");
-                                EVAL_SYMBOL(); // Cycles to the invalid global name.
-
-                                for(size_t i = 0; i < varList.size(); ++i) {
-                                        if(fileRead == varList[i].varName) {
-                                                PRINT_COMPILER_WARNING("VAR [$%s] already declared; Ignoring redefinition.\n", fileRead.c_str());
-                                                goto COMP_START; // thank god.
-                                        }
-                                }
-
-                                VAR_DEF newDef;
-                                newDef.varName = fileRead;
-                                newDef.relativeIndex = varList.size();
-
-                                varList.push_back(newDef);
-                                PRINT_COMPILER("Defined VAR [%s].\n", fileRead.c_str());
-
-                                continue;
-                        }
-
-                          // Define a new variable.
+                        
+                        // Define a new variable.
                         EVAL_SYMBOL();
+                        bool invalidDefine = false;
 
                         for(size_t i = 0; i < globalList.size(); ++i) {
                                 if(fileRead == globalList[i].varName) {
-                                        PRINT_COMPILER_WARNING("GLOBAL [>%s] already declared; Ignoring redefinition.\n");
-                                        goto COMP_START; // thank god.
+                                        PRINT_COMPILER_WARNING("GLOBAL [>%s] already declared; Ignoring redefinition.\n", fileRead.c_str());
+                                        invalidDefine = true;
+                                        break;
                                 }
                         }
+
+                        if(invalidDefine) continue;
 
                         PRINT_COMPILER("Defined GLOBAL [%s].\n", fileRead.c_str());
 
@@ -2559,6 +2575,9 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                 CHECK_COMP(IF);
                 CHECK_COMP(END);
+                CHECK_COMP(ELSE);
+                CHECK_COMP(SKIP);
+                CHECK_COMP(SKIP_END);
 
                 CHECK_COMP(SET);
                 CHECK_COMP(SET_BINARY);
@@ -2671,12 +2690,17 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                 }
 
                 
-                // Match IFs and ENDs
+                // Match IFs, ENDs, and ELSEs
+                {
 
                 unsigned int numberOfIfsFound = 1;
                 unsigned int numberOfEndsFound = 0;
                 unsigned int finalEndIndex = 0;
+                unsigned int finalElseIndex = 0;
+                int waitForElse = 0;
+                bool matchedElse = false;
                 uint32_t* endIndex = nullptr;
+                uint32_t* elseIndex = nullptr;
 
                 for (size_t i = 0; i < ifLocations.size(); i++) {
                         NOVERB_PRINT_COMPILER("Checking IF [%zu]\n", ifLocations[i]);
@@ -2685,18 +2709,30 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                                 // If an IF statement is found before and END statement, the program requires that many more ENDs
                                 // to break the loop. The corresponding END will be the one found when there are equal IFs and ENDs found.
                                 if (nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::END) {
-                                        numberOfEndsFound++;
+                                        ++numberOfEndsFound;
+                                        --waitForElse;
+                                        continue;
                                 }
-                                if (nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_EQU ||
+                                if (    nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_EQU ||
                                         nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_NOT ||
                                         nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_GRT ||
                                         nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_LST ||
                                         nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_GRTE ||
                                         nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_LSTE ||
                                         nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::LOGIC_IF_TRUE
-                                        ) {
-                                numberOfIfsFound++;
-                        }
+                                )
+                                {
+                                        ++numberOfIfsFound;
+                                        ++waitForElse;
+                                        continue;
+                                }
+                                if((nodeList[finalEndIndex].access.ID == nthp::script::instructions::ID::ELSE) && (waitForElse == 0)) {
+                                        if(matchedElse) { PRINT_COMPILER_ERROR("Duplicate unmatched ELSE found while evaluating IF [%zu].\n", ifLocations[i]); return 1; }
+
+                                        finalElseIndex = finalEndIndex;
+                                        matchedElse = true;
+                                        continue;
+                                }
 
                         }
                         if(finalEndIndex == nodeList.size()) {
@@ -2706,23 +2742,63 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                         // Important, not a mistake. Don't go blaming this 3 months from now.
                         --finalEndIndex;
+
+                        if(!(matchedElse)) { finalElseIndex = 0; }
+                        else {
+                                // No need to worry; ELSE data is allocated when the symbol is compiled.
+                                (*(uint32_t*)nodeList[finalElseIndex].access.data) = finalEndIndex; // Stores the END location in the ELSE for easy redirection.
+
+                        }
+
+
+                        
                         // Assigns the pointer to the last 4 bytes of the node to store the end index (Unless a BNE instruction).
                         if(nodeList[ifLocations[i]].access.ID == nthp::script::instructions::ID::LOGIC_IF_TRUE) {
                                 endIndex = (uint32_t*)(nodeList[ifLocations[i]].access.data + sizeof(nthp::script::instructions::stdRef));
+                                elseIndex = (uint32_t*)(nodeList[ifLocations[i]].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(uint32_t));
+
                         }
                         else {
                                 endIndex = (uint32_t*)(nodeList[ifLocations[i]].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(nthp::script::instructions::stdRef));
+                                elseIndex = (uint32_t*)(nodeList[ifLocations[i]].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(nthp::script::instructions::stdRef) + sizeof(uint32_t));
                         }
 
                         NOVERB_PRINT_COMPILER("Matched IF to END at [%u].\n", finalEndIndex);
 
 
                         *endIndex = finalEndIndex;
+                        *elseIndex = finalElseIndex;
                         numberOfIfsFound = 1;
                         numberOfEndsFound = 0;
+                        waitForElse = 0;
+                        matchedElse = false;
 
                 } // For
 
+                }
+
+                {
+                        uint32_t skip_endLocation = 0;
+                        uint32_t* skipEndWrite = NULL;
+
+                       // Match SKIPs and SKIP_ENDs.
+                        for(size_t i = 0; i < skipList.size(); ++i) {
+                                for(skip_endLocation = skipList[i]; (nodeList[skip_endLocation].access.ID != nthp::script::instructions::ID::SKIP_END) && (skip_endLocation < nodeList.size()); ++skip_endLocation) 
+                                {
+                                        continue;
+                                }
+
+                                if(skip_endLocation == nodeList.size()) {
+                                        PRINT_COMPILER_ERROR("SKIP at [%zu] has no matching SKIP_END flag.\n", skipList[i]);
+                                        return 1;
+                                }
+
+                                skipEndWrite = (uint32_t*)(nodeList[skipList[i]].access.data);
+                                *skipEndWrite = skip_endLocation;
+
+                        }
+
+                }
 
                 // Set up header with:
                 //      - Local Memory Budget
