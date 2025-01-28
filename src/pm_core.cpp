@@ -55,7 +55,7 @@ int nthp::debuggerBehaviour(std::string target, FILE* debugOutputTarget) {
                         
                         while((nthp::core.isRunning()) && (!currentStage.data.changeStage) && debuggingActiveProcess) {
                                 frameStart = SDL_GetTicks();
-
+                                SDL_Delay(1);
                                 
                                 currentStage.handleEvents();
 
@@ -65,8 +65,7 @@ int nthp::debuggerBehaviour(std::string target, FILE* debugOutputTarget) {
                                 currentStage.tick();
                                 currentStage.logic();
 
-
-                                nthp::deltaTime = nthp::intToFixed(SDL_GetTicks() - frameStart);
+                                deltaTime = nthp::intToFixed(SDL_GetTicks() - frameStart);
                         
                                 if(nthp::deltaTime < nthp::frameDelay) {
                                         SDL_Delay(nthp::fixedToInt(nthp::frameDelay - nthp::deltaTime));

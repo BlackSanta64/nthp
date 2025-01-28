@@ -31,7 +31,6 @@ CONST MAX_PLAYERSPEED 1.2
 CONST -MAX_PLAYERSPEED -1.2
 
 
-MACRO skipExecution { IF 0 EQU 1 }
 
 MACRO initFlags {
 /       x       y       tx      ty      cx      cy      fs      sr      title   /
@@ -82,8 +81,7 @@ ACTION_BIND #a_exit >exitKey            ESCAPE
 ACTION_BIND #a_createDS >createStage    l
 
 SM_WRITE 1 1
-
-
+SM_WRITE 2 1
 
 
 CONST core_context __DEFINED

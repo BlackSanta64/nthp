@@ -12,8 +12,8 @@ LABEL #l_include
 @loadStage ( stage1.ch )
 @f_initStageObjects
 
-SET >playerAcceleration 0.009
-SET >friction 0.005
+SET >playerAcceleration 0.07
+SET >friction 0.04
 SET >onSolidGround 1
 SET >playerXVelocity 0
 SET >playerYVelocity 0

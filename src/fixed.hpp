@@ -17,7 +17,7 @@ namespace nthp {
 
 #ifndef FIXED_POINT_SCALE
                 // The fixed-point scale factor as a whole-number power of 2
-#define         FIXED_POINT_SCALE       10
+#define         FIXED_POINT_SCALE       6
 
 #endif
 
