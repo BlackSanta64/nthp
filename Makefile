@@ -23,8 +23,8 @@ SDL_imageLibInclude =
 endif
 
 
-CFLAGS = -lSDL2 $(SDL_imageLibInclude) -D LINUX -D USE_SDLIMG=$(USE_SDLIMAGE)
-DEBUG_CFLAGS = -g -lSDL2 $(SDL_imageLibInclude) -D LINUX -D DEBUG -DUSE_SDLIMG=$(USE_SDLIMAGE)
+CFLAGS = -lSDL2 -lSDL2_mixer $(SDL_imageLibInclude) -D LINUX -D USE_SDLIMG=$(USE_SDLIMAGE)
+DEBUG_CFLAGS = -g -lSDL2 -lSDL2_mixer $(SDL_imageLibInclude) -D LINUX -D DEBUG -DUSE_SDLIMG=$(USE_SDLIMAGE)
 libTargets = global_defs.o core.o position.o palette.o rawsurface.o softwaretexture.o e_entity.o e_collision.o st_compress.o s_compiler.o s_script.o gtexture.o s_stage.o
 debug_libTargets = global_defs_d.o core_d.o position_d.o palette_d.o rawsurface_d.o softwaretexture_d.o e_entity_d.o e_collision_d.o st_compress_d.o s_compiler_d.o s_script_d.o gtexture_d.o s_stage_d.o
 
@@ -33,7 +33,7 @@ lib_srcSymbols = $(SRCDIR)global_defs.cpp $(SRCDIR)core.cpp $(SRCDIR)position.cp
 
 
 
-PM_CLAGS = -lSDL2 $(SDL_imageLibInclude) -D LINUX -D DEBUG -D USE_SDLIMG=$(USE_SDLIMAGE)
+PM_CLAGS = -lSDL2 -lSDL2_mixer $(SDL_imageLibInclude) -D LINUX -D DEBUG -D USE_SDLIMG=$(USE_SDLIMAGE)
 
 all: release debug pm
 
