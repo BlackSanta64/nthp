@@ -66,11 +66,10 @@ void nthp::entity::gEntity::setPosition(nthp::vectFixed newPos) {
 	hitbox.y = wPosition.y + hbOffset.y;
 }
 
-// Moves the entity with delta timing factored into the offset.
+// Moves the entity by given offset (NO DELTATIME FACTOR)
 void nthp::entity::gEntity::move(nthp::vectFixed offset) {
-        wPosition += nthp::vectFixed(nthp::f_fixedProduct(offset.x, nthp::deltaTime), nthp::f_fixedProduct(offset.y, nthp::deltaTime));
-	hitbox.x = wPosition.x + hbOffset.x;
-	hitbox.y = wPosition.y + hbOffset.y;
+	hitbox.x = offset.x + hbOffset.x;
+	hitbox.y = offset.y + hbOffset.y;
 }
 
 void nthp::entity::gEntity::setCurrentFrame(size_t cf) {

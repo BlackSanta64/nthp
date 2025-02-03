@@ -11,6 +11,7 @@
 nthp::EngineCore nthp::core;
 nthp::script::stage::Stage currentStage;
 nthp::script::CompilerInstance symbolData;
+std::string testTarget;
 
 bool debuggingActiveProcess = false;
 bool suspendExecution = false;
@@ -92,6 +93,7 @@ int nthp::debuggerBehaviour(std::string target, FILE* debugOutputTarget) {
                         }
                         else {
                                 debuggingActiveProcess = false;
+                                suspendExecution = false;
                                 break;
                         }
                 }
@@ -116,7 +118,7 @@ int main(int argv, char** argc) {
         std::mutex g_access;
 
         std::thread debuggerThread(headless_runtime);
-        std::string targetName, debugOutput;
+        std::string debugOutput;
         FILE* debug_fd = stdout;
 
 	if(argv > 1) {
@@ -125,7 +127,7 @@ int main(int argv, char** argc) {
                         if(debuggerThread.joinable()) debuggerThread.join();
                         return 0;
                 }
-                targetName = argc[1];
+                testTarget = argc[1];
 
                 if(argv > 2) {
                         debugOutput = argc[2];
@@ -135,7 +137,8 @@ int main(int argv, char** argc) {
                 }
         }
         else {
-                targetName = "prog";
+                testTarget = "prog";
+                debugOutput = "debug.log";
         }
 
 	if(debugOutput != "stdout") {
@@ -157,7 +160,7 @@ int main(int argv, char** argc) {
 
                                                
 
-                        int ret = nthp::debuggerBehaviour(targetName, debug_fd);
+                        int ret = nthp::debuggerBehaviour(testTarget, debug_fd);
                         if(ret) {
                                 PM_PRINT_ERROR("\nCritical failure in debugger; return code %d\n", ret);
                         }
@@ -192,7 +195,7 @@ int headless_runtime() {
 	std::vector<std::string> args;
 	std::mutex g_access;
 
-	std::string input, arg;
+	std::string input, arg, configTestingTarget = "";
 	bool isRunning = true;
         
 
@@ -260,30 +263,82 @@ int headless_runtime() {
 			}
                         if(args[0] == "debug") {
                                 if(!inHeadlessMode) {
+                                        if(args.size() > 1) {
+                                                testTarget = args[1];
+                                        }
                                         g_access.lock();
 
                                         debuggingActiveProcess = true;
+                                        PM_PRINT("Now debugging target [%s].\n", testTarget.c_str());
 
                                         g_access.unlock();
-
-                                        PM_PRINT("Now debugging target.\n");
+                                        continue;
                                 }
                                 else {
                                         PM_PRINT_ERROR("Currently running in headless mode; No target.\n");
                                 }
                         }
+                        if(args[0] == "target") {
+                                if(inHeadlessMode) {
+                                        PM_PRINT_ERROR("Currently running in headless mode; No target.\n");
+                                        continue;
+                                }
+
+                                if(args.size() < 2) {
+                                        PM_PRINT_ERROR("No target specified.\n");
+                                        continue;
+                                }
+
+
+                                configTestingTarget = args[1];
+                                PM_PRINT("Set debug target config to [%s].\n", configTestingTarget.c_str());
+                                continue;
+
+                        }
+
+                        if(args[0] == "test") {
+
+                                if(debuggingActiveProcess) { PM_PRINT("Target currently running; close current session before starting a new one.\n"); continue; }
+
+                                nthp::script::CompilerInstance comp;
+                                if(comp.compileStageConfig(configTestingTarget.c_str(), NULL, false, false)) {
+                                        PM_PRINT_ERROR("Critical failure in config [%s]; see debug log.\n", configTestingTarget.c_str());
+                                        continue;
+                                }
+
+                                PM_PRINT("Testing [%s]...\n", configTestingTarget.c_str());
+                                { testTarget = comp.getStageOutputTarget(); }
+                                g_access.lock();
+
+                                        debuggingActiveProcess = true;
+                                        PM_PRINT("Now debugging target [%s].\n", testTarget.c_str());
+
+                                g_access.unlock();
+                                continue;
+
+                        }
+
+
                         if(args[0] == "help") {
                                 help_output();
+                                continue;
                         }
 
                         if(args[0] == "stop") {
                                 if(debuggingActiveProcess) {
                                         PM_PRINT("Stopping active debug session.\n");
-                                        debuggingActiveProcess = false;
+                                        g_access.lock();
+
+                                                nthp::core.stop();
+                                                debuggingActiveProcess = false;
+                                                suspendExecution = false;
+
+                                        g_access.unlock();
                                 }
                                 else {
                                         PM_PRINT("Not in an active debug session.\n");
                                 }
+                                continue;
 
                         } 
 
@@ -368,11 +423,17 @@ int headless_runtime() {
                                 if(args[0] == "import") {
                                         if(args.size() < 3) { PM_PRINT("Invalid arguments. syn; import src/stg sourcefile/stageconfig"); continue; }
                                         if(args[1] == "src") {
-                                                if(symbolData.compileSourceFile(args[2].c_str(), NULL, false, true)) PM_PRINT("ERROR!!!\n");
+                                                if(symbolData.compileSourceFile(args[2].c_str(), NULL, false, true)) {
+                                                        PM_PRINT_ERROR("Failed to import symbols from file [%s].\n", args[2].c_str());
+                                                        continue;
+                                                }
                                                 PM_PRINT("Imported [%zu] symbols from source file [%s].\n", symbolData.globalList.size() + symbolData.macroList.size() + symbolData.varList.size() + symbolData.constantList.size(), args[2].c_str());
                                         }
                                         if(args[1] == "stg") {
-                                                if(symbolData.compileStageConfig(args[2].c_str(), NULL, false, true)) PM_PRINT("ERROR!!!\n");
+                                                if(symbolData.compileStageConfig(args[2].c_str(), NULL, false, true)) {
+                                                        PM_PRINT_ERROR("Failed to import symbols from file [%s].\n", args[2].c_str());
+                                                        continue;
+                                                }
                                                 PM_PRINT("Imported [%zu] symbols from stage file [%s].\n", symbolData.globalList.size() + symbolData.macroList.size() + symbolData.constantList.size(), args[2].c_str());
                                         }
                                         continue;
@@ -426,8 +487,18 @@ int headless_runtime() {
                                         PM_PRINT("GLOBAL List :.\n[index, [>symbol] = [value]]\n");
                                         g_access.lock();
 
-                                        for(size_t i = 0; i < symbolData.globalList.size(); ++i) {
-                                                std::cout << "\t[" << i << ", [>" << symbolData.globalList[i].varName << "] = [" << nthp::fixedToDouble(currentStage.data.globalVarSet[symbolData.globalList[i].relativeIndex]) << "] ]\n";
+                                        bool printSymbols = false;
+                                        size_t index;
+                                        if(symbolData.globalList.size() > 0) { 
+                                                printSymbols = true;
+                                        }
+
+                                        for(size_t i = 0; i < currentStage.data.globalMemBudget; ++i) {
+                                                index = i;
+                                                std::cout << "\t[" << i; 
+                                                
+                                                if(printSymbols) { std::cout << ", [>" << symbolData.globalList[i].varName; index = symbolData.globalList[i].relativeIndex; }
+                                                std::cout << "] = [" << nthp::fixedToDouble(currentStage.data.globalVarSet[index]) << "] ]\n";
                                         }
 
                                         g_access.unlock();

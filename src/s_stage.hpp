@@ -68,6 +68,7 @@ namespace nthp {
 
                                 nthp::script::Script& getScript(size_t index) { return scriptBlock[index]; }
                                 nthp::script::Script::ScriptDataSet data;
+                                
 
                                 void clean();
 
@@ -82,6 +83,7 @@ namespace nthp {
                                 std::vector<uint32_t> exitList;
                                 std::vector<uint32_t> initList;
 
+                                std::string configOutputTarget;
                                 
                                 
 

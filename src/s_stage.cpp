@@ -79,28 +79,33 @@ int nthp::script::stage::Stage::loadStage(const char* stageFile) {
 
                 if(scriptBlock[i].import(configs[i].scriptFile.c_str(), &data)) {
                         PRINT_DEBUG_ERROR("Unable to complete stage import; binary [%s] failed to load.\n", configs[i].scriptFile.c_str());
-                        delete[] scriptBlock;
-                        delete[] triggerBlock;
+                        
                         
                         return 1;
                 }
                 triggerBlock[i] = configs[i].trig;
-                if(triggerBlock[i].ID == TRIG_TICK) {
-                        tickList.push_back(i);
-                        continue;
+
+                switch(triggerBlock[i].ID) {
+                        case TRIG_TICK:
+                                tickList.push_back(i);
+                                break;
+                        case TRIG_LOGIC:
+                                logicList.push_back(i);
+                                break;
+                        case TRIG_INIT:
+                                initList.push_back(i);
+                                break;
+                        case TRIG_EXIT:
+                                exitList.push_back(i);
+                                break;
+                        
+                        default:
+                                PRINT_DEBUG_ERROR("Invalid Trigger type [%X]; Aborting...\n", triggerBlock[i].ID);
+                                delete[] scriptBlock;
+                                delete[] triggerBlock;
+                                return 1;
                 }
-                if(triggerBlock[i].ID == TRIG_LOGIC) {
-                        logicList.push_back(i);
-                        continue;
-                }
-                if(triggerBlock[i].ID == TRIG_INIT) {
-                        initList.push_back(i);
-                        continue;
-                }
-                if(triggerBlock[i].ID == TRIG_EXIT) {
-                        exitList.push_back(i);
-                        continue;
-                }
+
         }
 
         // Allocate all global memory at once.

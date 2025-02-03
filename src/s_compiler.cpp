@@ -2890,6 +2890,9 @@ int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFi
                 return 1;
         }
 
+        std::string targetOutput = "prog";
+        if(output != NULL) targetOutput = output; // Assigned target override if not null.
+
         std::string fileRead;
         bool operationComplete = false;
         std::vector<nthp::script::stage::scriptConfig> triggerList;
@@ -2961,6 +2964,14 @@ int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFi
 
                 } // if(fileRead == "SCRIPT_CONFIG")
 
+                if(fileRead == "TARGET") {
+                        file >> fileRead;
+                        targetOutput = fileRead;
+
+                        PRINT_COMPILER("Output target override; target set to [%s].\n", fileRead.c_str());
+                        continue;
+                }
+
 
                 if(fileRead == "BUILD_SYSTEM") {
                         globalList.clear();
@@ -3018,11 +3029,12 @@ int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFi
         } // while(!operationComplete)
 
         file.close();
-        if(output == NULL) {
+        if(output == NULL && ignoreInstructionData) {
                 return 0;
         }
 
-        file.open(output, std::ios::out | std::ios::binary);
+        file.open(targetOutput, std::ios::out | std::ios::binary);
+        stageOutputTarget = targetOutput;
         
         nthp::script::stage::trigger_w primTrig = 0;
         uint8_t fileLength = 0;

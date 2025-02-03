@@ -110,12 +110,15 @@ namespace nthp {
                         }
                 }
 
+                const std::string getStageOutputTarget() { return stageOutputTarget; }
+
                 ~CompilerInstance();
                 private:
 
                         nthp::script::Node* compiledNodes;
                         size_t nodeBlockSize;
 
+                        std::string stageOutputTarget;
 
 
                         // Labels and Goto's are matched post-compilation.
