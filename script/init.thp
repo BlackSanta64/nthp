@@ -1,0 +1,34 @@
+
+
+
+MACRO initFlags {
+/		x		y		tx		ty		cx		cy		fs		sr		title	/
+		920		518		8000	8000	0		0		0		0		test
+}
+
+
+CORE_INIT @initFlags
+
+SET_ACTIVE_PALETTE resource/genericPalette.pal
+
+TEXTURE_DEFINE 1
+CONST t_oscar 0
+
+TEXTURE_LOAD #t_oscar resource/oscar.cst
+
+FRAME_DEFINE 1
+CONST f0_oscar 0
+
+FRAME_SET #f0_oscar 0 0 2592 4608 #t_oscar
+
+ENT_DEFINE 1
+CONST e_renderOscar 0
+
+ENT_SETRENDERSIZE #e_renderOscar 8000 8000
+ENT_SETPOS #e_renderOscar 0 0
+ENT_SETFRAMERANGE #e_renderOscar #f0_oscar 1
+
+
+CONST CONTEXT_MAINPROG __DEFINED
+
+EXIT

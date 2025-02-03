@@ -970,16 +970,15 @@ DEFINE_COMPILATION_BEHAVIOUR(SET_BINARY) {
 DEFINE_COMPILATION_BEHAVIOUR(DEFINE) {
         ADD_NODE(DEFINE);
 
-        uint32_t* size = decltype(size)(nodeList[currentNode].access.data);
-        EVAL_SYMBOL();
 
-        try {
-                *size = std::stoul(fileRead);
-        }
-        catch(std::invalid_argument) {
-                PRINT_COMPILER_ERROR("DEFINE Argument must be constant numeral type.\n");
-                return 1;
-        }
+        EVAL_SYMBOL();
+        auto s_size = EVAL_PREF();
+        CHECK_REF(s_size);
+        
+
+        stdRef* size = decltype(size)(nodeList[currentNode].access.data);
+        *size = s_size;
+
         
         PRINT_NODEDATA();
         return 0;

@@ -414,15 +414,27 @@ DEFINE_EXECUTION_BEHAVIOUR(CLEAR) {
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(DEFINE) {
-        uint32_t size = *(uint32_t*)(data->nodeSet[data->currentNode].access.data);
-        if(data->varSetSize > 0) 
-                (*data->currentLocalMemory) = (nthp::script::stdVarWidth*)realloc((*data->currentLocalMemory), size * sizeof(nthp::script::stdVarWidth));
-        else
-                (*data->currentLocalMemory) = (nthp::script::stdVarWidth*)malloc(size * sizeof(nthp::script::stdVarWidth));
+        stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+        void* data = (*data->currentLocalMemory);
+        
+        EVAL_STDREF(size);
+        
 
-        if((*data->currentLocalMemory) == NULL) return 1;
-        data->varSetSize = size;
+        if((data->varSetSize > 0)) {
+                auto x = (nthp::script::stdVarWidth*)realloc(data, nthp::fixedToInt(size.value));
+                if(x == NULL) {
+                        PRINT_DEBUG_ERROR("Unable to allocate local memory at [%zu]; closing..\n", data->currentNode);
+                        return 1;
+                }
+                
+                (*data->currentLocalMemory) = x;
+                data->varSetSize = nthp::fixedToInt(size.value);
 
+                return 0;
+        }
+
+        (*data->currentLocalMemory) = (nthp::script::stdVarWidth*)malloc(nthp::fixedToInt(size.value));
+        data->varSetSize = nthp::fixedToInt(size.value);
 
         return 0;
 }
@@ -1441,8 +1453,8 @@ nthp::script::Script::~Script() {
         if(localVarSetSize > 0)
                 delete[] localVarSet;
 
-        // Make sure NOT to delete the localLabelBlock, as temping as it seems.
-        // it points to the HEADER node data, do it's  freed with the rest of the
+        // Make sure NOT to delete the localLabelBlock, as tempting as it seems.
+        // it points to the HEADER node data, so it's freed with the rest of the
         // nodes. I write this because I made that mistake on Oct. 15, 2024.
 
         if(!inStageContext) {

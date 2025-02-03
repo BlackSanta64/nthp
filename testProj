@@ -1,0 +1,31 @@
+BUILD_SYSTEM
+	script/init.thp script/init.thpcs
+	script/game.thp script/game.thpcs
+END
+
+SCRIPT_CONFIG
+	
+	FILE script/init.thpcs
+	
+	TYPE T_INIT
+	GPR 9
+	MEMORY 0
+
+END
+
+
+SCRIPT_CONFIG
+	
+	FILE script/game.thpcs
+	
+	TYPE T_TICK
+	GPR 7
+	MEMORY 0
+
+END
+
+
+
+
+
+EXIT
