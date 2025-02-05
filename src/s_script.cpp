@@ -415,13 +415,13 @@ DEFINE_EXECUTION_BEHAVIOUR(CLEAR) {
 
 DEFINE_EXECUTION_BEHAVIOUR(DEFINE) {
         stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
-        void* data = (*data->currentLocalMemory);
+        void* varData = (*data->currentLocalMemory);
         
         EVAL_STDREF(size);
         
 
         if((data->varSetSize > 0)) {
-                auto x = (nthp::script::stdVarWidth*)realloc(data, nthp::fixedToInt(size.value));
+                auto x = (nthp::script::stdVarWidth*)realloc(varData, nthp::fixedToInt(size.value));
                 if(x == NULL) {
                         PRINT_DEBUG_ERROR("Unable to allocate local memory at [%zu]; closing..\n", data->currentNode);
                         return 1;
@@ -1125,7 +1125,7 @@ DEFINE_EXECUTION_BEHAVIOUR(MUSIC_RESUME) {
 }
 
 
-DEFINE_EXECUTION_BEHAVIOUR(CACHE_CREATE) {
+DEFINE_EXECUTION_BEHAVIOUR(CACHE_DEFINE) {
         stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
 
         EVAL_STDREF(size);

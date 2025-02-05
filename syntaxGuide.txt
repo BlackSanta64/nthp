@@ -1,0 +1,179 @@
+        Nthp Game Engine Script Syntax Guide ::..
+
+
+This file outlines every instruction the base compiler module is programmed
+to handle; the name, parameters, and any important notes will be highlighted where
+needed.
+Each set of instructions with similar applications or underlying utiliy will be
+grouped together.
+
+
+Structure :
+INSTRUCTION_NAME        param1 (type), param2 (type)...
+                or if no params,
+INSTRUCTION_NAME 
+
+
+Legend :
+
+        (const) = A constant numerical value.
+        (stdRef) = A constant value OR reference to any GLOBAL or VAR.
+        (indRef) = An explicit reference to any GLOBAL or VAR.
+        (string) = Any string of UTF-8 characters (no whitespace)
+
+
+
+        BASE PROGRAM CONTROL    ::
+
+LABEL           labelID (const) 
+GOTO            labelID (const)
+JUMP            labelID (stdRef)
+RETURN          InstructionIndex (stdRef)
+SKIP            
+SKIP_END
+SUSPEND
+GETINDEX        ptrToWrite (indRef)
+
+EXIT            :: EXIT marks the exit point for any translation unit;
+                :: will return to source if read in a branch script, or finalize
+                :: and link if read in a source script.
+                
+                :: IMPORTANT:   -EXIT MUST be the LAST INSTRUCTION. Any instructions or
+                                text proceeding EXIT will be IGNORED.
+
+                                -Any compiler instance that reaches EOF without an EXIT instruction
+                                will throw COMP_INCOMPLETE and abort compilation, regardless of
+                                the target being a branch or source script.
+
+
+        MATH AND VARIABLE CONTROL ::
+
+INC             ptrToInc (indRef)
+DEC             ptrToDec (indRef)
+RSHIFT          ptrToShift (indRef)
+LSHIFT          ptrToShift (indRef)
+ADD             operandA (stdRef), operandB (stdRef), output (indRef)
+SUB             operandA (stdRef), operandB (stdRef), output (indRef)
+MUL             operandA (stdRef), operandB (stdRef), output (indRef)
+DIV             operandA (stdRef), operandB (stdRef), output (indRef)
+SQRT            operand (stdRef), output (indRef)
+
+SET             ptrToSet (indRef), value (const)
+SET_BINARY      ptrToSet (indRef), value (const)
+COPY            ptrValue (indRef), ptrTarget (indRef)
+CLEAR
+DEFINE          newVarSize (stdRef)
+
+
+        ADVANCED PROGRAM CONTROL ::
+
+IF      operandA (stdRef), OPERATOR (EQU,NOT,LST,GRT,LSTE,GRTE), operandB (stdRef)
+IF      operandA (stdRef)       :: Unlike the IF syntax above, not providing an operator
+                                :: or second operand will make the compiler use IF_TRUE,
+                                :: meaning any non-zero value will pass.
+ELSE
+END
+
+
+
+        CORE CONTROL ::
+
+CORE_INIT               pixelResolutionX (stdRef), pixelResolutionY (stdRef), virtResX (stdRef), virtResY, cameraPosX (stdRef), cameraPosY (stdRef), fullscreen (stdRef BOOL), softwareRender (stdRef BOOL), title (string)
+CORE_QRENDER            entityTarget (stdRef)
+CORE_ABS_QRENDER        entityTarget (stdRef)
+CORE_CLEAR
+CORE_DISPLAY
+CORE_SETMAXFPS          targetFPS (stdRef)
+CORE_SETWINDOWRES       pixelResX (stdRef), pixelResY (stdRef)
+CORE_SETCAMERARES       virtResX (stdRef), virtResY (stdRef)
+CORE_SETCAMERAPOSITION  posX (stdRef), posY (stdRef)
+CORE_MOVECAMERA         offsetX (stdRef), offsetY (stdRef)
+CORE_STOP
+
+
+        TEXTURE MANAGEMENT ::
+
+TEXTURE_DEFINE          stackSize (stdRef)
+TEXTURE_CLEAR
+TEXTURE_LOAD            textureTarget (stdRef), textureFile (string)
+SET_ACTIVE_PALETTE      paletteFile (string)
+                        :: SET_ACTIVE_PALETTE must be called before
+                        :: loading a texture with TEXTURE_LOAD. Not doing so
+                        :: will result in all textures loaded being completely black
+                        :: (default palette is initialized to 0, so this is still defined behaviour). 
+                        :: Alpha levels will still be correct.
+
+FRAME_DEFINE            stackSize (stdRef)
+FRAME_CLEAR
+FRAME_SET               frameIndex (stdRef), srcX (stdRef), srcY (stdRef), srcW (stdRef), srcH (stdRef), targetTexture (stdRef)
+
+
+        ENTITY CONTROL AND CONFIG ::
+
+ENT_DEFINE              stackSize (stdRef)
+ENT_CLEAR
+ENT_SETCURRENTFRAME     entityTarget (stdRef), frameOffset (stdRef)
+ENT_SETPOS              target (stdRef), xPos (stdRef), yPos (stdRef)
+ENT_MOVE                target (stdRef), xOffset (stdRef), yOffset (stdRef)
+ENT_SETFRAMERANGE       target (stdRef), startFrameIndex (stdRef), size (stdRef)
+ENT_SETHITBOXSIZE       target (stdRef), sizeW (stdRef), sizeH (stdRef)
+ENT_SETHITBOXOFFSET     target (stdRef), offsetX (stdRef), offsetY (stdRef)
+ENT_SETRENDERSIZE       target (stdRef), sizeW (stdRef), sizeH (stdRef)
+
+ENT_CHECKCOLLISION      entityA (stdRef), entityB (stdRef), output (indRef)
+
+
+        ACTIONS AND INTERFACING ::
+
+ACTION_DEFINE           stackSize (stdRef)
+ACTION_CLEAR
+ACTION_BIND             targetIndex (stdRef), output (indRef), bindKey (special)
+                        :: The bindKey parameter takes in any standard keyboard character,
+                        :: or special strings (ESCAPE, TAB, RSHIFT, LSHIFT, RCTRL, LCTRL, RETURN,
+                        :: UP, DOWN, LEFT, RIGHT, SPACE) for non-character keys.
+
+
+        POLLING ::
+
+POLL                    entityTarget (stdRef), field (HITBOX, POS, CURRENTFRAME, RENDERSIZE)
+
+
+        MUSIC AND SFX ::
+
+MUSIC_DEFINE            stackSize (stdRef)
+MUSIC_CLEAR
+SOUND_DEFINE            stackSize (stdRef)
+SOUND_CLEAR
+MUSIC_LOAD              musicTarget (stdRef), soundFile (string)
+SOUND_LOAD              soundTarget (stdRef), soundFile (string)
+SOUND_PLAY              soundTarget (stdRef)
+MUSIC_START             musicTarget (stdRef)
+MUSIC_STOP
+MUSIC_PAUSE
+MUSIC_RESUME
+
+        CACHE AND FILE OPERATIONS ::
+
+CACHE_DEFINE            cacheSize (stdRef)
+CACHE_RESIZE            newSize (stdRef)
+CACHE_OPEN              cacheFile (string)
+CACHE_CLEAR
+CACHE_WRITE             cacheTarget (stdRef), value (stdRef)
+CACHE_READ              cacheTarget (stdRef), output (indRef)
+CACHE_SAVE              cacheFileOutput (string)
+
+
+        STAGE INTERFACE ::
+
+SM_WRITE                stageMemoryIndex (stdRef), value (stdRef)
+SM_READ                 stageMemoryIndex (stdRef), output (indRef)
+STAGE_LOAD              stageFile (string)
+GETGPR                  output (indRef)
+
+
+
+        MISC. INSTRUCTIONS ::
+
+PRINT                   value (stdRef)
+DRAW_SETCOLOR           paletteIndex (stdRef)
+DRAW_LINE               x1 (stdRef), y1 (stdRef), x2 (stdRef), y2 (stdRef)

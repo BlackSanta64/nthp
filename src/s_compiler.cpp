@@ -2075,8 +2075,8 @@ DEFINE_COMPILATION_BEHAVIOUR(MUSIC_RESUME) {
 }
 
 
-DEFINE_COMPILATION_BEHAVIOUR(CACHE_CREATE) {
-        ADD_NODE(CACHE_CREATE);
+DEFINE_COMPILATION_BEHAVIOUR(CACHE_DEFINE) {
+        ADD_NODE(CACHE_DEFINE);
 
         EVAL_SYMBOL();
         auto size = EVAL_PREF();
@@ -2646,7 +2646,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                 CHECK_COMP(MUSIC_PAUSE);
                 CHECK_COMP(MUSIC_RESUME);
 
-                CHECK_COMP(CACHE_CREATE);
+                CHECK_COMP(CACHE_DEFINE);
                 CHECK_COMP(CACHE_RESIZE);
                 CHECK_COMP(CACHE_OPEN);
                 CHECK_COMP(CACHE_CLEAR);

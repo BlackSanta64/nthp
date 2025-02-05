@@ -118,7 +118,7 @@ namespace ID {
                 MUSIC_STOP,\
                 MUSIC_PAUSE,\
                 MUSIC_RESUME,\
-                CACHE_CREATE,\
+                CACHE_DEFINE,\
                 CACHE_RESIZE,\
                 CACHE_OPEN,\
                 CACHE_CLEAR,\
@@ -243,7 +243,7 @@ namespace Size {
                 MUSIC_PAUSE = 0,
                 MUSIC_RESUME = 0,
 
-                CACHE_CREATE = sizeof(stdRef),
+                CACHE_DEFINE = sizeof(stdRef),
                 CACHE_RESIZE = sizeof(stdRef),
                 CACHE_OPEN = DYNAMIC_SIZE,
                 CACHE_CLEAR = 0,
