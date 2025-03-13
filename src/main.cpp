@@ -71,6 +71,8 @@ int nthp::runtimeBehaviour(int argv, char** argc) {
                                 currentStage.data.globalVarSet[DELTATIME_GLOBAL_INDEX] = nthp::deltaTime;
                         }
 
+
+
                         // Exit Phase
                         if(currentStage.exit()) return -1;
 

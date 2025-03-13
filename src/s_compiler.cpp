@@ -235,13 +235,34 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
         ref.metadata = 0;
         ref.value = 0;
 
+        bool ptr_reference = false;
+
+        // Prefixes are evaluated IN ORDER of ; ptr_dereference (*), ptr_reference (&), Negation (-), Globality (> or $)
+        // NOTE: reference (&) PTR prefixes can evaluated as constants, dereferences (*) cannot.
         do {
+                if(expression[0] == '*') {
+                        PR_METADATA_SET(ref, nthp::script::flagBits::IS_PTR);
+                        expression.erase(expression.begin());
+                }
+
+                if(expression[0] == '&') {
+                        // A ptr reference sets the P_Ref value to the index of the variable.
+                        // Globality cannot be ingored.
+                        ptr_reference = true;
+                        expression.erase(expression.begin());
+                }
+
                 if(expression[0] == '-') {
                         if(expression.size() < 2) {
                                 PRINT_COMPILER_ERROR("Unable to evaluate reference [%s]; Invalid Argument.\n", expression.c_str());
                                 return ref;
                         }
                         if(expression[1] == '$' || expression[1] == '>') {
+                                if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_PTR)) {
+                                        PRINT_COMPILER_WARNING("Negated ptr reference (*) [%s]; ignoring negation.\n", expression.c_str());
+                                        expression.erase(expression.begin());
+                                        break;
+                                }
                                 PR_METADATA_SET(ref, nthp::script::flagBits::IS_NEGATED);
                                 expression.erase(expression.begin());
                         }
@@ -250,7 +271,7 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
 
                 // No need for 2 compares. Only reaches this point if dereference character is present ($ OR > checked prior).
                 if(expression[0] == '$') {
-                        PR_METADATA_SET         (ref, nthp::script::flagBits::IS_REFERENCE);
+                        PR_METADATA_SET (ref, nthp::script::flagBits::IS_REFERENCE);
 
                         expression.erase(expression.begin());
                         break;
@@ -263,6 +284,8 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
                 }
 
         } while(0);
+
+        
 
         // Evaluate Var.
         // If no VARNAME is referenced, assumes numeral reference type (instead of $VARNAME or >VARNAME, $2 or >2), or constant. Throws
@@ -298,7 +321,7 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
                 ref.value = nthp::doubleToFixed(value);
 
                 // A reference cannot have a decimal value.
-                if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {
+                if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE) || (ptr_reference)) {
                         if(nthp::getFixedDecimal(ref.value) > 0) {
                                 PRINT_COMPILER_WARNING("Reference [%s] is invalid; Decimal not permitted, discarding decimal.\n", expression.c_str());
                         }
@@ -314,6 +337,12 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
                 return ref;
         }
  
+        // Remove IS_REFERENCE flag if referenced with ptr_reference prefix (&). Because the expression is now the
+        // relative index of a reference, removing the IS_REFERENCE flag makes it evalute as a constant, meaning the
+        // unadultered index of the VAR, or a ptr_reference!
+        if(ptr_reference) { PR_METADATA_CLEAR(ref, nthp::script::flagBits::IS_REFERENCE); }
+
+
         PR_METADATA_SET(ref, nthp::script::flagBits::IS_VALID);
         NOVERB_PRINT_COMPILER("Evaluated Reference [%s]: Value = %llu, IR = %u, IG = %u\n", expression.c_str(), ref.value, PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE), PR_METADATA_GET(ref, nthp::script::flagBits::IS_GLOBAL));
         
@@ -447,16 +476,16 @@ DEFINE_COMPILATION_BEHAVIOUR(JUMP) {
 
 
         EVAL_SYMBOL();
-        nthp::script::instructions::indRef* labelID = decltype(labelID)(nodeList[currentNode].access.data);
         auto static_label = EVAL_PREF();
-
         CHECK_REF(static_label);
+
         if(!PR_METADATA_GET(static_label, nthp::script::flagBits::IS_REFERENCE)) {
                 PRINT_COMPILER_WARNING("JUMP Node at [%zu] uses constant expression as label reference; Consider using GOTO instead.\n", currentNode);
         }
 
-        labelID->metadata = static_label.metadata;
-        labelID->value = nthp::fixedToInt(static_label.value);
+        stdRef* labelID = decltype(labelID)(nodeList[currentNode].access.data);
+        *labelID = static_label;
+
         NOVERB_PRINT_COMPILER("[%zu] JUMP Node evaluated: ID = %lld\n", currentNode, nthp::fixedToInt(labelID->value));
 
         PRINT_NODEDATA();
@@ -480,23 +509,16 @@ DEFINE_COMPILATION_BEHAVIOUR(RETURN) {
 
 DEFINE_COMPILATION_BEHAVIOUR(GETINDEX) {
         ADD_NODE(GETINDEX);
-
-
-        indRef* pointer = decltype(pointer)(nodeList[currentNode].access.data);
+        
         EVAL_SYMBOL();
-
         auto static_ref = EVAL_PREF();
         CHECK_REF(static_ref);
 
-        if(!PR_METADATA_GET(static_ref, nthp::script::flagBits::IS_REFERENCE)) {
-                PRINT_COMPILER_ERROR("GETINDEX Argument must reference.\n");
-                return 1;
-        }
+        ptrRef* pointer = decltype(pointer)(nodeList[currentNode].access.data);
 
-        pointer->metadata = static_ref.metadata;
-        pointer->value = nthp::fixedToInt(static_ref.value);
-
+        *pointer = static_ref;
         PRINT_NODEDATA();
+
         return 0;
 }
 
@@ -505,14 +527,12 @@ DEFINE_COMPILATION_BEHAVIOUR(INC) {
         ADD_NODE(INC);
 
         EVAL_SYMBOL();
-        indRef* var = decltype(var)(nodeList[currentNode].access.data);
         auto static_var = EVAL_PREF();
-
         CHECK_REF(static_var);
 
-        var->metadata = static_var.metadata;
-        var->value = (uint32_t)nthp::fixedToInt(static_var.value);
-      
+        ptrRef* var = decltype(var)(nodeList[currentNode].access.data);
+
+        *var = static_var;
         PRINT_NODEDATA();
         return 0;
 }
@@ -521,18 +541,12 @@ DEFINE_COMPILATION_BEHAVIOUR(DEC) {
         ADD_NODE(DEC);
 
         EVAL_SYMBOL();
-        indRef* var = decltype(var)(nodeList[currentNode].access.data);
         auto static_var = EVAL_PREF();
-
         CHECK_REF(static_var);
 
-        if(!PR_METADATA_GET(static_var, nthp::script::flagBits::IS_REFERENCE)) {
-                PRINT_COMPILER_ERROR("Unable to evaluate Reference; INC must take reference.\n");
-                return 1;
-        }
-        var->metadata = static_var.metadata;
-        var->value = (uint32_t)nthp::fixedToInt(static_var.value);
-      
+        ptrRef* var = decltype(var)(nodeList[currentNode].access.data);
+
+        *var = static_var;
         PRINT_NODEDATA();
         return 0;
 }
@@ -545,22 +559,14 @@ DEFINE_COMPILATION_BEHAVIOUR(RSHIFT) {
         auto ref = EVAL_PREF();
         CHECK_REF(ref);
 
-        if(!PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {
-                PRINT_COMPILER_ERROR("Unable to evaluate Reference; RSHIFT must take reference.\n");
-                return 1;
-        }
-
-        indRef* var = (decltype(var))(nodeList[currentNode].access.data);
-
         EVAL_SYMBOL();
         auto count = EVAL_PREF();
         CHECK_REF(count);
 
-        stdRef* fcount = (decltype(fcount))(nodeList[currentNode].access.data + sizeof(indRef));
+        stdRef* fcount = (decltype(fcount))(nodeList[currentNode].access.data + sizeof(ptrRef));
+        ptrRef* var = (decltype(var))(nodeList[currentNode].access.data);
 
-        var->metadata = ref.metadata;
-        var->value = (uint32_t)nthp::fixedToInt(ref.value);
-
+        *var = ref;
         *fcount = count;
 
         PRINT_NODEDATA();
@@ -574,22 +580,14 @@ DEFINE_COMPILATION_BEHAVIOUR(LSHIFT) {
         auto ref = EVAL_PREF();
         CHECK_REF(ref);
 
-        if(!PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {
-                PRINT_COMPILER_ERROR("Unable to evaluate Reference; RSHIFT must take reference.\n");
-                return 1;
-        }
-
-        indRef* var = (decltype(var))(nodeList[currentNode].access.data);
-
         EVAL_SYMBOL();
         auto count = EVAL_PREF();
         CHECK_REF(count);
 
-        stdRef* fcount = (decltype(fcount))(nodeList[currentNode].access.data + sizeof(indRef));
+        stdRef* fcount = (decltype(fcount))(nodeList[currentNode].access.data + sizeof(ptrRef));
+        ptrRef* var = (decltype(var))(nodeList[currentNode].access.data);
 
-        var->metadata = ref.metadata;
-        var->value = (uint32_t)nthp::fixedToInt(ref.value);
-        
+        *var = ref;
         *fcount = count;
 
         PRINT_NODEDATA();
@@ -603,7 +601,7 @@ DEFINE_COMPILATION_BEHAVIOUR(ADD) {
 
         nthp::script::instructions::stdRef* operandA = decltype(operandA)(nodeList[currentNode].access.data);
         nthp::script::instructions::stdRef* operandB = decltype(operandB)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef));
-        indRef* output = decltype(output)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(nthp::script::instructions::stdRef));
+        ptrRef* output = decltype(output)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(nthp::script::instructions::stdRef));
 
         EVAL_SYMBOL();
         auto static_op_A = EVAL_PREF();
@@ -618,17 +616,10 @@ DEFINE_COMPILATION_BEHAVIOUR(ADD) {
         CHECK_REF(static_output);
 
 
-        if(!PR_METADATA_GET(static_output, nthp::script::flagBits::IS_REFERENCE)) {
-                PRINT_COMPILER_ERROR("Final Operand of ADD (arg.ADD_OUTPUT) must be a reference.\n");
-                return 1;
-        }
-
 
         *operandA = static_op_A;
         *operandB = static_op_B;
-
-        output->metadata = static_output.metadata;
-        output->value = (uint32_t)nthp::fixedToInt(static_output.value);;
+        *output = static_output;
 
         
         PRINT_NODEDATA();
@@ -640,7 +631,7 @@ DEFINE_COMPILATION_BEHAVIOUR(SUB) {
 
         nthp::script::instructions::stdRef* operandA = decltype(operandA)(nodeList[currentNode].access.data);
         nthp::script::instructions::stdRef* operandB = decltype(operandB)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef));
-        indRef* output = decltype(output)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(nthp::script::instructions::stdRef));
+        ptrRef* output = decltype(output)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(nthp::script::instructions::stdRef));
 
         EVAL_SYMBOL();
         auto static_op_A = EVAL_PREF();
@@ -655,18 +646,12 @@ DEFINE_COMPILATION_BEHAVIOUR(SUB) {
         CHECK_REF(static_output);
 
 
-        if(!PR_METADATA_GET(static_output, nthp::script::flagBits::IS_REFERENCE)) {
-                PRINT_COMPILER_ERROR("Final Operand of SUB (arg.SUB_OUTPUT) must be a reference.\n");
-                return 1;
-        }
-
 
         *operandA = static_op_A;
         *operandB = static_op_B;
+        *output = static_output;
 
-        output->metadata = static_output.metadata;
-        output->value = (uint32_t)nthp::fixedToInt(static_output.value);
-
+        
         PRINT_NODEDATA();
         return 0;
 }
@@ -676,7 +661,7 @@ DEFINE_COMPILATION_BEHAVIOUR(MUL) {
 
         nthp::script::instructions::stdRef* operandA = decltype(operandA)(nodeList[currentNode].access.data);
         nthp::script::instructions::stdRef* operandB = decltype(operandB)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef));
-        indRef* output = decltype(output)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(nthp::script::instructions::stdRef));
+        ptrRef* output = decltype(output)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(nthp::script::instructions::stdRef));
 
         EVAL_SYMBOL();
         auto static_op_A = EVAL_PREF();
@@ -691,19 +676,12 @@ DEFINE_COMPILATION_BEHAVIOUR(MUL) {
         CHECK_REF(static_output);
 
 
-        if(!PR_METADATA_GET(static_output, nthp::script::flagBits::IS_REFERENCE)) {
-                PRINT_COMPILER_ERROR("Final Operand of MUL (arg.MUL_OUTPUT) must be a reference.\n");
-                return 1;
-        }
-
 
         *operandA = static_op_A;
         *operandB = static_op_B;
+        *output = static_output;
 
-        output->metadata = static_output.metadata;
-        output->value = (uint32_t)nthp::fixedToInt(static_output.value);
-
-
+        
         PRINT_NODEDATA();
         return 0;
 }
@@ -713,7 +691,7 @@ DEFINE_COMPILATION_BEHAVIOUR(DIV) {
 
         nthp::script::instructions::stdRef* operandA = decltype(operandA)(nodeList[currentNode].access.data);
         nthp::script::instructions::stdRef* operandB = decltype(operandB)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef));
-        indRef* output = decltype(output)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(nthp::script::instructions::stdRef));
+        ptrRef* output = decltype(output)(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef) + sizeof(nthp::script::instructions::stdRef));
 
         EVAL_SYMBOL();
         auto static_op_A = EVAL_PREF();
@@ -728,19 +706,12 @@ DEFINE_COMPILATION_BEHAVIOUR(DIV) {
         CHECK_REF(static_output);
 
 
-        if(!PR_METADATA_GET(static_output, nthp::script::flagBits::IS_REFERENCE)) {
-                PRINT_COMPILER_ERROR("Final Operand of DIV (arg.DIV_OUTPUT) must be a reference.\n");
-                return 1;
-        }
-
 
         *operandA = static_op_A;
         *operandB = static_op_B;
+        *output = static_output;
 
-        output->metadata = static_output.metadata;
-        output->value = (uint32_t)nthp::fixedToInt(static_output.value);
-
-     
+        
         PRINT_NODEDATA();
         return 0;
 }
@@ -749,7 +720,7 @@ DEFINE_COMPILATION_BEHAVIOUR(SQRT) {
         ADD_NODE(SQRT);
 
         nthp::script::instructions::stdRef* base = (decltype(base))nodeList[currentNode].access.data;
-        indRef* output = (decltype(output))(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef));
+        ptrRef* output = (decltype(output))(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef));
 
         EVAL_SYMBOL();
         auto static_base = EVAL_PREF();
@@ -759,16 +730,8 @@ DEFINE_COMPILATION_BEHAVIOUR(SQRT) {
         auto static_output = EVAL_PREF();
         CHECK_REF(static_output);
 
-        if(!PR_METADATA_GET(static_output, nthp::script::flagBits::IS_REFERENCE)) {
-                PRINT_COMPILER_ERROR("Final Operand of SQRT (arg.SQRT_OUTPUT) must be a reference\n");
-                return 1;
-        }
-
         *base = static_base;
-        
-        output->metadata = static_output.metadata;
-        output->value = (uint32_t)nthp::fixedToInt(static_output.value);;
-
+        *output = static_output;
 
         PRINT_NODEDATA();
         return 0;
@@ -890,82 +853,52 @@ DEFINE_COMPILATION_BEHAVIOUR(CLEAR) {
 }
 
 DEFINE_COMPILATION_BEHAVIOUR(SET) {
+
+        // SET will be overwritten by COPY if the compiler reads a reference as the copy value.
+        // This means you pretty much don't have to use COPY explicity. Ever. SET can act as both
+        // a SET instruction and COPY.
+
+        EVAL_SYMBOL(); // pointer
+        auto ref = EVAL_PREF();
+        CHECK_REF(ref);
+
+
+        EVAL_SYMBOL(); // value
+        auto v = EVAL_PREF();
+        CHECK_REF(v);
+
+        if(PR_METADATA_GET(v, nthp::script::flagBits::IS_REFERENCE)) {
+                PRINT_COMPILER_WARNING("SET instruction VALUE as reference; overwriting instruction to COPY.\n");
+
+
+                ADD_NODE(COPY);
+                ptrRef* value = (ptrRef*)(nodeList[currentNode].access.data);
+                ptrRef* target = (ptrRef*)(nodeList[currentNode].access.data + sizeof(ptrRef));
+                
+
+                *target = ref;
+                *value = v;
+
+                PRINT_NODEDATA();
+                return 0;
+        }
+
+        // No COPY override.
         ADD_NODE(SET);
 
+        ptrRef* pointer = (ptrRef*)(nodeList[currentNode].access.data);
+        nthp::script::stdVarWidth* value = (nthp::script::stdVarWidth*)(nodeList[currentNode].access.data + sizeof(ptrRef));
 
-        indRef* pointer = decltype(pointer)(nodeList[currentNode].access.data);
-        nthp::script::stdVarWidth* value = decltype(value)(nodeList[currentNode].access.data + sizeof(indRef));
+        nthp::script::stdVarWidth static_value = v.value; // This is assuming the value is a constant. Unless EVAL_PREF fails, this shouldn't be an issue.
 
-        EVAL_SYMBOL(); // pointer
-        auto ref = EVAL_PREF();
 
-        CHECK_REF(ref);
-        if(!PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {
-                PRINT_COMPILER_ERROR("First SET argument must be a reference. Syntax: SET $var value\n");
-                return 1;
-        }
-
-        EVAL_SYMBOL(); // value
-        nthp::script::stdVarWidth static_value;
-
-        try {
-                double conv = std::stod(fileRead);
-                if((std::abs(conv) < nthp::fixedTypeConstants::FIXED_EPSILON) && (conv != 0)) {
-                        PRINT_COMPILER_WARNING("Expression [%s] cannot be expressed/approximated in current fixed point system configuration. Expression will be rounded to 0.\n", fileRead.c_str());
-                }
-
-                static_value = nthp::doubleToFixed(conv);
-        }
-        catch(std::invalid_argument) {
-                PRINT_COMPILER_ERROR("Unable to evaluate numeral at [%zu]; Invalid Argument.\n", currentNode);
-                return 1;
-        }
-
-        pointer->metadata = ref.metadata;
-        pointer->value = (uint32_t)nthp::fixedToInt(ref.value);
-
+        *pointer = ref;
         *value = static_value;
 
         PRINT_NODEDATA();
         return 0;
 }
 
-DEFINE_COMPILATION_BEHAVIOUR(SET_BINARY) {
-        ADD_NODE(SET_BINARY);
-
-
-        indRef* pointer = decltype(pointer)(nodeList[currentNode].access.data);
-        nthp::script::stdVarWidth* value = decltype(value)(nodeList[currentNode].access.data + sizeof(indRef));
-
-        EVAL_SYMBOL(); // pointer
-        auto ref = EVAL_PREF();
-
-        CHECK_REF(ref);
-        if(!PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {
-                PRINT_COMPILER_ERROR("First SET argument must be a reference. Syntax: SET $var value\n");
-                return 1;
-        }
-
-        EVAL_SYMBOL(); // value
-        nthp::script::stdVarWidth static_value;
-
-        try {
-                auto conv = std::stoll(fileRead);
-                static_value = conv;
-        }
-        catch(std::invalid_argument) {
-                PRINT_COMPILER_ERROR("Unable to evaluate numeral at [%zu]; Invalid Argument.\n", currentNode);
-                return 1;
-        }
-
-        pointer->metadata = ref.metadata;
-        pointer->value = (uint32_t)nthp::fixedToInt(ref.value);
-
-        *value = static_value;
-
-        PRINT_NODEDATA();
-        return 0;
-}
 
 DEFINE_COMPILATION_BEHAVIOUR(DEFINE) {
         ADD_NODE(DEFINE);
@@ -996,21 +929,12 @@ DEFINE_COMPILATION_BEHAVIOUR(COPY) {
         auto sto = EVAL_PREF();
         CHECK_REF(sto);
 
-        if(!PR_METADATA_GET(sfrom, nthp::script::flagBits::IS_REFERENCE) || !PR_METADATA_GET(sto, nthp::script::flagBits::IS_REFERENCE)) {
-                PRINT_COMPILER_ERROR("COPY must take two references. (COPY $from $to).\n");
-                return 1;
-        }
 
-        indRef* from = (indRef*)(nodeList[currentNode].access.data);
-        indRef* to = (indRef*)(nodeList[currentNode].access.data + sizeof(indRef));        
+        ptrRef* from = (ptrRef*)(nodeList[currentNode].access.data);
+        ptrRef* to = (ptrRef*)(nodeList[currentNode].access.data + sizeof(ptrRef));        
 
-        to->value = nthp::fixedToInt(sto.value);
-        to->metadata = sto.metadata;
-
-        from->value = nthp::fixedToInt(sfrom.value);
-        from->metadata = sfrom.metadata;
-
-
+        *to = sto;
+        *from = sfrom;
         PRINT_NODEDATA();
         return 0;
 }
@@ -1174,16 +1098,9 @@ DEFINE_COMPILATION_BEHAVIOUR(GETGPR) {
         auto write_to = EVAL_PREF();
         CHECK_REF(write_to);
 
-
-        if(!PR_METADATA_GET(write_to, nthp::script::flagBits::IS_REFERENCE)) {
-                PRINT_COMPILER_ERROR("GETGPR must take a reference.\n");
-                return 1;
-        }
-
-        indRef* output = (indRef*)(nodeList[currentNode].access.data);
-        output->value = nthp::fixedToInt(write_to.value);
-        output->metadata = write_to.metadata;
-
+        ptrRef* output = (ptrRef*)(nodeList[currentNode].access.data);
+        
+        *output = write_to;
         PRINT_NODEDATA();
         return 0;
 }
@@ -1216,7 +1133,7 @@ DEFINE_COMPILATION_BEHAVIOUR(SM_READ) {
 
 
         stdRef* from = (stdRef*)(nodeList[currentNode].access.data);
-        indRef* into = (indRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
+        ptrRef* into = (ptrRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
 
 
         EVAL_SYMBOL();
@@ -1227,15 +1144,8 @@ DEFINE_COMPILATION_BEHAVIOUR(SM_READ) {
         auto _into = EVAL_PREF();
         CHECK_REF(_into);
 
-        if(!PR_METADATA_GET(_into, nthp::script::flagBits::IS_REFERENCE)) {
-                PRINT_COMPILER_ERROR("SM_READ must take reference as 2nd argument.\n");
-                return 1;
-        }
-
         *from = _from;
-        into->value = nthp::fixedToInt(_into.value);
-        into->metadata = _into.metadata;
-
+        *into = _into;
         PRINT_NODEDATA();
         return 0;
 }
@@ -1477,20 +1387,13 @@ DEFINE_COMPILATION_BEHAVIOUR(ENT_CHECKCOLLISION) {
         CHECK_REF(_output);
 
 
-        if(!PR_METADATA_GET(_output, nthp::script::flagBits::IS_REFERENCE)) {
-                PRINT_COMPILER_ERROR("Last argument of ENT_CHECKCOLLISION invalid. (syn. ENT_CHECKCOLLISION entA entB outputVar)\n");
-                return 1;
-        }
-
         stdRef* enta = (stdRef*)(nodeList[currentNode].access.data);
         stdRef* entb = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
-        indRef* output = (indRef*)(nodeList[currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
+        ptrRef* output = (ptrRef*)(nodeList[currentNode].access.data + sizeof(stdRef) + sizeof(stdRef));
 
         *enta = ent_a;
         *entb = ent_b;
-        output->value = nthp::fixedToInt(_output.value);
-        output->metadata = _output.metadata;
-
+        *output = _output;
 
         PRINT_NODEDATA();
         return 0;
@@ -1838,10 +1741,9 @@ DEFINE_COMPILATION_BEHAVIOUR(POLL) {
 
         } while(0);
 
-        indRef* ent = (indRef*)(nodeList[currentNode].access.data);
-        ent->value = nthp::fixedToInt(entity.value);
-        ent->metadata = entity.metadata;
+        stdRef* ent = (stdRef*)(nodeList[currentNode].access.data);
 
+        *ent = entity;
         PRINT_NODEDATA();
 
         return 0;
@@ -2157,7 +2059,6 @@ DEFINE_COMPILATION_BEHAVIOUR(CACHE_WRITE) {
 DEFINE_COMPILATION_BEHAVIOUR(CACHE_READ) {
         ADD_NODE(CACHE_READ);
 
-
         EVAL_SYMBOL();
         auto cache_target = EVAL_PREF();
         CHECK_REF(cache_target);
@@ -2173,13 +2074,11 @@ DEFINE_COMPILATION_BEHAVIOUR(CACHE_READ) {
         }
 
         stdRef* _cache_target = (stdRef*)(nodeList[currentNode].access.data);
-        indRef* _var_target = (indRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
+        ptrRef* _var_target = (ptrRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
 
 
         *_cache_target = cache_target;
-        _var_target->metadata = var_target.metadata;
-        _var_target->value = nthp::fixedToInt(var_target.value);
-
+        *_var_target = var_target;
         PRINT_NODEDATA();
         return 0;
 }
@@ -2579,7 +2478,6 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                 CHECK_COMP(SKIP_END);
 
                 CHECK_COMP(SET);
-                CHECK_COMP(SET_BINARY);
                 CHECK_COMP(CLEAR);
                 CHECK_COMP(DEFINE);
                 CHECK_COMP(COPY);
@@ -2981,7 +2879,7 @@ int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFi
                         // Add constant runtime globals.
                         addGlobalDef("mousepos_x");
                         addGlobalDef("mousepos_y");
-                        addGlobalDef("deltatime");
+                        addGlobalDef("deltaTime");
                         addGlobalDef("mouse1");
                         addGlobalDef("mouse2");
                         addGlobalDef("mouse3");

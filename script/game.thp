@@ -1,11 +1,29 @@
 DEPEND #CONTEXT_MAINPROG
 
+GLOBAL testValue
+GLOBAL testA
+GLOBAL testB
+GLOBAL testC
+GLOBAL ptr_getindex_output
+
+MACRO set_getindex_target {
+        SET &>ptr_getindex_output #ar0
+}
+MACRO getindex {
+        GETINDEX >ptr_getindex_output
+}
+
+
+
+@set_getindex_target ( &>testA )
+@getindex
+
 
 
 LABEL 1
 
 	CORE_CLEAR
-	CORE_QRENDER #e_renderOscar
+
 	CORE_DISPLAY
 
 

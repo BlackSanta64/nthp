@@ -3,6 +3,9 @@ BUILD_SYSTEM
 	script/game.thp script/game.thpcs
 END
 
+TARGET prog
+
+
 SCRIPT_CONFIG
 	
 	FILE script/init.thpcs

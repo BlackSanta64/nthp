@@ -62,7 +62,6 @@ namespace ID {
                 SKIP,\
                 SKIP_END,\
                 SET,\
-                SET_BINARY,\
                 CLEAR,\
                 DEFINE,\
                 COPY,\
@@ -133,7 +132,8 @@ namespace ID {
 
 #define GET_INSTRUCTION_ID(instruction) nthp::script::instructions::ID::instruction
 typedef P_Reference<nthp::script::stdVarWidth> stdRef;
-typedef P_Reference<uint32_t> indRef;
+typedef stdRef ptrRef; // Just for readability
+typedef P_Reference<uint32_t> setRef;
 
 
 // Sizes must have the same name as the ENUM entry in 'ID'.
@@ -148,18 +148,18 @@ namespace Size {
                 JUMP = sizeof(stdRef),
                 SUSPEND = 0,
                 RETURN = sizeof(stdRef),
-                GETINDEX = sizeof(indRef),
+                GETINDEX = sizeof(ptrRef),
 
-                INC = sizeof(indRef),
-                DEC = sizeof(indRef),
-                RSHIFT = sizeof(indRef) + sizeof(stdRef),
-                LSHIFT = sizeof(indRef) + sizeof(stdRef),
+                INC = sizeof(ptrRef),
+                DEC = sizeof(ptrRef),
+                RSHIFT = sizeof(ptrRef) + sizeof(stdRef),
+                LSHIFT = sizeof(ptrRef) + sizeof(stdRef),
 
-                ADD = sizeof(stdRef) + sizeof(stdRef) + sizeof(indRef),
-                SUB = sizeof(stdRef) + sizeof(stdRef) + sizeof(indRef),
-                MUL = sizeof(stdRef) + sizeof(stdRef) + sizeof(indRef),
-                DIV = sizeof(stdRef) + sizeof(stdRef) + sizeof(indRef),
-                SQRT = sizeof(stdRef) + sizeof(indRef),
+                ADD = sizeof(stdRef) + sizeof(stdRef) + sizeof(ptrRef),
+                SUB = sizeof(stdRef) + sizeof(stdRef) + sizeof(ptrRef),
+                MUL = sizeof(stdRef) + sizeof(stdRef) + sizeof(ptrRef),
+                DIV = sizeof(stdRef) + sizeof(stdRef) + sizeof(ptrRef),
+                SQRT = sizeof(stdRef) + sizeof(ptrRef),
 
 
                 LOGIC_IF_TRUE = sizeof(stdRef) + sizeof(uint32_t) + sizeof(uint32_t),
@@ -175,11 +175,10 @@ namespace Size {
                 SKIP = sizeof(uint32_t),
                 SKIP_END = 0,
 
-                SET = sizeof(indRef) + sizeof(nthp::script::stdVarWidth),
-                SET_BINARY = sizeof(indRef) + sizeof(nthp::script::stdVarWidth),
+                SET = sizeof(ptrRef) + sizeof(nthp::script::stdVarWidth),
                 CLEAR = 0,
                 DEFINE = sizeof(stdRef),
-                COPY = sizeof(indRef) + sizeof(indRef),
+                COPY = sizeof(ptrRef) + sizeof(ptrRef),
 
 		TEXTURE_DEFINE = sizeof(stdRef),
 		TEXTURE_CLEAR = 0,
@@ -190,9 +189,9 @@ namespace Size {
                 FRAME_DEFINE = sizeof(stdRef),
                 FRAME_CLEAR = 0,
                 FRAME_SET = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef),
-                GETGPR = sizeof(indRef),
+                GETGPR = sizeof(ptrRef),
                 SM_WRITE = sizeof(stdRef) + sizeof(stdRef),
-                SM_READ = sizeof(stdRef) + sizeof(indRef),
+                SM_READ = sizeof(stdRef) + sizeof(ptrRef),
 
                 ENT_DEFINE = sizeof(stdRef),
                 ENT_CLEAR = 0,
@@ -203,7 +202,7 @@ namespace Size {
                 ENT_SETHITBOXSIZE = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef),
                 ENT_SETHITBOXOFFSET = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef),
                 ENT_SETRENDERSIZE = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef),
-                ENT_CHECKCOLLISION = sizeof(stdRef) + sizeof(stdRef) + sizeof(indRef),
+                ENT_CHECKCOLLISION = sizeof(stdRef) + sizeof(stdRef) + sizeof(ptrRef),
 
 
                 CORE_INIT = DYNAMIC_SIZE,
@@ -248,7 +247,7 @@ namespace Size {
                 CACHE_OPEN = DYNAMIC_SIZE,
                 CACHE_CLEAR = 0,
                 CACHE_WRITE = sizeof(stdRef) + sizeof(stdRef),
-                CACHE_READ = sizeof(stdRef) + sizeof(indRef),
+                CACHE_READ = sizeof(stdRef) + sizeof(ptrRef),
                 CACHE_SAVE = DYNAMIC_SIZE,
 
                 PRINT = sizeof(stdRef)

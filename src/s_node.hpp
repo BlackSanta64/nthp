@@ -60,7 +60,8 @@ namespace script {
                 IS_REFERENCE,
                 IS_GLOBAL,
                 IS_VALID,
-                IS_NEGATED
+                IS_NEGATED,
+                IS_PTR          // IS_PTR is checked FIRST!
         } flagBits;
 
 

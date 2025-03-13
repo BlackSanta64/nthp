@@ -47,6 +47,8 @@ namespace script {
 
         extern nthp::texture::Palette activePalette;
 
+
+
         class Script {
         public:
 
