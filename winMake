@@ -1,4 +1,8 @@
 TARGET=run
+# WINDOWS NTHP COMPLETE BUILDSYSTEM
+
+# Both SDL (obviously) and the SDL_mixer expansion libraries are REQUIRED DEPENDENCIES!
+# Configure your own install directories here, or use Linux buildsystem with standard package manager installations (on Linux).
 
 SDLInclude=C:\CppLibs\SDL\SDL2\include
 SDLLib=C:\CppLibs\SDL\SDL2\lib\x64
@@ -43,8 +47,8 @@ LINKERFLAGS = shell32.lib SDL2.lib SDL2main.lib SDL2_mixer.lib $(SDLIMGLibFile) 
 DEBUG_LINKERFLAGS = shell32.lib SDL2.lib SDL2main.lib SDL2_mixer.lib $(SDLIMGLibFile) -link -LIBPATH:$(SDLLib) -LIBPATH:$(SDLMixerLib) $(SDLIMGLibPath) -DEBUG -ASSEMBLYDEBUG -SUBSYSTEM:CONSOLE -MACHINE:$(CONFIG)
 PM_LINKERFLAGS = shell32.lib SDL2.lib SDL2main.lib SDL2_mixer.lib $(PM_SDLIMGLibFile) -link -LIBPATH:$(SDLLib) -LIBPATH:$(SDLMixerLib) $(PM_SDLIMGLibPath) -SUBSYSTEM:CONSOLE -MACHINE:$(CONFIG)
 
-libTargets = global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj e_collision.obj st_compress.obj s_compiler.obj s_script.obj gtexture.obj s_stage.obj
-debug_libTargets = global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj e_collision_d.obj st_compress_d.obj s_compiler_d.obj s_script_d.obj gtexture_d.obj s_stage_d.obj
+libTargets = global_defs.obj core.obj position.obj palette.obj rawsurface.obj softwaretexture.obj e_entity.obj e_collision.obj st_compress.obj s_compiler.obj s_script.obj gtexture.obj s_stage.obj t_font.obj
+debug_libTargets = global_defs_d.obj core_d.obj position_d.obj palette_d.obj rawsurface_d.obj softwaretexture_d.obj e_entity_d.obj e_collision_d.obj st_compress_d.obj s_compiler_d.obj s_script_d.obj gtexture_d.obj s_stage_d.obj t_font_d.obj
 lib_srcSymbols = $(SRCDIR)global_defs.cpp $(SRCDIR)core.cpp $(SRCDIR)position.cpp $(SRCDIR)palette.cpp $(SRCDIR)rawsurface.cpp $(SRCDIR)softwaretexture.cpp $(SRCDIR)e_entity.cpp $(SRCDIR)e_collision.cpp $(SRCDIR)st_compress.cpp $(SRCDIR)s_compiler.cpp $(SRCDIR)s_script.cpp $(SRCDIR)gtexture.cpp $(SRCDIR)s_stage.cpp
 
 
@@ -110,6 +114,8 @@ gtexture.obj: $(SRCDIR)gtexture.cpp $(SRCDIR)gtexture.hpp
 s_stage.obj: $(SRCDIR)s_stage.cpp $(SRCDIR)s_stage.hpp
 	$(CC) -c $(SRCDIR)s_stage.cpp -Fo"s_stage.obj" $(CFLAGS)
 
+t_font.obj: $(SRCDIR)t_font.hpp $(SRCDIR)t_font.cpp
+	$(CC) -c $(SRCDIR)t_font.cpp -Fo"t_font.obj" $(CFLAGS)
 
 
 #DEBUG DEPENDENCIES GO HERE
@@ -155,6 +161,9 @@ gtexture_d.obj: $(SRCDIR)gtexture.cpp $(SRCDIR)gtexture.hpp
 
 s_stage_d.obj: $(SRCDIR)s_stage.cpp $(SRCDIR)s_stage.hpp
 	$(CC) -c $(SRCDIR)s_stage.cpp -Fo"s_stage_d.obj" $(DEBUG_CFLAGS)
+
+t_font.obj: $(SRCDIR)t_font.hpp $(SRCDIR)t_font.cpp
+	$(CC) -c $(SRCDIR)t_font.cpp -Fo"t_font_d.obj" $(DEBUG_CFLAGS)
 
 clean:
 	del *.obj *.pdb *.ilk
