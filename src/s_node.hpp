@@ -4,6 +4,8 @@
 namespace nthp {
 namespace script {
 
+        constexpr FIXED_TYPE blockMemoryBitAllocation = FIXED_POINT_WIDTH / 2;
+
         // The base unit of script execution. A Node contains an 8bit ID, defining instruction type.
 
         union Node {
@@ -54,6 +56,31 @@ namespace script {
                 // Using some shift/mask/cast shit instead of bit-field for P_Reference
                 // metadata. Bit-fields do not mix with files.
 
+        };
+
+        // PTR DESCRIPTOR STRUCTURE:
+        // Vars that are assigned a ptr descriptor will have the following layout:
+        //      - lower order bit half is the data location within a block.
+        //      - higher order bit half is the block location within the stack.
+
+        // The amount of block memory available is dependent on the fixed point system width,
+        // as stdrefs are used as pointers.
+        // Ex. FIXED_POINT_WIDTH = 16-bit
+        //              bits [0-7] are data location within a block
+        //              bits [8-15] are block location.
+        //
+        // Higher fixed point widths give access to more data and blocks to allocate. In this case,
+        // a maxium of 255 blocks can be allocated, with a maximum size of 255 entries per block.
+        //
+        // Blocks are indexed starting at 1, as block 0 is the GLOBAL list, which cannot be changed and is defined by the
+        // compiler. If a PTR VAR points to another VAR, the bits [8-15] will be 0, and bits [0-7] will be the index of the
+        // VAR in the GLOBAL list. This means the same structure can be used to reference dynamic block data and static VARs.
+
+        
+        struct BlockMemoryEntry {
+                nthp::script::stdVarWidth* data;
+                size_t size;
+                bool isFree;
         };
 
         typedef enum __P_REF_FLAGS_BITS {

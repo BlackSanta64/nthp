@@ -89,6 +89,9 @@ namespace script {
                         nthp::script::stdVarWidth* cache;
                         size_t cacheSize;
 
+                        nthp::script::BlockMemoryEntry* blockData;
+                        size_t blockDataSize;
+
                         Action* actionList; // Tracks keypresses; created with ACTION_DEFINE and ACTION_BIND to configure.
                         size_t  actionListSize;
 
