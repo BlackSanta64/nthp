@@ -58,10 +58,9 @@ namespace script {
 
         typedef enum __P_REF_FLAGS_BITS {
                 IS_REFERENCE,
-                IS_GLOBAL,
-                IS_VALID,
                 IS_NEGATED,
-                IS_PTR          // IS_PTR is checked FIRST!
+                IS_PTR,          // IS_PTR is checked FIRST!
+                IS_VALID
         } flagBits;
 
 

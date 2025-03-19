@@ -86,7 +86,6 @@ namespace nthp {
 
                 std::vector<nthp::script::CompilerInstance::CONST_DEF>  constantList;
                 std::vector<nthp::script::CompilerInstance::MACRO_DEF>  macroList;
-                std::vector<nthp::script::CompilerInstance::VAR_DEF>    varList;
                 std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>    globalList;  
 
                 static inline void undefConstant(const char* constName, std::vector<nthp::script::CompilerInstance::CONST_DEF>& constantList) {

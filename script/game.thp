@@ -1,23 +1,20 @@
 DEPEND #CONTEXT_MAINPROG
 
-GLOBAL testValue
-GLOBAL testA
-GLOBAL testB
-GLOBAL testC
-GLOBAL ptr_getindex_output
+VAR testValue
+VAR testA
+VAR testB
+VAR testC
+VAR ptr_getindex_output
 
 MACRO set_getindex_target {
-        SET &>ptr_getindex_output #ar0
+        SET &ptr_getindex_output #ar0
 }
 MACRO getindex {
-        GETINDEX >ptr_getindex_output
+        GETINDEX $ptr_getindex_output
 }
 
-
-
-@set_getindex_target ( &>testA )
+@set_getindex_target ( &testB )
 @getindex
-
 
 
 LABEL 1

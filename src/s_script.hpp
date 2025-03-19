@@ -59,7 +59,6 @@ namespace script {
                 };
 
         struct ScriptDataSet {
-                        uint32_t localMemBudget;
                         uint32_t globalMemBudget;
 
                         uint32_t* currentLabelBlock;
@@ -74,8 +73,6 @@ namespace script {
                         nthp::script::stdVarWidth* globalVarSet;
                         size_t varSetSize;
                         /////////////////////////
-
-                        nthp::script::stdVarWidth** currentLocalMemory; // Changes when different scripts are executed.
 
 
                         nthp::texture::gTexture* textureBlock; // Context texture data.
@@ -115,8 +112,6 @@ namespace script {
                 int execute();
                 int execute(uint32_t entryPoint);
 
-                // Safe getter for any THPScript Var. To accurately pull VAR names, a debug compiler object must be used to query relative var indecies.
-                inline nthp::script::stdVarWidth getVar(size_t index) { if(index < localVarSetSize) return localVarSet[index]; else return 0; }
                 
 
                 
@@ -126,8 +121,6 @@ namespace script {
         private:
                 mutable ScriptDataSet* data;
                 
-                nthp::script::stdVarWidth* localVarSet;
-                size_t localVarSetSize;
 
                 uint32_t* localLabelBlock;
                 uint32_t localLabelBlockSize;

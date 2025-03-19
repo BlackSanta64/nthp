@@ -427,7 +427,7 @@ int headless_runtime() {
                                                         PM_PRINT_ERROR("Failed to import symbols from file [%s].\n", args[2].c_str());
                                                         continue;
                                                 }
-                                                PM_PRINT("Imported [%zu] symbols from source file [%s].\n", symbolData.globalList.size() + symbolData.macroList.size() + symbolData.varList.size() + symbolData.constantList.size(), args[2].c_str());
+                                                PM_PRINT("Imported [%zu] symbols from source file [%s].\n", symbolData.globalList.size() + symbolData.macroList.size() + symbolData.constantList.size(), args[2].c_str());
                                         }
                                         if(args[1] == "stg") {
                                                 if(symbolData.compileStageConfig(args[2].c_str(), NULL, false, true)) {

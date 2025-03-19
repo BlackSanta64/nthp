@@ -62,8 +62,6 @@ namespace ID {
                 SKIP,\
                 SKIP_END,\
                 SET,\
-                CLEAR,\
-                DEFINE,\
                 COPY,\
 		TEXTURE_DEFINE,\
 		TEXTURE_CLEAR,\
@@ -176,8 +174,6 @@ namespace Size {
                 SKIP_END = 0,
 
                 SET = sizeof(ptrRef) + sizeof(nthp::script::stdVarWidth),
-                CLEAR = 0,
-                DEFINE = sizeof(stdRef),
                 COPY = sizeof(ptrRef) + sizeof(ptrRef),
 
 		TEXTURE_DEFINE = sizeof(stdRef),

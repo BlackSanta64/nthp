@@ -14,7 +14,6 @@ using namespace nthp::script::instructions;
                                                                         std::string& fileRead,\
                                                                         std::vector<nthp::script::CompilerInstance::CONST_DEF>& constantList,\
                                                                         std::vector<nthp::script::CompilerInstance::MACRO_DEF>& macroList,\
-                                                                        std::vector<nthp::script::CompilerInstance::VAR_DEF>& varList,\
                                                                         std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>& globalList,\
                                                                         std::vector<nthp::script::CompilerInstance::LABEL_DEF>& labelList,\
                                                                         std::vector<nthp::script::CompilerInstance::GOTO_DEF>& gotoList,\
@@ -230,7 +229,7 @@ int EvaluateSymbol(std::fstream& file, std::string& expression, std::vector<nthp
 
 
 // Substitues a VAR reference or parses numeral references (for compatibility)
-nthp::script::instructions::stdRef EvaluateReference(std::string expression, std::vector<nthp::script::CompilerInstance::VAR_DEF>& varList, std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>& globalList, bool buildSystemContext) {
+nthp::script::instructions::stdRef EvaluateReference(std::string expression, std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>& globalList, bool buildSystemContext) {
         stdRef ref;
         ref.metadata = 0;
         ref.value = 0;
@@ -249,7 +248,9 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
                         // A ptr reference sets the P_Ref value to the index of the variable.
                         // Globality cannot be ingored.
                         ptr_reference = true;
+                        PR_METADATA_SET (ref, nthp::script::flagBits::IS_REFERENCE);
                         expression.erase(expression.begin());
+                        break;
                 }
 
                 if(expression[0] == '-') {
@@ -257,7 +258,7 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
                                 PRINT_COMPILER_ERROR("Unable to evaluate reference [%s]; Invalid Argument.\n", expression.c_str());
                                 return ref;
                         }
-                        if(expression[1] == '$' || expression[1] == '>') {
+                        if(expression[1] == '$') {
                                 if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_PTR)) {
                                         PRINT_COMPILER_WARNING("Negated ptr reference (*) [%s]; ignoring negation.\n", expression.c_str());
                                         expression.erase(expression.begin());
@@ -276,12 +277,6 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
                         expression.erase(expression.begin());
                         break;
                 }
-                if(expression[0] == '>') {
-                        PR_METADATA_SET (ref, nthp::script::flagBits::IS_REFERENCE);
-                        if(buildSystemContext) PR_METADATA_SET (ref, nthp::script::flagBits::IS_GLOBAL);
-
-                        expression.erase(expression.begin());
-                }
 
         } while(0);
 
@@ -291,18 +286,9 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
         // If no VARNAME is referenced, assumes numeral reference type (instead of $VARNAME or >VARNAME, $2 or >2), or constant. Throws
         // Invalid argument if otherwise.
         if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {
-                if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_GLOBAL)) {
-                        for(size_t i = 0; i < globalList.size(); ++i) {
-                                if(expression == globalList[i].varName) {
-                                        expression = std::to_string(globalList[i].relativeIndex);
-                                }
-                        }
-                }
-                else {
-                        for(size_t i = 0; i < varList.size(); ++i) {
-                                if(expression == varList[i].varName) {
-                                        expression = std::to_string(varList[i].relativeIndex);
-                                }
+                for(size_t i = 0; i < globalList.size(); ++i) {
+                        if(expression == globalList[i].varName) {
+                                expression = std::to_string(globalList[i].relativeIndex);
                         }
                 }
         }
@@ -344,7 +330,7 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
 
 
         PR_METADATA_SET(ref, nthp::script::flagBits::IS_VALID);
-        NOVERB_PRINT_COMPILER("Evaluated Reference [%s]: Value = %llu, IR = %u, IG = %u\n", expression.c_str(), ref.value, PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE), PR_METADATA_GET(ref, nthp::script::flagBits::IS_GLOBAL));
+        NOVERB_PRINT_COMPILER("Evaluated Reference [%s]: Value = %llu, IR = %u\n", expression.c_str(), ref.value, PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE));
         
         return ref; 
 }
@@ -355,7 +341,7 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
 // Generic conviencence macro to evaluate the next symbol in the stream. Automatically pulls the next
 // symbol from a macro or source file into 'fileRead'
 #define EVAL_SYMBOL() ____S_EVAL(file, fileRead, constantList, macroList, currentMacroPosition, targetMacro, evaluateMacro)
-#define EVAL_PREF() EvaluateReference(fileRead, varList, globalList, buildSystemContext)
+#define EVAL_PREF() EvaluateReference(fileRead, globalList, buildSystemContext)
 
 #define CHECK_REF(ref) if(!PR_METADATA_GET(ref, nthp::script::flagBits::IS_VALID)) return 1 
 
@@ -844,14 +830,6 @@ DEFINE_COMPILATION_BEHAVIOUR(IF) {
 
 
 
-DEFINE_COMPILATION_BEHAVIOUR(CLEAR) {
-        ADD_NODE(CLEAR);
-
-
-        PRINT_NODEDATA();
-        return 0;
-}
-
 DEFINE_COMPILATION_BEHAVIOUR(SET) {
 
         // SET will be overwritten by COPY if the compiler reads a reference as the copy value.
@@ -899,23 +877,6 @@ DEFINE_COMPILATION_BEHAVIOUR(SET) {
         return 0;
 }
 
-
-DEFINE_COMPILATION_BEHAVIOUR(DEFINE) {
-        ADD_NODE(DEFINE);
-
-
-        EVAL_SYMBOL();
-        auto s_size = EVAL_PREF();
-        CHECK_REF(s_size);
-        
-
-        stdRef* size = decltype(size)(nodeList[currentNode].access.data);
-        *size = s_size;
-
-        
-        PRINT_NODEDATA();
-        return 0;
-}
 
 
 DEFINE_COMPILATION_BEHAVIOUR(COPY) {
@@ -1661,10 +1622,6 @@ DEFINE_COMPILATION_BEHAVIOUR(ACTION_BIND) {
         auto var = EVAL_PREF(); // Global to bind it to.
         CHECK_REF(var);
 
-        if(!PR_METADATA_GET(var, nthp::script::flagBits::IS_GLOBAL)) {
-                PRINT_COMPILER_ERROR("Second argument of ACTION_BIND must be a GLOBAL reference.\n");
-                return 1;
-        }
 
         EVAL_SYMBOL();
         int32_t key = fileRead[0]; // should correspond to keycode. idk _
@@ -2139,7 +2096,6 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
         }
         labelList.clear();
         gotoList.clear();
-        varList.clear();
 
 
         nthp::script::cleanNodeSet(nodeList);
@@ -2168,7 +2124,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
         bool evaluateMacro = false;
 
 
-        #define COMPILE(instruction) if( instruction ( nodeList, file, fileRead, constantList, macroList, varList, globalList, labelList, gotoList, ifLocations, endLocations, skipList, currentMacroPosition, targetMacro, evaluateMacro, buildSystemContext) ) return 1
+        #define COMPILE(instruction) if( instruction ( nodeList, file, fileRead, constantList, macroList, globalList, labelList, gotoList, ifLocations, endLocations, skipList, currentMacroPosition, targetMacro, evaluateMacro, buildSystemContext) ) return 1
         #define CHECK_COMP(instruction) if(fileRead == #instruction) { COMPILE(instruction); continue; }
 
         bool operationOngoing = true;
@@ -2219,27 +2175,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                         }
                 }
 
-                // Evaluate Compiler Definitions first.
                 if(fileRead == "VAR") {
-                        // Define a new variable.
-                        EVAL_SYMBOL();
-
-                        for(size_t i = 0; i < varList.size(); ++i) {
-                                if(fileRead == varList[i].varName) {
-                                        PRINT_COMPILER_WARNING("VAR [$%s] already declared; Ignoring redefinition.\n", fileRead.c_str());
-                                        goto COMP_START; // thank god.
-                                }
-                        }
-
-
-                        VAR_DEF newDef;
-                        newDef.varName = fileRead;
-                        newDef.relativeIndex = varList.size();
-
-                        varList.push_back(newDef);
-                        PRINT_COMPILER("Defined VAR [%s].\n", fileRead.c_str());
-                }
-                if(fileRead == "GLOBAL") {
                         
                         // Define a new variable.
                         EVAL_SYMBOL();
@@ -2247,7 +2183,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                         for(size_t i = 0; i < globalList.size(); ++i) {
                                 if(fileRead == globalList[i].varName) {
-                                        PRINT_COMPILER_WARNING("GLOBAL [>%s] already declared; Ignoring redefinition.\n", fileRead.c_str());
+                                        PRINT_COMPILER_WARNING("GLOBAL [$%s] already declared; Ignoring redefinition.\n", fileRead.c_str());
                                         invalidDefine = true;
                                         break;
                                 }
@@ -2389,15 +2325,16 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                         size_t i = 0;
                         switch(fileRead.c_str()[0]) {
                                 case '$':
-                                        {
+                                {
                                         fileRead.erase(fileRead.begin());
-                                        for(; i < varList.size(); ++i) {
-                                                if(fileRead == varList[i].varName) break;
+                                        for(; i < globalList.size(); ++i) {
+                                                if(fileRead == globalList[i].varName) break;
                                         }
-                                        if(i == varList.size()) {
-                                                PRINT_COMPILER_DEPEND_ERROR("VAR Dependency [%s] not declared; Dependency check failed.\n", fileRead.c_str());
+                                        if(i == globalList.size()) {
+                                                PRINT_COMPILER_DEPEND_ERROR("GLOBAL Dependency [%s] not declared; Dependency check failed.\n", fileRead.c_str());
                                                 return 1;
                                         }
+
                                         }
                                         break;
                                 case '@': 
@@ -2405,7 +2342,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                                         for(; i < macroList.size(); ++i) {
                                                 if(fileRead == macroList[i].macroName) break;
                                         }
-                                        if(i == varList.size()) {
+                                        if(i == macroList.size()) {
                                                 PRINT_COMPILER_DEPEND_ERROR("MACRO Dependency [%s] not declared; Dependency check failed.\n", fileRead.c_str());
                                                 return 1;
                                         }
@@ -2420,19 +2357,6 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                                                 PRINT_COMPILER_DEPEND_ERROR("CONST Dependency [%s] not declared; Dependency check failed.\n", fileRead.c_str());
                                                 return 1;
                                         }
-                                        }
-                                        break;
-                                case '>':
-                                        {
-                                        fileRead.erase(fileRead.begin());
-                                        for(; i < globalList.size(); ++i) {
-                                                if(fileRead == globalList[i].varName) break;
-                                        }
-                                        if(i == globalList.size()) {
-                                                PRINT_COMPILER_DEPEND_ERROR("GLOBAL Dependency [%s] not declared; Dependency check failed.\n", fileRead.c_str());
-                                                return 1;
-                                        }
-
                                         }
                                         break;
 
@@ -2478,8 +2402,6 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                 CHECK_COMP(SKIP_END);
 
                 CHECK_COMP(SET);
-                CHECK_COMP(CLEAR);
-                CHECK_COMP(DEFINE);
                 CHECK_COMP(COPY);
 
 		CHECK_COMP(TEXTURE_DEFINE);
@@ -2698,26 +2620,23 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                 }
 
                 // Set up header with:
-                //      - Local Memory Budget
                 //      - Global Memory Budget (if applicable)
                 //      - Label List
 
                 if(nodeList.size() > 0) {
-                        nodeList[0].access.size = sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t) + (sizeof(uint32_t) * labelList.size() * 2);
+                        nodeList[0].access.size = sizeof(uint32_t) + sizeof(uint32_t) + (sizeof(uint32_t) * labelList.size() * 2);
                         nodeList[0].access.data = (char*)malloc(nodeList[0].access.size);
 
                         if(nodeList[0].access.data == NULL) {
                                 FATAL_PRINT(nthp::FATAL_ERROR::Memory_Fault, "Memory Fault in Compiler.\n");
                         }
 
-                        uint32_t* localmem = (decltype(localmem))(nodeList[0].access.data);
-                        uint32_t* globalmem = (decltype(globalmem))(nodeList[0].access.data + sizeof(uint32_t));
-                        uint32_t* labelstart = (decltype(labelstart))(nodeList[0].access.data + (sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t)));
-                        uint32_t* labelSize = (decltype(labelstart))(nodeList[0].access.data + (sizeof(uint32_t) + sizeof(uint32_t)));
+                        uint32_t* globalmem = (decltype(globalmem))(nodeList[0].access.data);
+                        uint32_t* labelstart = (decltype(labelstart))(nodeList[0].access.data + (sizeof(uint32_t) + sizeof(uint32_t)));
+                        uint32_t* labelSize = (decltype(labelstart))(nodeList[0].access.data + (sizeof(uint32_t)));
                         *labelSize = labelList.size();
 
 
-                        *localmem = (uint32_t)varList.size();
                         *globalmem = (uint32_t)globalAlloc;
 
                         // Writes label data to header. For use in JUMP.

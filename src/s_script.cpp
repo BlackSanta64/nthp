@@ -8,20 +8,11 @@ nthp::texture::Palette nthp::script::activePalette;
 
 #define EVAL_STDREF(ref)        do {\
                                 if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {\
-                                        if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_GLOBAL)) {\
                                                 if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_PTR)) {\
                                                         ref.value = data->globalVarSet[nthp::fixedToInt(data->globalVarSet[nthp::fixedToInt(ref.value)])];\
                                                         break;\
                                                 }\
                                                 ref.value = data->globalVarSet[nthp::fixedToInt(ref.value)];\
-                                        }\
-                                        else {\
-                                                if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_PTR)) {\
-                                                        ref.value = (*data->currentLocalMemory)[nthp::fixedToInt((*data->currentLocalMemory)[nthp::fixedToInt(ref.value)])];\
-                                                        break;\
-                                                }\
-                                                ref.value = (*data->currentLocalMemory)[nthp::fixedToInt(ref.value)];\
-                                        }\
                                         if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_NEGATED)) ref.value = -(ref.value);\
                                 } }\
                                 while(0);
@@ -92,12 +83,7 @@ DEFINE_EXECUTION_BEHAVIOUR(GETINDEX) {
         ptrRef var = *(ptrRef*)data->nodeSet[data->currentNode].access.data;
         EVAL_STDREF(var);
 
-        if(PR_METADATA_GET(var, nthp::script::flagBits::IS_GLOBAL)) {
-                data->globalVarSet[nthp::fixedToInt(var.value)] = nthp::intToFixed(data->currentNode);
-        }
-        else {
-                (*data->currentLocalMemory)[nthp::fixedToInt(var.value)] = nthp::intToFixed(data->currentNode);
-        }
+        data->globalVarSet[nthp::fixedToInt(var.value)] = nthp::intToFixed(data->currentNode);
 
         return 0;
 }
@@ -106,12 +92,7 @@ DEFINE_EXECUTION_BEHAVIOUR(INC) {
         ptrRef var = *(ptrRef*)data->nodeSet[data->currentNode].access.data;
         EVAL_STDREF(var);
 
-        if(PR_METADATA_GET(var, nthp::script::flagBits::IS_GLOBAL)) {
-                data->globalVarSet[nthp::fixedToInt(var.value)] += nthp::intToFixed(1);
-        }
-        else {
-                (*data->currentLocalMemory)[nthp::fixedToInt(var.value)] += nthp::intToFixed(1);
-        }
+        data->globalVarSet[nthp::fixedToInt(var.value)] += nthp::intToFixed(1);
 
         return 0;
 }
@@ -120,12 +101,8 @@ DEFINE_EXECUTION_BEHAVIOUR(DEC) {
         ptrRef var = *(ptrRef*)data->nodeSet[data->currentNode].access.data;
         EVAL_STDREF(var);
 
-        if(PR_METADATA_GET(var, nthp::script::flagBits::IS_GLOBAL)) {
-                data->globalVarSet[nthp::fixedToInt(var.value)] -= nthp::intToFixed(1);
-        }
-        else {
-                (*data->currentLocalMemory)[nthp::fixedToInt(var.value)] -= nthp::intToFixed(1);
-        }
+       
+        data->globalVarSet[nthp::fixedToInt(var.value)] -= nthp::intToFixed(1);
 
         return 0;
 }
@@ -137,12 +114,7 @@ DEFINE_EXECUTION_BEHAVIOUR(LSHIFT) {
         EVAL_STDREF(var);
         EVAL_STDREF(count);
         
-        if(PR_METADATA_GET(var, nthp::script::flagBits::IS_GLOBAL)) {
-                data->globalVarSet[nthp::fixedToInt(var.value)] = ((data->globalVarSet[var.value]) << nthp::fixedToInt(count.value));
-        }
-        else {                
-                (*data->currentLocalMemory)[nthp::fixedToInt(var.value)] = (((*data->currentLocalMemory)[var.value]) << nthp::fixedToInt(count.value));
-        }
+        data->globalVarSet[nthp::fixedToInt(var.value)] = ((data->globalVarSet[var.value]) << nthp::fixedToInt(count.value));
 
         return 0;
 }
@@ -156,12 +128,9 @@ DEFINE_EXECUTION_BEHAVIOUR(RSHIFT) {
         EVAL_STDREF(count);
 
         
-        if(PR_METADATA_GET(var, nthp::script::flagBits::IS_GLOBAL)) {
-                data->globalVarSet[nthp::fixedToInt(var.value)] = ((data->globalVarSet[var.value]) >> nthp::fixedToInt(count.value));
-        }
-        else {                
-                (*data->currentLocalMemory)[nthp::fixedToInt(var.value)] = (((*data->currentLocalMemory)[var.value]) >> nthp::fixedToInt(count.value));
-        }
+        data->globalVarSet[nthp::fixedToInt(var.value)] = ((data->globalVarSet[var.value]) >> nthp::fixedToInt(count.value));
+
+      
 
         return 0;
 }
@@ -177,11 +146,9 @@ DEFINE_EXECUTION_BEHAVIOUR(ADD) {
         EVAL_STDREF(b);
         EVAL_STDREF(output);
 
-        if(PR_METADATA_GET(output, nthp::script::flagBits::IS_GLOBAL)) {
-                data->globalVarSet[nthp::fixedToInt(output.value)] = (a.value + b.value);
-        } else {
-                (*data->currentLocalMemory)[nthp::fixedToInt(output.value)] = (a.value + b.value);
-        }
+
+        data->globalVarSet[nthp::fixedToInt(output.value)] = (a.value + b.value);
+       
 
         return 0;
 }
@@ -196,11 +163,10 @@ DEFINE_EXECUTION_BEHAVIOUR(SUB) {
         EVAL_STDREF(b);
         EVAL_STDREF(output)
 
-        if(PR_METADATA_GET(output, nthp::script::flagBits::IS_GLOBAL)) {
-                data->globalVarSet[nthp::fixedToInt(output.value)] = (a.value - b.value);
-        } else {
-                (*data->currentLocalMemory)[nthp::fixedToInt(output.value)] = (a.value - b.value);
-        }
+
+        data->globalVarSet[nthp::fixedToInt(output.value)] = (a.value - b.value);
+
+       
         return 0;
 }
 
@@ -214,11 +180,9 @@ DEFINE_EXECUTION_BEHAVIOUR(MUL) {
         EVAL_STDREF(b);
         EVAL_STDREF(output);
 
-        if(PR_METADATA_GET(output, nthp::script::flagBits::IS_GLOBAL)) {
-                data->globalVarSet[nthp::fixedToInt(output.value)] = nthp::f_fixedProduct(a.value, b.value);
-        } else {
-                (*data->currentLocalMemory)[nthp::fixedToInt(output.value)] = nthp::f_fixedProduct(a.value, b.value);
-        }
+
+        data->globalVarSet[nthp::fixedToInt(output.value)] = nthp::f_fixedProduct(a.value, b.value);
+      
         return 0;
 }
 
@@ -232,11 +196,8 @@ DEFINE_EXECUTION_BEHAVIOUR(DIV) {
         EVAL_STDREF(b);
         EVAL_STDREF(output);
 
-        if(PR_METADATA_GET(output, nthp::script::flagBits::IS_GLOBAL)) {
-                data->globalVarSet[nthp::fixedToInt(output.value)] = nthp::f_fixedQuotient(a.value, b.value);
-        } else {
-                (*data->currentLocalMemory)[nthp::fixedToInt(output.value)] = nthp::f_fixedQuotient(a.value, b.value);
-        }
+        data->globalVarSet[nthp::fixedToInt(output.value)] = nthp::f_fixedQuotient(a.value, b.value);
+
         return 0;
 }
 
@@ -247,13 +208,8 @@ DEFINE_EXECUTION_BEHAVIOUR(SQRT) {
         EVAL_STDREF(base);
         EVAL_STDREF(output);
 
-        if(PR_METADATA_GET(output, nthp::script::flagBits::IS_GLOBAL)) {
-                data->globalVarSet[nthp::fixedToInt(output.value)] = nthp::f_sqrt(base.value);
-        }
-        else {
-                (*data->currentLocalMemory)[nthp::fixedToInt(output.value)] = nthp::f_sqrt(base.value);
-        }
-       
+        data->globalVarSet[nthp::fixedToInt(output.value)] = nthp::f_sqrt(base.value);
+
         return 0;
 }
 
@@ -405,78 +361,23 @@ DEFINE_EXECUTION_BEHAVIOUR(SET) {
         nthp::script::stdVarWidth value = *(nthp::script::stdVarWidth*)(data->nodeSet[data->currentNode].access.data + sizeof(ptrRef));
 
         EVAL_STDREF(pointer);
-        printf("ref.value = %lf\n", nthp::fixedToDouble(pointer.value));
 
-        if(PR_METADATA_GET(pointer, nthp::script::flagBits::IS_GLOBAL)) {
-                data->globalVarSet[nthp::fixedToInt(pointer.value)] = value;
-        }
-        else {
-                (*data->currentLocalMemory)[nthp::fixedToInt(pointer.value)] = value;
-        }
+
+        data->globalVarSet[nthp::fixedToInt(pointer.value)] = value;
        
         return 0;
 }
 
 
-DEFINE_EXECUTION_BEHAVIOUR(CLEAR) {
-        free((*data->currentLocalMemory));
-        data->varSetSize = 0;
-
-        return 0;
-}
-
-DEFINE_EXECUTION_BEHAVIOUR(DEFINE) {
-        stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
-        void* varData = (*data->currentLocalMemory);
-        
-        EVAL_STDREF(size);
-        
-
-        if((data->varSetSize > 0)) {
-                auto x = (nthp::script::stdVarWidth*)realloc(varData, nthp::fixedToInt(size.value));
-                if(x == NULL) {
-                        PRINT_DEBUG_ERROR("Unable to allocate local memory at [%zu]; closing..\n", data->currentNode);
-                        return 1;
-                }
-                
-                (*data->currentLocalMemory) = x;
-                data->varSetSize = nthp::fixedToInt(size.value);
-
-                return 0;
-        }
-
-        (*data->currentLocalMemory) = (nthp::script::stdVarWidth*)malloc(nthp::fixedToInt(size.value));
-        data->varSetSize = nthp::fixedToInt(size.value);
-
-        return 0;
-}
-
 DEFINE_EXECUTION_BEHAVIOUR(COPY) {
         ptrRef from = *(ptrRef*)(data->nodeSet[data->currentNode].access.data);
         ptrRef to = *(ptrRef*)(data->nodeSet[data->currentNode].access.data + sizeof(ptrRef));
-        nthp::script::stdVarWidth* from_target;
-        nthp::script::stdVarWidth* to_target;
 
         EVAL_STDREF(from);
         EVAL_STDREF(to);
 
 
-        if(PR_METADATA_GET(from, nthp::script::flagBits::IS_GLOBAL)) {
-                from_target = data->globalVarSet;
-        }
-        else {
-                from_target = (*data->currentLocalMemory);
-        }
-
-        if(PR_METADATA_GET(to, nthp::script::flagBits::IS_GLOBAL)) {
-                to_target = data->globalVarSet;
-        }
-        else {
-                to_target = (*data->currentLocalMemory);
-        }
-
-
-        to_target[nthp::fixedToInt(to.value)] = from_target[nthp::fixedToInt(to.value)];
+        data->globalVarSet[nthp::fixedToInt(to.value)] = data->globalVarSet[nthp::fixedToInt(to.value)];
         return 0;
 }
 
@@ -575,12 +476,9 @@ DEFINE_EXECUTION_BEHAVIOUR(GETGPR) {
         ptrRef into = *(ptrRef*)(data->nodeSet[data->currentNode].access.data);
         EVAL_STDREF(into);
 
-        if(PR_METADATA_GET(into, nthp::script::flagBits::IS_GLOBAL)) {
-                data->globalVarSet[nthp::fixedToInt(into.value)] = nthp::intToFixed(data->currentTriggerConfig.GPR);
-        }
-        else {
-                (*data->currentLocalMemory)[nthp::fixedToInt(into.value)] = nthp::intToFixed(data->currentTriggerConfig.GPR);
-        }
+
+        data->globalVarSet[nthp::fixedToInt(into.value)] = nthp::intToFixed(data->currentTriggerConfig.GPR);
+
 
         return 0;
 }
@@ -604,12 +502,9 @@ DEFINE_EXECUTION_BEHAVIOUR(SM_READ) {
         EVAL_STDREF(location);
         EVAL_STDREF(output);
 
-        if(PR_METADATA_GET(output, nthp::script::flagBits::IS_GLOBAL)) {
-                data->globalVarSet[nthp::fixedToInt(output.value)] = nthp::intToFixed(nthp::script::stageMemory[nthp::fixedToInt(location.value)]);
-        }
-        else {
-                (*data->currentLocalMemory)[nthp::fixedToInt(output.value)] = nthp::intToFixed(nthp::script::stageMemory[nthp::fixedToInt(location.value)]);
-        }
+
+        data->globalVarSet[nthp::fixedToInt(output.value)] = nthp::intToFixed(nthp::script::stageMemory[nthp::fixedToInt(location.value)]);
+
 
         return 0;
 }
@@ -736,13 +631,8 @@ DEFINE_EXECUTION_BEHAVIOUR(ENT_CHECKCOLLISION) {
         EVAL_STDREF(entB);
         EVAL_STDREF(output);
 
-        if(PR_METADATA_GET(output, nthp::script::flagBits::IS_GLOBAL)) {
-                
-                data->globalVarSet[nthp::fixedToInt(output.value)] = nthp::intToFixed((int)nthp::entity::checkRectCollision(data->entityBlock[nthp::fixedToInt(entA.value)].getHitbox(), data->entityBlock[nthp::fixedToInt(entB.value)].getHitbox()));
-        }
-        else {
-                (*data->currentLocalMemory)[nthp::fixedToInt(output.value)] = nthp::intToFixed((int)nthp::entity::checkRectCollision(data->entityBlock[nthp::fixedToInt(entA.value)].getHitbox(), data->entityBlock[nthp::fixedToInt(entB.value)].getHitbox()));
-        }
+
+        data->globalVarSet[nthp::fixedToInt(output.value)] = nthp::intToFixed((int)nthp::entity::checkRectCollision(data->entityBlock[nthp::fixedToInt(entA.value)].getHitbox(), data->entityBlock[nthp::fixedToInt(entB.value)].getHitbox()));
 
         return 0;
 }
@@ -1201,12 +1091,8 @@ DEFINE_EXECUTION_BEHAVIOUR(CACHE_READ) {
         EVAL_STDREF(target);
         EVAL_STDREF(var);
 
-        if(PR_METADATA_GET(var, nthp::script::flagBits::IS_GLOBAL)) {
-                data->globalVarSet[nthp::fixedToInt(var.value)] = data->cache[nthp::fixedToInt(target.value)];
-        }
-        else {
-                (*data->currentLocalMemory)[nthp::fixedToInt(var.value)] = data->cache[nthp::fixedToInt(target.value)];
-        }
+
+        data->globalVarSet[nthp::fixedToInt(var.value)] = data->cache[nthp::fixedToInt(target.value)];
 
         return 0;
 }
@@ -1261,17 +1147,12 @@ nthp::script::Script::Script() {
         localCurrentNode = 0;
         localLabelBlock = nullptr;
         localLabelBlockSize = 0;
-        localVarSet = nullptr;
-        localVarSetSize = 0;
 }
 
 nthp::script::Script::Script(const char* filename, ScriptDataSet* dataSet) {
         localCurrentNode = 0;
         localLabelBlock = nullptr;
         localLabelBlockSize = 0;
-        localVarSet = nullptr;
-        localVarSetSize = 0;
-
 
 
         import(filename, dataSet);
@@ -1318,16 +1199,12 @@ int nthp::script::Script::import(const char* filename, ScriptDataSet* dataSet) {
                 }
         }
 
-        localVarSetSize = *(uint32_t*)(nodeSet[0].access.data);
-        data->globalMemBudget += *(uint32_t*)(nodeSet[0].access.data + sizeof(uint32_t)); // Unused unless in stage context.
+        data->globalMemBudget += *(uint32_t*)(nodeSet[0].access.data);
 
         // Note this is a pointer to the region that stores labels.
-        localLabelBlock = (uint32_t*)(nodeSet[0].access.data + (sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t)));
-        localLabelBlockSize = *(uint32_t*)(nodeSet[0].access.data + (sizeof(uint32_t) + sizeof(uint32_t)));
+        localLabelBlock = (uint32_t*)(nodeSet[0].access.data + (sizeof(uint32_t) + sizeof(uint32_t)));
+        localLabelBlockSize = *(uint32_t*)(nodeSet[0].access.data + (sizeof(uint32_t)));
 
-        localVarSet = (decltype(localVarSet))malloc(sizeof(nthp::fixed_t) * localVarSetSize);
-        memset(localVarSet, 0, sizeof(nthp::fixed_t) * localVarSetSize);
-        
 
         return 0;
 }
@@ -1345,8 +1222,6 @@ int nthp::script::Script::execute() {
                 data->isSuspended = false;
         #endif
 
-        data->currentLocalMemory = &localVarSet;
-        data->varSetSize = localVarSetSize;
         data->currentLabelBlock = localLabelBlock;
         data->currentLabelBlockSize = localLabelBlockSize;
         data->currentNode = localCurrentNode;
@@ -1439,8 +1314,6 @@ int nthp::script::Script::execute(uint32_t entryPoint) {
 
 
 nthp::script::Script::~Script() {
-        if(localVarSetSize > 0)
-                delete[] localVarSet;
 
         // Make sure NOT to delete the localLabelBlock, as tempting as it seems.
         // it points to the HEADER node data, so it's freed with the rest of the
