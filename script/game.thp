@@ -6,6 +6,7 @@ VAR testB
 VAR testC
 VAR ptr_getindex_output
 
+
 MACRO set_getindex_target {
         SET &ptr_getindex_output #ar0
 }
@@ -15,6 +16,8 @@ MACRO getindex {
 
 @set_getindex_target ( &testB )
 @getindex
+
+SET &testPrivate 250
 
 
 LABEL 1

@@ -33,15 +33,12 @@ namespace nthp {
                 public:
 
 
-                // Compiler-Only; Used by the compiler to track variables declared.
-                struct VAR_DEF {
-                        std::string varName;
-                        uint32_t relativeIndex;
-                };
 
                 struct GLOBAL_DEF {
                         std::string varName;
                         uint32_t relativeIndex;
+                        bool isPrivate; // TODO.
+                        std::string definedIn;
                 };
 
                 // Compiler-Only; Represents a macro-like substitution.
@@ -131,10 +128,20 @@ namespace nthp {
                                 GLOBAL_DEF def;
                                 def.relativeIndex = globalList.size();
                                 def.varName = name;
+                                def.isPrivate = false;
 
                                 globalList.push_back(def);
                         }
+                        inline void addPrivateGlobalDef(const char* name, const char* definedInFile) {
+                                GLOBAL_DEF def;
+                                def.relativeIndex = globalList.size();
+                                def.varName = name;
 
+                                def.isPrivate = true;
+                                def.definedIn = definedInFile;
+                                
+                                globalList.push_back(def);
+                        }
                         
                         
                 

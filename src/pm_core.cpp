@@ -117,6 +117,7 @@ int main(int argv, char** argc) {
         nthp::setMaxFPS(15);
         std::mutex g_access;
 
+
         std::thread debuggerThread(headless_runtime);
         std::string debugOutput;
         FILE* debug_fd = stdout;

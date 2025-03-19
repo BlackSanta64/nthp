@@ -200,6 +200,17 @@ namespace nthp {
 #endif
 
 
+template<class width>
+width checksum(void* data, size_t blockSize) {
+        width* blocks = (width*)data;
+        width result = blocks[0] ^ blocks[1];
+
+        for(size_t i = 2; i < blockSize; ++i) {
+                result ^= blocks[i];
+        }
+
+        return result;
+}
 
 
 

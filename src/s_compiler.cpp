@@ -12,6 +12,7 @@ using namespace nthp::script::instructions;
 #define DEFINE_COMPILATION_BEHAVIOUR(instruction) int instruction (std::vector<nthp::script::Node>& nodeList,\
                                                                         std::fstream& file,\
                                                                         std::string& fileRead,\
+                                                                        std::string& currentFile,\
                                                                         std::vector<nthp::script::CompilerInstance::CONST_DEF>& constantList,\
                                                                         std::vector<nthp::script::CompilerInstance::MACRO_DEF>& macroList,\
                                                                         std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>& globalList,\
@@ -228,8 +229,9 @@ int EvaluateSymbol(std::fstream& file, std::string& expression, std::vector<nthp
 }
 
 
-// Substitues a VAR reference or parses numeral references (for compatibility)
-nthp::script::instructions::stdRef EvaluateReference(std::string expression, std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>& globalList, bool buildSystemContext) {
+// Substitues a VAR reference or parses numeral references (for compatibility).
+// Returning REF without the IS_VALID bit set assumes a failure.
+nthp::script::instructions::stdRef EvaluateReference(std::string expression, std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>& globalList, std::string& currentFile, bool buildSystemContext) {
         stdRef ref;
         ref.metadata = 0;
         ref.value = 0;
@@ -286,10 +288,21 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
         // If no VARNAME is referenced, assumes numeral reference type (instead of $VARNAME or >VARNAME, $2 or >2), or constant. Throws
         // Invalid argument if otherwise.
         if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {
+                bool validReference = false;
+
                 for(size_t i = 0; i < globalList.size(); ++i) {
                         if(expression == globalList[i].varName) {
+                                if(globalList[i].isPrivate && (globalList[i].definedIn != currentFile)) {
+                                        continue;
+                                }
+                                validReference = true;
                                 expression = std::to_string(globalList[i].relativeIndex);
                         }
+                }
+
+                if(!(validReference)) {
+                        PRINT_COMPILER_ERROR("De/referenced definition [$%s] doesn't exist or is outside of scope.\n", expression.c_str());
+                        return ref;
                 }
         }
 
@@ -319,7 +332,7 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
                 }
         }
         catch(std::invalid_argument) {
-                PRINT_COMPILER_ERROR("Unable to evaluate reference [%s]; Invalid Argument.\n", expression.c_str());
+                PRINT_COMPILER_ERROR("Caught; Unable to evaluate reference [%s]; Invalid Argument.\n", expression.c_str());
                 return ref;
         }
  
@@ -341,7 +354,7 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
 // Generic conviencence macro to evaluate the next symbol in the stream. Automatically pulls the next
 // symbol from a macro or source file into 'fileRead'
 #define EVAL_SYMBOL() ____S_EVAL(file, fileRead, constantList, macroList, currentMacroPosition, targetMacro, evaluateMacro)
-#define EVAL_PREF() EvaluateReference(fileRead, globalList, buildSystemContext)
+#define EVAL_PREF() EvaluateReference(fileRead, globalList, currentFile, buildSystemContext)
 
 #define CHECK_REF(ref) if(!PR_METADATA_GET(ref, nthp::script::flagBits::IS_VALID)) return 1 
 
@@ -2124,7 +2137,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
         bool evaluateMacro = false;
 
 
-        #define COMPILE(instruction) if( instruction ( nodeList, file, fileRead, constantList, macroList, globalList, labelList, gotoList, ifLocations, endLocations, skipList, currentMacroPosition, targetMacro, evaluateMacro, buildSystemContext) ) return 1
+        #define COMPILE(instruction) if( instruction ( nodeList, file, fileRead, currentFile, constantList, macroList, globalList, labelList, gotoList, ifLocations, endLocations, skipList, currentMacroPosition, targetMacro, evaluateMacro, buildSystemContext) ) return 1
         #define CHECK_COMP(instruction) if(fileRead == #instruction) { COMPILE(instruction); continue; }
 
         bool operationOngoing = true;
@@ -2194,6 +2207,36 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                         PRINT_COMPILER("Defined GLOBAL [%s].\n", fileRead.c_str());
 
                         addGlobalDef(fileRead.c_str());
+                        ++globalAlloc;
+                        continue;
+                }
+
+                if(fileRead == "PRIVATE") {
+                        // Define a new variable.
+                        EVAL_SYMBOL();
+                        bool invalidDefine = false;
+ 
+                        for(size_t i = 0; i < globalList.size(); ++i) {
+                                if(fileRead == globalList[i].varName) {
+                                        if(!globalList[i].isPrivate) {
+                                                PRINT_COMPILER_WARNING("GLOBAL [$%s] already declared; Ignoring redefinition.\n", fileRead.c_str());
+                                                invalidDefine = true;
+                                                break;
+                                        }
+                                        if(globalList[i].definedIn == currentFile) {
+                                                PRINT_COMPILER_WARNING("PRIVATE [$%s] already declared in current scope; Ignoring redefinition.\n", fileRead.c_str());
+                                                invalidDefine = true;
+                                                break;
+                                        }
+                                }
+                        }
+                        if(invalidDefine) continue;
+ 
+
+                        PRINT_COMPILER("Defined PRIVATE GLOBAL [%s].\n", fileRead.c_str());
+                        
+
+                        addPrivateGlobalDef(fileRead.c_str(), currentFile.c_str());
                         ++globalAlloc;
                         continue;
                 }
