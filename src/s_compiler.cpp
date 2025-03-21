@@ -237,18 +237,19 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
         ref.value = 0;
 
         bool ptr_reference = false;
+        bool deref_ptr = false;
 
         // Prefixes are evaluated IN ORDER of ; ptr_dereference (*), ptr_reference (&), Negation (-), Globality (> or $)
         // NOTE: reference (&) PTR prefixes can evaluated as constants, dereferences (*) cannot.
         do {
                 if(expression[0] == '*') {
                         PR_METADATA_SET(ref, nthp::script::flagBits::IS_PTR);
+                        PR_METADATA_SET(ref, nthp::script::flagBits::IS_REFERENCE);
                         expression.erase(expression.begin());
                 }
 
                 if(expression[0] == '&') {
                         // A ptr reference sets the P_Ref value to the index of the variable.
-                        // Globality cannot be ingored.
                         ptr_reference = true;
                         PR_METADATA_SET (ref, nthp::script::flagBits::IS_REFERENCE);
                         expression.erase(expression.begin());
@@ -260,16 +261,10 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
                                 PRINT_COMPILER_ERROR("Unable to evaluate reference [%s]; Invalid Argument.\n", expression.c_str());
                                 return ref;
                         }
-                        if(expression[1] == '$') {
-                                if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_PTR)) {
-                                        PRINT_COMPILER_WARNING("Negated ptr reference (*) [%s]; ignoring negation.\n", expression.c_str());
-                                        expression.erase(expression.begin());
-                                        break;
-                                }
-                                PR_METADATA_SET(ref, nthp::script::flagBits::IS_NEGATED);
-                                expression.erase(expression.begin());
-                        }
-                        else break;
+                                
+                        PR_METADATA_SET(ref, nthp::script::flagBits::IS_NEGATED);
+                        expression.erase(expression.begin());
+
                 }
 
                 // No need for 2 compares. Only reaches this point if dereference character is present ($ OR > checked prior).
@@ -311,25 +306,19 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
 
         try {
                 double value = std::stod(expression);
+
+
                 if((std::abs(value) < nthp::fixedTypeConstants::FIXED_EPSILON) && (value != 0)) {
                         PRINT_COMPILER_WARNING("Expression [%s] cannot be expressed/approximated in current fixed point system configuration. Expression will be rounded to 0.\n", expression.c_str());
                 }
 
-
-
                 ref.value = nthp::doubleToFixed(value);
-
-                // A reference cannot have a decimal value.
-                if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE) || (ptr_reference)) {
-                        if(nthp::getFixedDecimal(ref.value) > 0) {
-                                PRINT_COMPILER_WARNING("Reference [%s] is invalid; Decimal not permitted, discarding decimal.\n", expression.c_str());
-                        }
-
-                        ref.value = nthp::getFixedInteger(ref.value);
+                if(ptr_reference) {
+                        // Convert the saved index into a ptr descriptor. Block 0 is the GLOBAL LIST.
+                        ref.value = nthp::script::constructPtrDescriptor(0, nthp::fixedToInt(ref.value));
                 }
-                else {
-                        ref.value = nthp::doubleToFixed(value);
-                }
+        
+
         }
         catch(std::invalid_argument) {
                 PRINT_COMPILER_ERROR("Caught; Unable to evaluate reference [%s]; Invalid Argument.\n", expression.c_str());
@@ -909,6 +898,95 @@ DEFINE_COMPILATION_BEHAVIOUR(COPY) {
 
         *to = sto;
         *from = sfrom;
+        PRINT_NODEDATA();
+        return 0;
+}
+
+DEFINE_COMPILATION_BEHAVIOUR(ALLOC) {
+        ADD_NODE(ALLOC);
+
+        EVAL_SYMBOL();
+        auto s_size = EVAL_PREF();
+        CHECK_REF(s_size);
+
+        EVAL_SYMBOL();
+        auto storage_ptr = EVAL_PREF();
+        CHECK_REF(storage_ptr);
+
+        stdRef* size = (stdRef*)(nodeList[currentNode].access.data);
+        ptrRef* ptr = (ptrRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
+
+        *size = s_size;
+        *ptr = storage_ptr;
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+DEFINE_COMPILATION_BEHAVIOUR(FREE) {
+        ADD_NODE(FREE);
+
+        EVAL_SYMBOL();
+        auto ptr = EVAL_PREF();
+        CHECK_REF(ptr);
+
+        ptrRef* p = (ptrRef*)(nodeList[currentNode].access.data);
+
+        *p = ptr;
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(NEXT) {
+        ADD_NODE(NEXT);
+
+        EVAL_SYMBOL();
+        auto ptr = EVAL_PREF();
+        CHECK_REF(ptr);
+
+        ptrRef* p = (ptrRef*)nodeList[currentNode].access.data;
+
+        *p = ptr;
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+
+DEFINE_COMPILATION_BEHAVIOUR(PREV) {
+        ADD_NODE(PREV);
+
+        EVAL_SYMBOL();
+        auto ptr = EVAL_PREF();
+        CHECK_REF(ptr);
+
+        ptrRef* p = (ptrRef*)nodeList[currentNode].access.data;
+
+        *p = ptr;
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
+DEFINE_COMPILATION_BEHAVIOUR(INDEX) {
+        ADD_NODE(INDEX);
+
+        EVAL_SYMBOL();
+        auto ptr = EVAL_PREF();
+        CHECK_REF(ptr);
+
+        EVAL_SYMBOL();
+        auto addr = EVAL_PREF();
+        CHECK_REF(addr);
+
+        ptrRef* block = (ptrRef*)(nodeList[currentNode].access.data);
+        stdRef* location = (stdRef*)(nodeList[currentNode].access.data + sizeof(ptrRef));
+
+        *block = ptr;
+        *location = addr;
+
         PRINT_NODEDATA();
         return 0;
 }
@@ -2206,7 +2284,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                         PRINT_COMPILER("Defined GLOBAL [%s].\n", fileRead.c_str());
 
-                        addGlobalDef(fileRead.c_str());
+                        addGlobalDef(fileRead.c_str(), currentFile.c_str());
                         ++globalAlloc;
                         continue;
                 }
@@ -2218,7 +2296,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
  
                         for(size_t i = 0; i < globalList.size(); ++i) {
                                 if(fileRead == globalList[i].varName) {
-                                        if(!globalList[i].isPrivate) {
+                                        if(!(globalList[i].isPrivate)) {
                                                 PRINT_COMPILER_WARNING("GLOBAL [$%s] already declared; Ignoring redefinition.\n", fileRead.c_str());
                                                 invalidDefine = true;
                                                 break;
@@ -2446,6 +2524,11 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                 CHECK_COMP(SET);
                 CHECK_COMP(COPY);
+                CHECK_COMP(ALLOC);
+                CHECK_COMP(FREE);
+                CHECK_COMP(NEXT);
+                CHECK_COMP(PREV);
+                CHECK_COMP(INDEX);
 
 		CHECK_COMP(TEXTURE_DEFINE);
 		CHECK_COMP(TEXTURE_CLEAR);
@@ -2839,16 +2922,16 @@ int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFi
                         
 
                         // Add constant runtime globals.
-                        addGlobalDef("mousepos_x");
-                        addGlobalDef("mousepos_y");
-                        addGlobalDef("deltaTime");
-                        addGlobalDef("mouse1");
-                        addGlobalDef("mouse2");
-                        addGlobalDef("mouse3");
-                        addGlobalDef("r_poll1");
-                        addGlobalDef("r_poll2");
-                        addGlobalDef("r_poll3");
-                        addGlobalDef("r_poll4");
+                        addGlobalDef("mousepos_x", "predefined");
+                        addGlobalDef("mousepos_y", "predefined");
+                        addGlobalDef("deltaTime", "predefined");
+                        addGlobalDef("mouse1", "predefined");
+                        addGlobalDef("mouse2", "predefined");
+                        addGlobalDef("mouse3", "predefined");
+                        addGlobalDef("r_poll1", "predefined");
+                        addGlobalDef("r_poll2", "predefined");
+                        addGlobalDef("r_poll3", "predefined");
+                        addGlobalDef("r_poll4", "predefined");
 
 
                         while(!file.eof()) {

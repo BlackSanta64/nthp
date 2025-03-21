@@ -63,6 +63,11 @@ namespace ID {
                 SKIP_END,\
                 SET,\
                 COPY,\
+                ALLOC,\
+                FREE,\
+                NEXT,\
+                PREV,\
+                INDEX,\
 		TEXTURE_DEFINE,\
 		TEXTURE_CLEAR,\
 		TEXTURE_LOAD,\
@@ -175,6 +180,11 @@ namespace Size {
 
                 SET = sizeof(ptrRef) + sizeof(nthp::script::stdVarWidth),
                 COPY = sizeof(ptrRef) + sizeof(ptrRef),
+                ALLOC = sizeof(stdRef) + sizeof(ptrRef),
+                FREE = sizeof(ptrRef),
+                NEXT = sizeof(ptrRef),
+                PREV = sizeof(ptrRef),
+                INDEX = sizeof(ptrRef) + sizeof(stdRef),
 
 		TEXTURE_DEFINE = sizeof(stdRef),
 		TEXTURE_CLEAR = 0,

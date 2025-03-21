@@ -6,6 +6,12 @@
 nthp::script::stage::Stage::Stage() {
         memset(&data, 0, sizeof(nthp::script::Script::ScriptDataSet));
         data.currentMusicTrack = -1;
+        data.blockData = (nthp::script::BlockMemoryEntry*)(malloc(sizeof(BlockMemoryEntry)));
+                data.blockData[0].isFree = false;
+                data.blockData[0].size = 0;
+                data.blockData[0].data = NULL;
+        data.blockDataSize = 1;
+        
         scriptBlock = NULL;
         triggerBlock = NULL;
         
@@ -16,6 +22,11 @@ nthp::script::stage::Stage::Stage() {
 nthp::script::stage::Stage::Stage(const char* stagefile) {
         memset(&data, 0, sizeof(nthp::script::Script::ScriptDataSet));
         data.currentMusicTrack = -1;
+        data.blockData = (nthp::script::BlockMemoryEntry*)(malloc(sizeof(BlockMemoryEntry)));
+                data.blockData[0].isFree = false;
+                data.blockData[0].size = 0;
+                data.blockData[0].data = NULL;
+        data.blockDataSize = 1;
         if(loadStage(stagefile)) {
                 scriptBlock = NULL;
                 triggerBlock = NULL;

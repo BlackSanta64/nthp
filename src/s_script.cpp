@@ -6,16 +6,40 @@ using namespace nthp::script::instructions;
 char nthp::script::stageMemory[STAGEMEM_MAX];
 nthp::texture::Palette nthp::script::activePalette;
 
-#define EVAL_STDREF(ref)        do {\
-                                if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {\
-                                                if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_PTR)) {\
-                                                        ref.value = data->globalVarSet[nthp::fixedToInt(data->globalVarSet[nthp::fixedToInt(ref.value)])];\
-                                                        break;\
-                                                }\
-                                                ref.value = data->globalVarSet[nthp::fixedToInt(ref.value)];\
-                                        if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_NEGATED)) ref.value = -(ref.value);\
-                                } }\
-                                while(0);
+
+inline void ____eval_std(stdRef& ref, nthp::script::Script::ScriptDataSet* data) {
+        do {
+                if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {
+                        ref.value = data->globalVarSet[nthp::fixedToInt(ref.value)];
+                }
+                if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_PTR)) {
+                        const auto ptr = nthp::script::parsePtrDescriptor(ref.value);
+                        if(ptr.block) {
+                                ref.value = data->blockData[ptr.block - 1].data[ptr.address];
+                                break;
+                        }
+                        ref.value = data->globalVarSet[ptr.address];
+                }               
+        } while(0);
+
+        if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_NEGATED)) ref.value = -(ref.value);
+}
+
+inline void ____eval_ptr(ptrRef& ref, nthp::script::Script::ScriptDataSet* data) {
+
+}
+
+#define EVAL_STDREF(ref)        ____eval_std(ref, data)
+
+#define EVAL_PTRREF(ref)\
+        nthp::script::stdVarWidth* target_dsc;\
+        do {\
+                EVAL_STDREF(ref);\
+                const auto ptr_dsc = nthp::script::parsePtrDescriptor(ref.value);\
+                if(ptr_dsc.block) { target_dsc = (data->blockData[ptr_dsc.block - 1].data + ptr_dsc.address); break; }\
+                target_dsc = (data->globalVarSet + ptr_dsc.address);\
+        }\
+        while(0)
 
 
 
@@ -81,28 +105,28 @@ DEFINE_EXECUTION_BEHAVIOUR(RETURN) {
 
 DEFINE_EXECUTION_BEHAVIOUR(GETINDEX) {
         ptrRef var = *(ptrRef*)data->nodeSet[data->currentNode].access.data;
-        EVAL_STDREF(var);
+        EVAL_PTRREF(var);
 
-        data->globalVarSet[nthp::fixedToInt(var.value)] = nthp::intToFixed(data->currentNode);
+        *target_dsc = nthp::intToFixed(data->currentNode);
 
         return 0;
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(INC) {
         ptrRef var = *(ptrRef*)data->nodeSet[data->currentNode].access.data;
-        EVAL_STDREF(var);
+        EVAL_PTRREF(var);
 
-        data->globalVarSet[nthp::fixedToInt(var.value)] += nthp::intToFixed(1);
+        *target_dsc = *target_dsc + nthp::intToFixed(1);
 
         return 0;
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(DEC) {
         ptrRef var = *(ptrRef*)data->nodeSet[data->currentNode].access.data;
-        EVAL_STDREF(var);
+        EVAL_PTRREF(var);
 
        
-        data->globalVarSet[nthp::fixedToInt(var.value)] -= nthp::intToFixed(1);
+        *target_dsc = *target_dsc - nthp::intToFixed(1);
 
         return 0;
 }
@@ -111,10 +135,10 @@ DEFINE_EXECUTION_BEHAVIOUR(LSHIFT) {
         ptrRef var =  *(ptrRef*)data->nodeSet[data->currentNode].access.data;
         stdRef count = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(ptrRef));
 
-        EVAL_STDREF(var);
+        EVAL_PTRREF(var);
         EVAL_STDREF(count);
         
-        data->globalVarSet[nthp::fixedToInt(var.value)] = ((data->globalVarSet[var.value]) << nthp::fixedToInt(count.value));
+        *target_dsc = ((data->globalVarSet[var.value]) << nthp::fixedToInt(count.value));
 
         return 0;
 }
@@ -124,11 +148,11 @@ DEFINE_EXECUTION_BEHAVIOUR(RSHIFT) {
         stdRef count = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(ptrRef));
         
         
-        EVAL_STDREF(var);
+        EVAL_PTRREF(var);
         EVAL_STDREF(count);
 
         
-        data->globalVarSet[nthp::fixedToInt(var.value)] = ((data->globalVarSet[var.value]) >> nthp::fixedToInt(count.value));
+        *target_dsc = ((data->globalVarSet[var.value]) >> nthp::fixedToInt(count.value));
 
       
 
@@ -144,10 +168,10 @@ DEFINE_EXECUTION_BEHAVIOUR(ADD) {
 
         EVAL_STDREF(a);
         EVAL_STDREF(b);
-        EVAL_STDREF(output);
+        EVAL_PTRREF(output);
 
 
-        data->globalVarSet[nthp::fixedToInt(output.value)] = (a.value + b.value);
+        *target_dsc = (a.value + b.value);
        
 
         return 0;
@@ -161,10 +185,10 @@ DEFINE_EXECUTION_BEHAVIOUR(SUB) {
 
         EVAL_STDREF(a);
         EVAL_STDREF(b);
-        EVAL_STDREF(output)
+        EVAL_PTRREF(output);
 
 
-        data->globalVarSet[nthp::fixedToInt(output.value)] = (a.value - b.value);
+        *target_dsc = (a.value - b.value);
 
        
         return 0;
@@ -178,10 +202,10 @@ DEFINE_EXECUTION_BEHAVIOUR(MUL) {
 
         EVAL_STDREF(a);
         EVAL_STDREF(b);
-        EVAL_STDREF(output);
+        EVAL_PTRREF(output);
 
 
-        data->globalVarSet[nthp::fixedToInt(output.value)] = nthp::f_fixedProduct(a.value, b.value);
+        *target_dsc = nthp::f_fixedProduct(a.value, b.value);
       
         return 0;
 }
@@ -194,9 +218,9 @@ DEFINE_EXECUTION_BEHAVIOUR(DIV) {
 
         EVAL_STDREF(a);
         EVAL_STDREF(b);
-        EVAL_STDREF(output);
+        EVAL_PTRREF(output);
 
-        data->globalVarSet[nthp::fixedToInt(output.value)] = nthp::f_fixedQuotient(a.value, b.value);
+        *target_dsc = nthp::f_fixedQuotient(a.value, b.value);
 
         return 0;
 }
@@ -206,9 +230,9 @@ DEFINE_EXECUTION_BEHAVIOUR(SQRT) {
         ptrRef output = *(ptrRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
 
         EVAL_STDREF(base);
-        EVAL_STDREF(output);
+        EVAL_PTRREF(output);
 
-        data->globalVarSet[nthp::fixedToInt(output.value)] = nthp::f_sqrt(base.value);
+        *target_dsc = nthp::f_sqrt(base.value);
 
         return 0;
 }
@@ -360,10 +384,9 @@ DEFINE_EXECUTION_BEHAVIOUR(SET) {
         ptrRef pointer = *(ptrRef*)(data->nodeSet[data->currentNode].access.data);
         nthp::script::stdVarWidth value = *(nthp::script::stdVarWidth*)(data->nodeSet[data->currentNode].access.data + sizeof(ptrRef));
 
-        EVAL_STDREF(pointer);
+        EVAL_PTRREF(pointer);
 
-
-        data->globalVarSet[nthp::fixedToInt(pointer.value)] = value;
+        *target_dsc = value;
        
         return 0;
 }
@@ -373,13 +396,118 @@ DEFINE_EXECUTION_BEHAVIOUR(COPY) {
         ptrRef from = *(ptrRef*)(data->nodeSet[data->currentNode].access.data);
         ptrRef to = *(ptrRef*)(data->nodeSet[data->currentNode].access.data + sizeof(ptrRef));
 
-        EVAL_STDREF(from);
-        EVAL_STDREF(to);
+        nthp::script::stdVarWidth _to_copy;
+
+        {
+                EVAL_PTRREF(from);
+                _to_copy = *target_dsc; // Important as there is only 1 target_dsc object. Mustn't redefine.
+        }
+        EVAL_PTRREF(to);
 
 
-        data->globalVarSet[nthp::fixedToInt(to.value)] = data->globalVarSet[nthp::fixedToInt(to.value)];
+        *target_dsc = _to_copy;
         return 0;
 }
+
+
+DEFINE_EXECUTION_BEHAVIOUR(ALLOC) {
+        stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+        ptrRef ptrOutput = *(ptrRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+
+        EVAL_STDREF(size);
+        EVAL_PTRREF(ptrOutput);
+
+        // Linear search for open blocks. If none, reallocate block memory and use
+        // last entry.
+        for(size_t i = 0; i < data->blockDataSize; ++i) {
+                if(data->blockData[i].isFree) {
+                        data->blockData[i].data = (nthp::script::stdVarWidth*)malloc(sizeof(nthp::script::stdVarWidth) * nthp::fixedToInt(size.value));
+                        
+              
+                        if(data->blockData[i].data == NULL) {
+                                PRINT_DEBUG_ERROR("Unable to allocate data block at [%p] (%zu).\n",data->blockData + i, i);
+                                return 1;
+                        }
+        
+        
+                        data->blockData[i].size = nthp::fixedToInt(size.value);
+                        data->blockData[i].isFree = false;
+                        *target_dsc = nthp::script::constructPtrDescriptor(i + 1, 0); // Initalize the ptr to the first element in the allocated block.
+                        return 0;
+                }
+        }
+
+        
+
+        ++data->blockDataSize;
+        nthp::script::BlockMemoryEntry* temp = (nthp::script::BlockMemoryEntry*)realloc(data->blockData, sizeof(nthp::script::BlockMemoryEntry) * data->blockDataSize);
+
+        if(temp == NULL) {
+                PRINT_DEBUG_ERROR("Unable to resize data block at [%p].\n", data->blockData);
+                return 1;
+        }
+        data->blockData = temp;
+        
+        data->blockData[data->blockDataSize - 1].data = (nthp::script::stdVarWidth*)malloc(sizeof(nthp::script::stdVarWidth) * nthp::fixedToInt(size.value));
+        data->blockData[data->blockDataSize - 1].size = nthp::fixedToInt(size.value);
+        data->blockData[data->blockDataSize - 1].isFree = false;
+
+
+
+        *target_dsc = nthp::script::constructPtrDescriptor(data->blockDataSize, 0); // Initalize the ptr to the first element in the allocated block.
+        
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(FREE) {
+        ptrRef ptr = *(ptrRef*)(data->nodeSet[data->currentNode].access.data);
+
+        EVAL_PTRREF(ptr);
+        const auto ptr_dsc = nthp::script::parsePtrDescriptor(ptr.value);
+        
+        if(ptr_dsc.block) {
+                free(data->blockData[ptr_dsc.block].data);
+                data->blockData[ptr_dsc.block].isFree = true;
+                data->blockData[ptr_dsc.block].size = 0;
+
+                return 0;
+        }
+
+        PRINT_DEBUG_WARNING("FREE at [%zu] Attempted to free global list.\n", data->currentNode);
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(NEXT) {
+        ptrRef ptr = *(ptrRef*)(data->nodeSet[data->currentNode].access.data);
+        
+        EVAL_PTRREF(ptr);
+
+       
+        *target_dsc = (*target_dsc + 1);
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(PREV) {
+        ptrRef ptr = *(ptrRef*)(data->nodeSet[data->currentNode].access.data);
+        
+        EVAL_PTRREF(ptr);
+
+        *target_dsc = (*target_dsc - 1);
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(INDEX) {
+        ptrRef ptr = *(ptrRef*)(data->nodeSet[data->currentNode].access.data);
+        stdRef addr = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(ptrRef));
+
+        EVAL_PTRREF(ptr);
+        EVAL_STDREF(addr);
+
+        *target_dsc = ((*target_dsc) & nthp::script::internal_constants::blockMemoryBlockMask) | nthp::fixedToInt(addr.value);
+        return 0;
+}
+
 
 DEFINE_EXECUTION_BEHAVIOUR(TEXTURE_DEFINE) {
 	stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
@@ -474,10 +602,10 @@ DEFINE_EXECUTION_BEHAVIOUR(FRAME_SET) {
 
 DEFINE_EXECUTION_BEHAVIOUR(GETGPR) {
         ptrRef into = *(ptrRef*)(data->nodeSet[data->currentNode].access.data);
-        EVAL_STDREF(into);
+        EVAL_PTRREF(into);
 
 
-        data->globalVarSet[nthp::fixedToInt(into.value)] = nthp::intToFixed(data->currentTriggerConfig.GPR);
+        *target_dsc = nthp::intToFixed(data->currentTriggerConfig.GPR);
 
 
         return 0;
@@ -500,10 +628,10 @@ DEFINE_EXECUTION_BEHAVIOUR(SM_READ) {
         ptrRef output = *(ptrRef*)(data->nodeSet[data->currentNode].access.data + sizeof(ptrRef));
 
         EVAL_STDREF(location);
-        EVAL_STDREF(output);
+        EVAL_PTRREF(output);
 
 
-        data->globalVarSet[nthp::fixedToInt(output.value)] = nthp::intToFixed(nthp::script::stageMemory[nthp::fixedToInt(location.value)]);
+        *target_dsc = nthp::intToFixed(nthp::script::stageMemory[nthp::fixedToInt(location.value)]);
 
 
         return 0;
@@ -629,10 +757,10 @@ DEFINE_EXECUTION_BEHAVIOUR(ENT_CHECKCOLLISION) {
         
         EVAL_STDREF(entA);
         EVAL_STDREF(entB);
-        EVAL_STDREF(output);
+        EVAL_PTRREF(output);
 
 
-        data->globalVarSet[nthp::fixedToInt(output.value)] = nthp::intToFixed((int)nthp::entity::checkRectCollision(data->entityBlock[nthp::fixedToInt(entA.value)].getHitbox(), data->entityBlock[nthp::fixedToInt(entB.value)].getHitbox()));
+        *target_dsc = nthp::intToFixed((int)nthp::entity::checkRectCollision(data->entityBlock[nthp::fixedToInt(entA.value)].getHitbox(), data->entityBlock[nthp::fixedToInt(entB.value)].getHitbox()));
 
         return 0;
 }
@@ -1089,10 +1217,10 @@ DEFINE_EXECUTION_BEHAVIOUR(CACHE_READ) {
         ptrRef var = *(ptrRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
 
         EVAL_STDREF(target);
-        EVAL_STDREF(var);
+        EVAL_PTRREF(var);
 
 
-        data->globalVarSet[nthp::fixedToInt(var.value)] = data->cache[nthp::fixedToInt(target.value)];
+        *target_dsc = data->cache[nthp::fixedToInt(target.value)];
 
         return 0;
 }

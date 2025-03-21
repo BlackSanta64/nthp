@@ -1,24 +1,20 @@
 DEPEND #CONTEXT_MAINPROG
 
-VAR testValue
-VAR testA
-VAR testB
-VAR testC
-VAR ptr_getindex_output
 
+PRIVATE ptr_array_1
+PRIVATE ptr_array_2
 
-MACRO set_getindex_target {
-        SET &ptr_getindex_output #ar0
-}
-MACRO getindex {
-        GETINDEX $ptr_getindex_output
-}
+ALLOC 10 &ptr_array_1
+ALLOC 15 &ptr_array_2
 
-@set_getindex_target ( &testB )
-@getindex
+SET $ptr_array_1 200
+NEXT &ptr_array_1
+SET $ptr_array_1 500
+PREV &ptr_array_1
 
-SET &testPrivate 250
-
+PRINT *ptr_array_1
+INDEX &ptr_array_1 1
+PRINT *ptr_array_1
 
 LABEL 1
 

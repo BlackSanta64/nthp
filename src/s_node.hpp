@@ -3,9 +3,7 @@
 
 namespace nthp {
 namespace script {
-
-        constexpr FIXED_TYPE blockMemoryBitAllocation = FIXED_POINT_WIDTH / 2;
-
+       
         // The base unit of script execution. A Node contains an 8bit ID, defining instruction type.
 
         union Node {
@@ -82,6 +80,37 @@ namespace script {
                 size_t size;
                 bool isFree;
         };
+
+
+        namespace internal_constants {
+                constexpr FIXED_TYPE blockMemoryBitAllocation = FIXED_POINT_WIDTH / 2;
+                constexpr FIXED_TYPE blockMemoryDataMask = (1 << blockMemoryBitAllocation) - 1; // Lower-order bit mask
+                constexpr FIXED_TYPE blockMemoryBlockMask = ~(blockMemoryDataMask);             // Higher-order bit mask
+        }
+
+        typedef struct {
+                FIXED_TYPE block        : nthp::script::internal_constants::blockMemoryBitAllocation;
+                FIXED_TYPE address      : nthp::script::internal_constants::blockMemoryBitAllocation;
+        } PtrDescriptor_st;
+
+        static inline FIXED_TYPE constructPtrDescriptor(FIXED_TYPE block, FIXED_TYPE address) {
+                using namespace nthp::script::internal_constants;
+                const FIXED_TYPE result = ((block << blockMemoryBitAllocation) & blockMemoryBlockMask) | (address & blockMemoryDataMask);
+
+                return result;
+        }
+
+        inline PtrDescriptor_st parsePtrDescriptor(FIXED_TYPE bin) {
+                using namespace nthp::script::internal_constants;
+                
+                PtrDescriptor_st ret;
+                ret.block =     (bin >> blockMemoryBitAllocation) & blockMemoryBlockMask;
+                ret.address =   (bin & blockMemoryDataMask);
+
+                return ret;
+        }
+
+
 
         typedef enum __P_REF_FLAGS_BITS {
                 IS_REFERENCE,

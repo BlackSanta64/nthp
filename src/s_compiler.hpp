@@ -124,11 +124,12 @@ namespace nthp {
                         std::vector<nthp::script::Node>                         nodeList;
 
 
-                        inline void addGlobalDef(const char* name) {
+                        inline void addGlobalDef(const char* name, const char* definedInFile) {
                                 GLOBAL_DEF def;
                                 def.relativeIndex = globalList.size();
                                 def.varName = name;
                                 def.isPrivate = false;
+                                def.definedIn = definedInFile;
 
                                 globalList.push_back(def);
                         }
@@ -139,7 +140,7 @@ namespace nthp {
 
                                 def.isPrivate = true;
                                 def.definedIn = definedInFile;
-                                
+
                                 globalList.push_back(def);
                         }
                         
