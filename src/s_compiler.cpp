@@ -245,13 +245,24 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
                 if(expression[0] == '*') {
                         PR_METADATA_SET(ref, nthp::script::flagBits::IS_PTR);
                         PR_METADATA_SET(ref, nthp::script::flagBits::IS_REFERENCE);
+
+                        deref_ptr = true;
                         expression.erase(expression.begin());
                 }
 
                 if(expression[0] == '&') {
                         // A ptr reference sets the P_Ref value to the index of the variable.
-                        ptr_reference = true;
-                        PR_METADATA_SET (ref, nthp::script::flagBits::IS_REFERENCE);
+
+                        // If a dereference prefix '*' is present along with a ptr_descriptor call '&',
+                        // simpify to reference '$'. NOTE: *&var ==== $var. *&var takes longer to evaluate on runtime.
+                        if(deref_ptr) {
+                                PR_METADATA_CLEAR(ref, nthp::script::flagBits::IS_PTR);
+                        }
+                        else {
+                                ptr_reference = true;
+                                PR_METADATA_SET (ref, nthp::script::flagBits::IS_REFERENCE);
+                        }
+                        
                         expression.erase(expression.begin());
                         break;
                 }

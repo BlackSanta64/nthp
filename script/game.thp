@@ -3,18 +3,19 @@ DEPEND #CONTEXT_MAINPROG
 
 PRIVATE ptr_array_1
 PRIVATE ptr_array_2
+PRIVATE result
 
-ALLOC 10 &ptr_array_1
-ALLOC 15 &ptr_array_2
+ALLOC 2 &ptr_array_1
+COPY &ptr_array_1 &ptr_array_2
+NEXT &ptr_array_2
 
-SET $ptr_array_1 200
-NEXT &ptr_array_1
-SET $ptr_array_1 500
-PREV &ptr_array_1
+SET $ptr_array_1 643.673
+SET $ptr_array_2 555.382
 
-PRINT *ptr_array_1
-INDEX &ptr_array_1 1
-PRINT *ptr_array_1
+DIV *ptr_array_1 *ptr_array_2 &result
+
+
+FREE &ptr_array_1
 
 LABEL 1
 
