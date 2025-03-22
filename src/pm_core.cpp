@@ -499,7 +499,7 @@ int headless_runtime() {
                                                 std::cout << "\t[" << i; 
                                                 
                                                 if(printSymbols) { std::cout << ", [>" << symbolData.globalList[i].varName; index = symbolData.globalList[i].relativeIndex; }
-                                                std::cout << "] = [" << nthp::fixedToDouble(currentStage.data.globalVarSet[index]) << "] ]\n";
+                                                std::cout << "] " << currentStage.data.globalVarSet + index << "; = [" << nthp::fixedToDouble(currentStage.data.globalVarSet[index]) << "] ]\n";
                                         }
 
                                         g_access.unlock();
@@ -563,6 +563,84 @@ int headless_runtime() {
                                         PM_PRINT("done.\n");
 
                                         g_access.unlock();
+                                        continue;
+                                }
+                                if(args[0] == "getblock" || args[0] == "gb") {
+                                        if(!suspendExecution) {
+                                                PM_PRINT_ERROR("Process must be suspended (break, b) to access block memory.\n");
+                                                continue;
+                                        }
+
+                                        if(args.size() < 2) {
+                                                g_access.lock();
+
+                                                PM_PRINT("List of Allocated Block data:\nChoose block \"gb [blockID]\"::\n");
+                                                uint8_t b = 0;
+                                                for(size_t i = 0; i < currentStage.data.blockDataSize; ++i) {
+                                                        b = currentStage.data.blockData[i].isFree;
+                                                        PM_PRINT("ID: %zu at [%p]. Contains [%zu] address space (Vacancy:%d).\n", i, currentStage.data.blockData[i].data, currentStage.data.blockData[i].size, b);
+                                                }
+
+                                                g_access.unlock();
+                                                continue;
+                                        }
+                                        size_t index = 0;
+                                        try {
+                                                index = std::stoi(args[1]);
+                                        }
+                                        catch(std::invalid_argument) {
+                                                PM_PRINT_ERROR("Invalid Argument; invalid blockID\n");
+                                                continue;
+                                        }
+
+                                        g_access.lock();
+
+                                        if(index > currentStage.data.blockDataSize) {
+                                                PM_PRINT_ERROR("Invalid Argument; invalid blockID\n");
+                                                g_access.unlock();
+                                                continue;
+                                        }
+                                        PM_PRINT("Reading Memory from block %zu [%p]...\n", index, currentStage.data.blockData + index);
+                                        for(size_t i = 0; i < currentStage.data.blockData[index].size; ++i) {
+                                                PM_PRINT("[%04zX] = %lf,\n", i, nthp::fixedToDouble(currentStage.data.blockData[index].data[i]));
+                                        }
+                                        PM_PRINT("\tRead %zu entries.\n", currentStage.data.blockData[index].size);
+
+                                        g_access.unlock();
+                                        continue;
+
+                                }
+
+                                if(args[0] == "setblock" || args[0] == "sb") {
+                                        if(!suspendExecution) {
+                                                PM_PRINT_ERROR("Process must be suspended (break, b) to access block memory.\n");
+                                                continue;
+                                        }
+
+                                        if(args.size() < 4) {
+                                                PM_PRINT_ERROR("Please specify blockID and address.\n\"sb [blockID] [address] [newValue]\"\n");
+                                                continue;
+                                        }
+
+                                        int block = std::stoi(args[1]);
+                                        int address = std::stoi(args[2]);
+                                        nthp::script::stdVarWidth value = nthp::doubleToFixed(std::stod(args[3]));
+
+                                        g_access.lock();
+
+                                        if(block < currentStage.data.blockDataSize) {
+                                                if(address < currentStage.data.blockData[block].size) {
+                                                        currentStage.data.blockData[block].data[address] = value;
+                                                        PM_PRINT("Write success; ID: %d at [%p], address %d; = %lf\n",block, currentStage.data.blockData + block, address, nthp::fixedToDouble(value));
+                                                        
+                                                        g_access.unlock();
+                                                        continue;
+                                                }
+                                        }
+
+                                        PM_PRINT_ERROR("Failure; ID or address out of bounds.\n");
+                                        g_access.unlock();
+
                                         continue;
                                 }
 

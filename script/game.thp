@@ -5,17 +5,24 @@ PRIVATE ptr_array_1
 PRIVATE ptr_array_2
 PRIVATE result
 
+
 ALLOC 2 &ptr_array_1
 COPY &ptr_array_1 &ptr_array_2
 NEXT &ptr_array_2
 
-SET $ptr_array_1 643.673
-SET $ptr_array_2 555.382
-
-DIV *ptr_array_1 *ptr_array_2 &result
+/ ptr_array_2 now points to the second element in the allocated
+block. /
 
 
-FREE &ptr_array_1
+SET $ptr_array_1 64.673
+SET $ptr_array_2 55.382
+
+        PRINT *ptr_array_1
+        PRINT *ptr_array_2
+
+
+MUL *ptr_array_1 *ptr_array_2 &result
+
 
 LABEL 1
 

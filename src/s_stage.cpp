@@ -257,6 +257,13 @@ void nthp::script::stage::Stage::clean() {
         if(data.frameBlockSize > 0) delete[] data.frameBlock;
         if(data.globalMemBudget > 0) delete[] data.globalVarSet;
         if(data.actionListSize > 0) delete[] data.actionList;
+        if(data.blockDataSize > 0) {
+                for(size_t i = 0; i < data.blockDataSize; ++i) {
+                        if(!(data.blockData[i].isFree)) free(data.blockData[i].data);
+                }
+
+                free(data.blockData);
+        }
 
         memset(&data, 0, sizeof(data));
 

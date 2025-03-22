@@ -8,7 +8,6 @@ nthp::texture::Palette nthp::script::activePalette;
 
 
 inline void ____eval_std(stdRef& ref, nthp::script::Script::ScriptDataSet* data) {
-        do {
                 if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {
                         ref.value = data->globalVarSet[nthp::fixedToInt(ref.value)];
 
@@ -19,15 +18,15 @@ inline void ____eval_std(stdRef& ref, nthp::script::Script::ScriptDataSet* data)
                                 const auto ptr = nthp::script::parsePtrDescriptor(ref.value);
                                 if(ptr.block) {
                                         ref.value = data->blockData[ptr.block - 1].data[ptr.address];
-                                        break;
+                                        return;
                                 }
-                                ref.value = data->globalVarSet[ptr.address];
-                        }               
+                        ref.value = data->globalVarSet[ptr.address];
                 }
-        } while(0);
-
-        if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_NEGATED)) ref.value = -(ref.value);
+                        
+                if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_NEGATED)) ref.value = -(ref.value);
+        }
 }
+        
 
 inline void ____eval_ptr(ptrRef& ref, nthp::script::Script::ScriptDataSet* data) {
 
@@ -470,9 +469,9 @@ DEFINE_EXECUTION_BEHAVIOUR(FREE) {
         const auto ptr_dsc = nthp::script::parsePtrDescriptor(ptr.value);
         
         if(ptr_dsc.block) {
-                free(data->blockData[ptr_dsc.block].data);
-                data->blockData[ptr_dsc.block].isFree = true;
-                data->blockData[ptr_dsc.block].size = 0;
+                free(data->blockData[ptr_dsc.block - 1].data);
+                data->blockData[ptr_dsc.block - 1].isFree = true;
+                data->blockData[ptr_dsc.block - 1].size = 0;
 
                 return 0;
         }

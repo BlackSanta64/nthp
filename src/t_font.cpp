@@ -13,7 +13,7 @@ int nthp::text::Font::importFont(const char* filename) {
         file.open(filename, std::ios::in | std::ios::binary);
 
         if(file.fail()) {
-                PRINT_DEBUG_ERROR("Unable to open font file [%s]; File inaccessible.\n", file);
+                PRINT_DEBUG_ERROR("Unable to open font file [%s]; File inaccessible.\n", filename);
                 return 1;
         }
 
@@ -29,12 +29,12 @@ int nthp::text::Font::exportFont(const char* filename) {
         file.open(filename, std::ios::out | std::ios::binary);
 
         if(file.fail()) {
-                PRINT_DEBUG_ERROR("Unable to open font file [%s]; Permission denied.\n");
+                PRINT_DEBUG_ERROR("Unable to open font file [%s]; Permission denied.\n", filename);
                 return 1;
         }
 
         file.write((char*)&fontData, nthp::text::fontByteLength);
         file.close();
         
-        return 1;
+        return 0;
 }

@@ -78,8 +78,9 @@ namespace script {
         struct BlockMemoryEntry {
                 nthp::script::stdVarWidth* data;
                 size_t size;
-                bool isFree;
+                char isFree;
         };
+
 
 
         namespace internal_constants {
@@ -104,7 +105,7 @@ namespace script {
                 using namespace nthp::script::internal_constants;
                 
                 PtrDescriptor_st ret;
-                ret.block =     (bin >> blockMemoryBitAllocation) & blockMemoryBlockMask;
+                ret.block =     (bin >> blockMemoryBitAllocation);
                 ret.address =   (bin & blockMemoryDataMask);
 
                 return ret;

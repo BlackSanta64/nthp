@@ -162,7 +162,7 @@ gtexture_d.obj: $(SRCDIR)gtexture.cpp $(SRCDIR)gtexture.hpp
 s_stage_d.obj: $(SRCDIR)s_stage.cpp $(SRCDIR)s_stage.hpp
 	$(CC) -c $(SRCDIR)s_stage.cpp -Fo"s_stage_d.obj" $(DEBUG_CFLAGS)
 
-t_font.obj: $(SRCDIR)t_font.hpp $(SRCDIR)t_font.cpp
+t_font_d.obj: $(SRCDIR)t_font.hpp $(SRCDIR)t_font.cpp
 	$(CC) -c $(SRCDIR)t_font.cpp -Fo"t_font_d.obj" $(DEBUG_CFLAGS)
 
 clean:
