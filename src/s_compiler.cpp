@@ -2,7 +2,11 @@
         #ifndef DEBUG
 	        #define DEBUG
         #endif
+
+        #define SUPPRESS_DEBUG_OUTPUT
 #endif
+
+
 
 #include "s_compiler.hpp"
 using namespace nthp::script::instructions;

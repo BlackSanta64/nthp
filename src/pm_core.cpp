@@ -620,12 +620,12 @@ int headless_runtime() {
                                         }
 
                                         if(args.size() < 4) {
-                                                PM_PRINT_ERROR("Please specify blockID and address.\n\"sb [blockID] [address] [newValue]\"\n");
+                                                PM_PRINT_ERROR("Please specify blockID and address.\n\"sb [blockID] [address] [newValue]\" \n");
                                                 continue;
                                         }
 
-                                        int block = std::stoi(args[1]);
-                                        int address = std::stoi(args[2]);
+                                        unsigned int block = std::stoul(args[1], NULL, 0);
+                                        unsigned int address = std::stoul(args[2], NULL, 0);
                                         nthp::script::stdVarWidth value = nthp::doubleToFixed(std::stod(args[3]));
 
                                         g_access.lock();

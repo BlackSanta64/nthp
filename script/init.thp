@@ -10,6 +10,7 @@ MACRO initFlags {
 CORE_INIT @initFlags
 
 SET_ACTIVE_PALETTE resource/genericPalette.pal
+CORE_SETMAXFPS 60
 
 PRIVATE testPrivate
 SET &testPrivate 100
