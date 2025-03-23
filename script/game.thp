@@ -6,13 +6,9 @@ PRIVATE ptr_array_2
 PRIVATE result
 
 
-ALLOC 2 &ptr_array_1
-COPY &ptr_array_1 &ptr_array_2
-NEXT &ptr_array_2
-
-/ ptr_array_2 now points to the second element in the allocated
-block. /
-
+ALLOC 50 &ptr_array_1
+SET &ptr_array_2 $ptr_array_1
+INDEX &ptr_array_2 42
 
 SET $ptr_array_1 64.67
 SET $ptr_array_2 55.38

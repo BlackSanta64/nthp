@@ -856,7 +856,10 @@ DEFINE_COMPILATION_BEHAVIOUR(SET) {
 
 
         ptrRef* target = (ptrRef*)(nodeList[currentNode].access.data);
-        stdRef* value = (stdRef*)(nodeList[currentNode].access.data + sizeof(ptrRef));
+        stdRef* val = (stdRef*)(nodeList[currentNode].access.data + sizeof(ptrRef));
+
+        *target = ptr_target;
+        *val = value;
 
 
         PRINT_NODEDATA();

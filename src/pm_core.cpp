@@ -94,6 +94,7 @@ int nthp::debuggerBehaviour(std::string target, FILE* debugOutputTarget) {
                         else {
                                 debuggingActiveProcess = false;
                                 suspendExecution = false;
+                                nthp::script::debug::suspendExecution = false;
                                 break;
                         }
                 }
@@ -102,6 +103,7 @@ int nthp::debuggerBehaviour(std::string target, FILE* debugOutputTarget) {
 
         currentStage.clean();
         nthp::core.cleanup();
+
 
         g_access.unlock();
         
