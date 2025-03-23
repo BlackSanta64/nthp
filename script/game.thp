@@ -14,8 +14,8 @@ NEXT &ptr_array_2
 block. /
 
 
-SET $ptr_array_1 64.673
-SET $ptr_array_2 55.382
+SET $ptr_array_1 64.67
+SET $ptr_array_2 55.38
 
         PRINT *ptr_array_1
         PRINT *ptr_array_2

@@ -385,30 +385,13 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_LSTE) {
 
 DEFINE_EXECUTION_BEHAVIOUR(SET) {
         ptrRef pointer = *(ptrRef*)(data->nodeSet[data->currentNode].access.data);
-        nthp::script::stdVarWidth value = *(nthp::script::stdVarWidth*)(data->nodeSet[data->currentNode].access.data + sizeof(ptrRef));
+        stdRef value = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(ptrRef));
 
         EVAL_PTRREF(pointer);
+        EVAL_STDREF(value);
 
-        *target_dsc = value;
+        *target_dsc = value.value;
        
-        return 0;
-}
-
-
-DEFINE_EXECUTION_BEHAVIOUR(COPY) {
-        ptrRef from = *(ptrRef*)(data->nodeSet[data->currentNode].access.data);
-        ptrRef to = *(ptrRef*)(data->nodeSet[data->currentNode].access.data + sizeof(ptrRef));
-
-        nthp::script::stdVarWidth _to_copy;
-
-        {
-                EVAL_PTRREF(from);
-                _to_copy = *target_dsc; // Important as there is only 1 target_dsc object. Mustn't redefine.
-        }
-        EVAL_PTRREF(to);
-
-
-        *target_dsc = _to_copy;
         return 0;
 }
 

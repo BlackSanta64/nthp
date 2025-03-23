@@ -62,7 +62,6 @@ namespace ID {
                 SKIP,\
                 SKIP_END,\
                 SET,\
-                COPY,\
                 ALLOC,\
                 FREE,\
                 NEXT,\
@@ -178,8 +177,7 @@ namespace Size {
                 SKIP = sizeof(uint32_t),
                 SKIP_END = 0,
 
-                SET = sizeof(ptrRef) + sizeof(nthp::script::stdVarWidth),
-                COPY = sizeof(ptrRef) + sizeof(ptrRef),
+                SET = sizeof(ptrRef) + sizeof(stdRef),
                 ALLOC = sizeof(stdRef) + sizeof(ptrRef),
                 FREE = sizeof(ptrRef),
                 NEXT = sizeof(ptrRef),

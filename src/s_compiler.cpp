@@ -844,74 +844,26 @@ DEFINE_COMPILATION_BEHAVIOUR(IF) {
 
 
 DEFINE_COMPILATION_BEHAVIOUR(SET) {
-
-        // SET will be overwritten by COPY if the compiler reads a reference as the copy value.
-        // This means you pretty much don't have to use COPY explicity. Ever. SET can act as both
-        // a SET instruction and COPY.
-
-        EVAL_SYMBOL(); // pointer
-        auto ref = EVAL_PREF();
-        CHECK_REF(ref);
-
-
-        EVAL_SYMBOL(); // value
-        auto v = EVAL_PREF();
-        CHECK_REF(v);
-
-        if(PR_METADATA_GET(v, nthp::script::flagBits::IS_REFERENCE)) {
-                PRINT_COMPILER_WARNING("SET instruction VALUE as reference; overwriting instruction to COPY.\n");
-
-
-                ADD_NODE(COPY);
-                ptrRef* value = (ptrRef*)(nodeList[currentNode].access.data);
-                ptrRef* target = (ptrRef*)(nodeList[currentNode].access.data + sizeof(ptrRef));
-                
-
-                *target = ref;
-                *value = v;
-
-                PRINT_NODEDATA();
-                return 0;
-        }
-
-        // No COPY override.
         ADD_NODE(SET);
 
-        ptrRef* pointer = (ptrRef*)(nodeList[currentNode].access.data);
-        nthp::script::stdVarWidth* value = (nthp::script::stdVarWidth*)(nodeList[currentNode].access.data + sizeof(ptrRef));
+        EVAL_SYMBOL();
+        auto ptr_target = EVAL_PREF();
+        CHECK_REF(ptr_target);
 
-        nthp::script::stdVarWidth static_value = v.value; // This is assuming the value is a constant. Unless EVAL_PREF fails, this shouldn't be an issue.
+        EVAL_SYMBOL();
+        auto value = EVAL_PREF();
+        CHECK_REF(value);
 
 
-        *pointer = ref;
-        *value = static_value;
+        ptrRef* target = (ptrRef*)(nodeList[currentNode].access.data);
+        stdRef* value = (stdRef*)(nodeList[currentNode].access.data + sizeof(ptrRef));
+
 
         PRINT_NODEDATA();
         return 0;
 }
 
 
-
-DEFINE_COMPILATION_BEHAVIOUR(COPY) {
-        ADD_NODE(COPY);
-
-        EVAL_SYMBOL();
-        auto sfrom = EVAL_PREF();
-        CHECK_REF(sfrom);
-
-        EVAL_SYMBOL();
-        auto sto = EVAL_PREF();
-        CHECK_REF(sto);
-
-
-        ptrRef* from = (ptrRef*)(nodeList[currentNode].access.data);
-        ptrRef* to = (ptrRef*)(nodeList[currentNode].access.data + sizeof(ptrRef));        
-
-        *to = sto;
-        *from = sfrom;
-        PRINT_NODEDATA();
-        return 0;
-}
 
 DEFINE_COMPILATION_BEHAVIOUR(ALLOC) {
         ADD_NODE(ALLOC);
@@ -2534,7 +2486,6 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                 CHECK_COMP(SKIP_END);
 
                 CHECK_COMP(SET);
-                CHECK_COMP(COPY);
                 CHECK_COMP(ALLOC);
                 CHECK_COMP(FREE);
                 CHECK_COMP(NEXT);
