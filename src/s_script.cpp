@@ -28,9 +28,6 @@ inline void ____eval_std(stdRef& ref, nthp::script::Script::ScriptDataSet* data)
 }
         
 
-inline void ____eval_ptr(ptrRef& ref, nthp::script::Script::ScriptDataSet* data) {
-
-}
 
 #define EVAL_STDREF(ref)        ____eval_std(ref, data)
 
@@ -44,6 +41,22 @@ inline void ____eval_ptr(ptrRef& ref, nthp::script::Script::ScriptDataSet* data)
         }\
         while(0)
 
+inline char* ____eval_str(ptrRef& ref, nthp::script::Script::ScriptDataSet* data) {
+        if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_NODE_STRING_PTR)) {
+                return data->nodeSet[nthp::fixedToInt(ref.value)].access.data;
+        }
+        EVAL_STDREF(ref);
+
+        const auto ptr_dsc = nthp::script::parsePtrDescriptor(ref.value);
+        if(ptr_dsc.block) { return (char*)(data->blockData[ptr_dsc.block - 1].data + ptr_dsc.address); }
+        
+        return (char*)(data->globalVarSet + ptr_dsc.address);
+}
+
+
+
+
+#define EVAL_STRREF(ref)        ____eval_str(ref, data)
 
 
 #ifdef DEBUG
@@ -395,19 +408,12 @@ DEFINE_EXECUTION_BEHAVIOUR(SET) {
         return 0;
 }
 
-
-DEFINE_EXECUTION_BEHAVIOUR(ALLOC) {
-        stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
-        ptrRef ptrOutput = *(ptrRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
-
-        EVAL_STDREF(size);
-        EVAL_PTRREF(ptrOutput);
-
-        // Linear search for open blocks. If none, reallocate block memory and use
+int nthp_internal_alloc(nthp::script::Script::ScriptDataSet* data, nthp::script::stdVarWidth* target_dsc, nthp::script::stdVarWidth size) {
+                // Linear search for open blocks. If none, reallocate block memory and use
         // last entry.
         for(size_t i = 0; i < data->blockDataSize; ++i) {
                 if(data->blockData[i].isFree) {
-                        data->blockData[i].data = (nthp::script::stdVarWidth*)malloc(sizeof(nthp::script::stdVarWidth) * nthp::fixedToInt(size.value));
+                        data->blockData[i].data = (nthp::script::stdVarWidth*)malloc(sizeof(nthp::script::stdVarWidth) * nthp::fixedToInt(size));
                         
               
                         if(data->blockData[i].data == NULL) {
@@ -416,7 +422,7 @@ DEFINE_EXECUTION_BEHAVIOUR(ALLOC) {
                         }
         
         
-                        data->blockData[i].size = nthp::fixedToInt(size.value);
+                        data->blockData[i].size = nthp::fixedToInt(size);
                         data->blockData[i].isFree = false;
                         *target_dsc = nthp::script::constructPtrDescriptor(i + 1, 0); // Initalize the ptr to the first element in the allocated block.
                         return 0;
@@ -434,13 +440,23 @@ DEFINE_EXECUTION_BEHAVIOUR(ALLOC) {
         }
         data->blockData = temp;
         
-        data->blockData[data->blockDataSize - 1].data = (nthp::script::stdVarWidth*)malloc(sizeof(nthp::script::stdVarWidth) * nthp::fixedToInt(size.value));
-        data->blockData[data->blockDataSize - 1].size = nthp::fixedToInt(size.value);
+        data->blockData[data->blockDataSize - 1].data = (nthp::script::stdVarWidth*)malloc(sizeof(nthp::script::stdVarWidth) * nthp::fixedToInt(size));
+        data->blockData[data->blockDataSize - 1].size = nthp::fixedToInt(size);
         data->blockData[data->blockDataSize - 1].isFree = false;
 
-
-
         *target_dsc = nthp::script::constructPtrDescriptor(data->blockDataSize, 0); // Initalize the ptr to the first element in the allocated block.
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(ALLOC) {
+        stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+        ptrRef ptrOutput = *(ptrRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+
+        EVAL_STDREF(size);
+        EVAL_PTRREF(ptrOutput);
+
+        nthp_internal_alloc(data, target_dsc, size.value);
         
         return 0;
 }
@@ -515,23 +531,28 @@ DEFINE_EXECUTION_BEHAVIOUR(TEXTURE_CLEAR) {
 
 DEFINE_EXECUTION_BEHAVIOUR(TEXTURE_LOAD) {
 	stdRef output = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
-	const char* file = (data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+	strRef file = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
 
         EVAL_STDREF(output);
+        auto filename = EVAL_STRREF(file);
 
 	if(nthp::fixedToInt(output.value) > data->textureBlockSize) {
 		PRINT_DEBUG_ERROR("Output index of TEXTURE_LOAD instuction out of bounds.\n");		
 		return 1;
 	}
 	
-	data->textureBlock[nthp::fixedToInt(output.value)].autoLoadTextureFile(file, &nthp::script::activePalette, nthp::core.getRenderer());
+	data->textureBlock[nthp::fixedToInt(output.value)].autoLoadTextureFile(filename, &nthp::script::activePalette, nthp::core.getRenderer());
 
 	return 0;
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(SET_ACTIVE_PALETTE) {
+        strRef paletteFile = *(strRef*)(data->nodeSet[data->currentNode].access.data);
 
-        nthp::script::activePalette.importPaletteFromFile(data->nodeSet[data->currentNode].access.data);
+        auto filename = EVAL_STRREF(paletteFile);
+        printf("[%s]\n", filename);
+
+        nthp::script::activePalette.importPaletteFromFile(filename);
 
         return 0;
 }
@@ -763,6 +784,7 @@ DEFINE_EXECUTION_BEHAVIOUR(CORE_INIT) {
         stdRef cx = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 4));
         stdRef cy = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 5));
         uint8_t flags = *(uint8_t*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 6));
+        strRef title = *(strRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 6) + sizeof(uint8_t));
 
         EVAL_STDREF(px);
         EVAL_STDREF(py);
@@ -770,10 +792,10 @@ DEFINE_EXECUTION_BEHAVIOUR(CORE_INIT) {
         EVAL_STDREF(ty);
         EVAL_STDREF(cx);
         EVAL_STDREF(cy);
+        auto titleString = EVAL_STRREF(title);
 
-        const char* title = (char*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 6) + sizeof(uint8_t));
 
-        nthp::core.init(nthp::RenderRuleSet(nthp::fixedToInt(px.value), nthp::fixedToInt(py.value), tx.value, ty.value, nthp::vectFixed(cx.value, cy.value)), title, (flags >> NTHP_CORE_INIT_FULLSCREEN) & 1, (flags >> NTHP_CORE_INIT_SOFTWARE_RENDERING) & 1);
+        nthp::core.init(nthp::RenderRuleSet(nthp::fixedToInt(px.value), nthp::fixedToInt(py.value), tx.value, ty.value, nthp::vectFixed(cx.value, cy.value)), titleString, (flags >> NTHP_CORE_INIT_FULLSCREEN) & 1, (flags >> NTHP_CORE_INIT_SOFTWARE_RENDERING) & 1);
 
 
         return 0;
@@ -907,9 +929,21 @@ DEFINE_EXECUTION_BEHAVIOUR(ACTION_CLEAR) {
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(STAGE_LOAD) {
+        strRef newStage = *(strRef*)(data->nodeSet[data->currentNode].access.data);
+
+        auto filename = EVAL_STRREF(newStage);
+
         data->changeStage = true;
         // Copies new stage name into stage memory. 
-        memcpy(nthp::script::stageMemory, data->nodeSet[data->currentNode].access.data, data->nodeSet[data->currentNode].access.size);
+        int size = 0;
+        for(uint8_t i = 0; i < 255; ++i) {
+                if(filename[i] == '\000') {
+                        size = i;
+                        break;
+                }
+        }
+
+        memcpy(nthp::script::stageMemory, filename, size);
         data->isSuspended = true;
 
         return 0;
@@ -1057,21 +1091,23 @@ DEFINE_EXECUTION_BEHAVIOUR(MUSIC_CLEAR) {
 
 DEFINE_EXECUTION_BEHAVIOUR(MUSIC_LOAD) {
         stdRef objectIndex = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
-        const char* filename = (data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+        strRef filename = *(strRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
 
         EVAL_STDREF(objectIndex);
+        auto fileString = EVAL_STRREF(filename);
 
-        int ret = nthp::core.audioSystem.music[nthp::fixedToInt(objectIndex.value)].load(filename);
+        int ret = nthp::core.audioSystem.music[nthp::fixedToInt(objectIndex.value)].load(fileString);
         return ret;
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(SOUND_LOAD) {
         stdRef objectIndex = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
-        const char* filename = (data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+        strRef filename = *(strRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
 
         EVAL_STDREF(objectIndex);
+        auto fileString = EVAL_STRREF(filename);
 
-        int ret = nthp::core.audioSystem.soundEffects[nthp::fixedToInt(objectIndex.value)].load(filename);
+        int ret = nthp::core.audioSystem.soundEffects[nthp::fixedToInt(objectIndex.value)].load(fileString);
         return ret;
 }
 
@@ -1116,116 +1152,69 @@ DEFINE_EXECUTION_BEHAVIOUR(MUSIC_RESUME) {
         return 0;
 }
 
+DEFINE_EXECUTION_BEHAVIOUR(DFILE_READ) {
+        ptrRef target = *(ptrRef*)(data->nodeSet[data->currentNode].access.data);
+        strRef filename = *(strRef*)(data->nodeSet[data->currentNode].access.data + sizeof(ptrRef));
 
-DEFINE_EXECUTION_BEHAVIOUR(CACHE_DEFINE) {
-        stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
-
-        EVAL_STDREF(size);
-
-        data->cache = (nthp::script::stdVarWidth*)(malloc(nthp::fixedToInt(size.value) * sizeof(nthp::script::stdVarWidth)));
-        if(data->cache == NULL) {
-                PRINT_DEBUG_ERROR("Failed to allocate cache; size = [%u].\n", nthp::fixedToInt(size.value));
-                return 1;
-        }
-
-        PRINT_DEBUG("allocated [%zu] bytes.\n", nthp::fixedToInt(size.value) * sizeof(nthp::script::stdVarWidth));
-        data->cacheSize = nthp::fixedToInt(size.value);
-        memset(data->cache, 0, nthp::fixedToInt(size.value) * sizeof(nthp::script::stdVarWidth));
-
-        return 0;
-}
-
-
-DEFINE_EXECUTION_BEHAVIOUR(CACHE_RESIZE) {
-        stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
-
-        EVAL_STDREF(size);
-
-        nthp::script::stdVarWidth* temp = (nthp::script::stdVarWidth*)(realloc(data->cache, nthp::fixedToInt(size.value) * sizeof(nthp::script::stdVarWidth)));
-        if(temp == NULL) {
-                PRINT_DEBUG_ERROR("Failed to reallocate cache; size = [%u].\n", size.value);
-                return 1;
-        }
-
-        data->cache = temp;
-        data->cacheSize = nthp::fixedToInt(size.value);
-
-        return 0;
-}
-
-
-DEFINE_EXECUTION_BEHAVIOUR(CACHE_OPEN) {
-        const char* filename = data->nodeSet[data->currentNode].access.data;
+        EVAL_PTRREF(target);
+        auto fileString = EVAL_STRREF(filename);
 
         std::fstream file;
-        file.open(filename, std::ios::binary | std::ios::in);
+        file.open(fileString, std::ios::in | std::ios::binary);
         if(file.fail()) {
-                PRINT_DEBUG_ERROR("Unable to open cache file [%s].\n", filename);
+                PRINT_DEBUG_ERROR("Unable to open file [%s]; File inaccessible.\n", fileString);
+                return 1;
+        }
+        nthp::script::stdVarWidth fileSize = 0;
+        file.read((char*)&fileSize, sizeof(nthp::script::stdVarWidth));
+
+        size_t byteSize = nthp::fixedToInt(fileSize) * sizeof(nthp::script::stdVarWidth);
+
+        nthp_internal_alloc(data, target_dsc, fileSize);
+        auto ptr = nthp::script::parsePtrDescriptor(*target_dsc);
+        if(ptr.block) {
+                file.read((char*)data->blockData[ptr.block - 1].data, fileSize);
+                file.close();
+
+                return 0;
+        }
+        else {
+                PRINT_DEBUG_ERROR("Cannot use DFILE_READ to input external data into global list.\n");
                 return 1;
         }
 
-        nthp::script::stdVarWidth fileRead;
-        file.read((char*)&fileRead, sizeof(fileRead));
-
-        data->cache = (nthp::script::stdVarWidth*)(malloc(nthp::fixedToInt(fileRead) * sizeof(nthp::script::stdVarWidth)));
-        data->cacheSize = nthp::fixedToInt(fileRead);
-        file.read((char*)data->cache, nthp::fixedToInt(fileRead) * sizeof(nthp::script::stdVarWidth));
-        file.close();
-
-
         return 0;
 }
 
-DEFINE_EXECUTION_BEHAVIOUR(CACHE_CLEAR) {
-        if(data->cacheSize > 0) {
-                free(data->cache);
-                data->cacheSize = 0;
-        }
-
-        return 0;
-}
-
-DEFINE_EXECUTION_BEHAVIOUR(CACHE_WRITE) {
-        stdRef target = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
-        stdRef value = *(stdRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
-
-        EVAL_STDREF(target);
-        EVAL_STDREF(value);
+DEFINE_EXECUTION_BEHAVIOUR(DFILE_WRITE) {
+        ptrRef target = *(ptrRef*)(data->nodeSet[data->currentNode].access.data);
+        strRef filename = *(strRef*)(data->nodeSet[data->currentNode].access.data + sizeof(ptrRef));
 
 
-        data->cache[nthp::fixedToInt(target.value)] = value.value;
-        return 0;
-}
+        EVAL_PTRREF(target); // EVAL_PTRREF does NOT change the evaluated ptr_descriptor in 'target.value'; it just creates target_dsc after evaluating it.
+        const auto ptr = nthp::script::parsePtrDescriptor(target.value);
 
 
-DEFINE_EXECUTION_BEHAVIOUR(CACHE_READ) {
-        stdRef target = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
-        ptrRef var = *(ptrRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+        auto fileString = EVAL_STRREF(filename);
 
-        EVAL_STDREF(target);
-        EVAL_PTRREF(var);
-
-
-        *target_dsc = data->cache[nthp::fixedToInt(target.value)];
-
-        return 0;
-}
-
-DEFINE_EXECUTION_BEHAVIOUR(CACHE_SAVE) {
-        const char* filename = (data->nodeSet[data->currentNode].access.data);
 
         std::fstream file;
-        file.open(filename, std::ios::binary | std::ios::out);
+        file.open(fileString, std::ios::out | std::ios::binary);
         if(file.fail()) {
-                PRINT_DEBUG_ERROR("Unable to open file target [%s].\n", filename);
+                PRINT_DEBUG_ERROR("Unable to open file [%s] for writing; File not accessible.\n", fileString);
                 return 1;
         }
 
-        const nthp::script::stdVarWidth size = nthp::intToFixed(data->cacheSize);
+
+        nthp::script::stdVarWidth size = nthp::intToFixed(data->blockData[ptr.block - 1].size);
+        printf("size = %u\n", nthp::fixedToInt(size));
         file.write((char*)&size, sizeof(nthp::script::stdVarWidth));
-        file.write((char*)data->cache, sizeof(nthp::script::stdVarWidth) * data->cacheSize);
+
+        size_t byteSize = data->blockData[ptr.block - 1].size * sizeof(nthp::script::stdVarWidth);
+        file.write((char*)target_dsc, byteSize);
 
         file.close();
+
         return 0;
 }
 
@@ -1239,6 +1228,11 @@ DEFINE_EXECUTION_BEHAVIOUR(PRINT) {
         GENERIC_PRINT("%lf\n", nthp::fixedToDouble(output.value));
 #endif
 
+        return 0;
+}
+
+
+DEFINE_EXECUTION_BEHAVIOUR(STRING) {
         return 0;
 }
 

@@ -64,6 +64,11 @@ namespace nthp {
                         uint32_t ID;
                 };
 
+                struct STR_DEF {
+                        uint32_t objectPosition;
+                        std::string name;
+                };
+
 
                 inline nthp::script::Node* getCompiledNodes()   { return compiledNodes; }
                 inline const size_t getNodeSize()               { return nodeBlockSize; }
@@ -83,7 +88,8 @@ namespace nthp {
 
                 std::vector<nthp::script::CompilerInstance::CONST_DEF>  constantList;
                 std::vector<nthp::script::CompilerInstance::MACRO_DEF>  macroList;
-                std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>    globalList;  
+                std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>    globalList;
+                std::vector<nthp::script::CompilerInstance::STR_DEF> stringList;
 
                 static inline void undefConstant(const char* constName, std::vector<nthp::script::CompilerInstance::CONST_DEF>& constantList) {
                         size_t i = 0;

@@ -1,9 +1,21 @@
 DEPEND #CONTEXT_MAINPROG
-CALL script/testBranch.b
 
 PRIVATE testValuePrivate
+PRIVATE fileImport
 
 SET &testValuePrivate 100
+ALLOC 10 &testValuePrivate
+SET $testValuePrivate 800.554
+
+STRING dataFile "data.cache"
+
+DFILE_WRITE $testValuePrivate ~dataFile
+
+
+DFILE_READ &fileImport ~dataFile
+
+
+FREE $fileImport
 
 
 LABEL 1

@@ -12,6 +12,9 @@
 using namespace nthp::script::instructions;
 
 
+
+
+
 // I love this
 #define DEFINE_COMPILATION_BEHAVIOUR(instruction) int instruction (std::vector<nthp::script::Node>& nodeList,\
                                                                         std::fstream& file,\
@@ -22,6 +25,7 @@ using namespace nthp::script::instructions;
                                                                         std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>& globalList,\
                                                                         std::vector<nthp::script::CompilerInstance::LABEL_DEF>& labelList,\
                                                                         std::vector<nthp::script::CompilerInstance::GOTO_DEF>& gotoList,\
+                                                                        std::vector<nthp::script::CompilerInstance::STR_DEF>& strList,\
                                                                         std::vector<size_t>& ifList,\
                                                                         std::vector<size_t>& endList,\
                                                                         std::vector<size_t>& skipList,\
@@ -235,7 +239,7 @@ int EvaluateSymbol(std::fstream& file, std::string& expression, std::vector<nthp
 
 // Substitues a VAR reference or parses numeral references (for compatibility).
 // Returning REF without the IS_VALID bit set assumes a failure.
-nthp::script::instructions::stdRef EvaluateReference(std::string expression, std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>& globalList, std::string& currentFile, bool buildSystemContext) {
+nthp::script::instructions::stdRef EvaluateReference(std::string expression, std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>& globalList, std::vector<nthp::script::CompilerInstance::STR_DEF>& strList, std::string& currentFile, bool buildSystemContext) {
         stdRef ref;
         ref.metadata = 0;
         ref.value = 0;
@@ -246,6 +250,27 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
         // Prefixes are evaluated IN ORDER of ; ptr_dereference (*), ptr_reference (&), Negation (-), Globality (> or $)
         // NOTE: reference (&) PTR prefixes can evaluated as constants, dereferences (*) cannot.
         do {
+                if(expression[0] == '~') {
+
+                        expression.erase(expression.begin());
+                        // Check for the string name in the node string list. If none,
+                        // assume it is a ptr_descriptor reference to allocated memory storing a string.
+                        for(size_t i = 0; i < strList.size(); ++i) {
+                                if(expression == strList[i].name) {
+
+                                        ref.value = nthp::intToFixed(strList[i].objectPosition);
+                                        ref.metadata = 0; // Reset flags to ensure only STRING_PTR is set.
+                                        PR_METADATA_SET(ref, nthp::script::flagBits::IS_NODE_STRING_PTR);
+                                        PR_METADATA_SET(ref, nthp::script::flagBits::IS_VALID);
+
+                                        return ref;
+                                }
+                        }
+
+                        // Assume it is a reference then, if no STRING node is matched.
+                        
+                }
+
                 if(expression[0] == '*') {
                         PR_METADATA_SET(ref, nthp::script::flagBits::IS_PTR);
                         PR_METADATA_SET(ref, nthp::script::flagBits::IS_REFERENCE);
@@ -281,6 +306,8 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
                         expression.erase(expression.begin());
 
                 }
+
+                
 
                 // No need for 2 compares. Only reaches this point if dereference character is present ($ OR > checked prior).
                 if(expression[0] == '$') {
@@ -358,7 +385,7 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
 // Generic conviencence macro to evaluate the next symbol in the stream. Automatically pulls the next
 // symbol from a macro or source file into 'fileRead'
 #define EVAL_SYMBOL() ____S_EVAL(file, fileRead, constantList, macroList, currentMacroPosition, targetMacro, evaluateMacro)
-#define EVAL_PREF() EvaluateReference(fileRead, globalList, currentFile, buildSystemContext)
+#define EVAL_PREF() EvaluateReference(fileRead, globalList, strList, currentFile, buildSystemContext)
 
 #define CHECK_REF(ref) if(!PR_METADATA_GET(ref, nthp::script::flagBits::IS_VALID)) return 1 
 
@@ -990,33 +1017,22 @@ DEFINE_COMPILATION_BEHAVIOUR(TEXTURE_CLEAR) {
 
 
 DEFINE_COMPILATION_BEHAVIOUR(TEXTURE_LOAD) {
+        ADD_NODE(TEXTURE_LOAD);
 	
 	EVAL_SYMBOL(); // output
-        auto ref = EVAL_PREF();
-        CHECK_REF(ref);
+        auto target = EVAL_PREF();
+        CHECK_REF(target);
 
         EVAL_SYMBOL(); // file
-        std::string textureFile = fileRead;
+        auto string = EVAL_PREF();
+        CHECK_REF(string);
 
+        stdRef* _target = (stdRef*)(nodeList[currentNode].access.data);
+        strRef* _filename = (strRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
 
-	if(textureFile.size() > UINT8_MAX - sizeof(nthp::script::instructions::stdRef)) {
-		PRINT_COMPILER_ERROR("File path name in TEXTURE_LOAD at [%zu] too large. Must be less than [%u] characters.", currentNode, UINT8_MAX - sizeof(nthp::script::instructions::stdRef));
-		return 1;
-	}
-	ADD_NODE(TEXTURE_LOAD);
-	nodeList[currentNode].access.size = sizeof(nthp::script::instructions::stdRef) + textureFile.size() + 1;
-	nodeList[currentNode].access.data = (char*)malloc(nodeList[currentNode].access.size);
+        *_target = target;
+        *_filename = string;
 
-	nthp::script::instructions::stdRef* output = (decltype(output))(nodeList[currentNode].access.data);
-
-	// Funny pointer stuff.	
-	memcpy(nodeList[currentNode].access.data + sizeof(nthp::script::instructions::stdRef), textureFile.c_str(), textureFile.size());
-        nodeList[currentNode].access.data[nodeList[currentNode].access.size - 1] = '\000';
-        
-       
-
-        ref.value = nthp::getFixedInteger(ref.value);
-        *output = ref;
 
         PRINT_NODEDATA();
 	return 0;
@@ -1025,19 +1041,15 @@ DEFINE_COMPILATION_BEHAVIOUR(TEXTURE_LOAD) {
 
 
 DEFINE_COMPILATION_BEHAVIOUR(SET_ACTIVE_PALETTE) {
-        EVAL_SYMBOL();
-
-        std::string paletteFile = fileRead;
-        if(paletteFile.size() > UINT8_MAX) {
-                PRINT_COMPILER_ERROR("File path name in TEXTURE_LOAD at [%zu] too large. Must be less than [%u] characters.", currentNode, UINT8_MAX);
-		return 1;
-        }
         ADD_NODE(SET_ACTIVE_PALETTE);
-        nodeList[currentNode].access.size = paletteFile.length() + 1;
-        nodeList[currentNode].access.data =  (char*)malloc(nodeList[currentNode].access.size);
-        memcpy(nodeList[currentNode].access.data, paletteFile.c_str(), paletteFile.length() + 1);
 
-        nodeList[currentNode].access.data[paletteFile.length()] = '\000';
+        EVAL_SYMBOL();
+        auto filename = EVAL_PREF();
+        CHECK_REF(filename);
+        
+        strRef* _filename = (strRef*)(nodeList[currentNode].access.data);
+
+        *_filename = filename;
 
         PRINT_NODEDATA();
         return 0;
@@ -1423,6 +1435,7 @@ DEFINE_COMPILATION_BEHAVIOUR(ENT_CHECKCOLLISION) {
 
 
 DEFINE_COMPILATION_BEHAVIOUR(CORE_INIT) {
+        ADD_NODE(CORE_INIT);
 
         
 
@@ -1471,23 +1484,18 @@ DEFINE_COMPILATION_BEHAVIOUR(CORE_INIT) {
         }
 
         EVAL_SYMBOL();
-        std::string title = fileRead;
+        auto titleString = EVAL_PREF();
+        CHECK_REF(titleString);
 
-        ADD_NODE(CORE_INIT);
-        nodeList[currentNode].access.size = (sizeof(stdRef) * 6) + sizeof(uint8_t) + title.size() + 1;
-        nodeList[currentNode].access.data = (char*)malloc(nodeList[currentNode].access.size);
-
-// px py tx ty cx cy fs sr title
-        nthp::script::instructions::stdRef* px = (decltype(px))(nodeList[currentNode].access.data);
-        nthp::script::instructions::stdRef* py = (decltype(py))(nodeList[currentNode].access.data + sizeof(stdRef));
-        nthp::script::instructions::stdRef* tx = (decltype(tx))(nodeList[currentNode].access.data + (sizeof(stdRef) * 2));
-        nthp::script::instructions::stdRef* ty = (decltype(ty))(nodeList[currentNode].access.data + (sizeof(stdRef) * 3));
-        nthp::script::instructions::stdRef* cx = (decltype(cx))(nodeList[currentNode].access.data + (sizeof(stdRef) * 4));
-        nthp::script::instructions::stdRef* cy = (decltype(cy))(nodeList[currentNode].access.data + (sizeof(stdRef) * 5));
+        // px py tx ty cx cy fs sr title
+        stdRef* px = (decltype(px))(nodeList[currentNode].access.data);
+        stdRef* py = (decltype(py))(nodeList[currentNode].access.data + sizeof(stdRef));
+        stdRef* tx = (decltype(tx))(nodeList[currentNode].access.data + (sizeof(stdRef) * 2));
+        stdRef* ty = (decltype(ty))(nodeList[currentNode].access.data + (sizeof(stdRef) * 3));
+        stdRef* cx = (decltype(cx))(nodeList[currentNode].access.data + (sizeof(stdRef) * 4));
+        stdRef* cy = (decltype(cy))(nodeList[currentNode].access.data + (sizeof(stdRef) * 5));
         uint8_t* flags = (decltype(flags))(nodeList[currentNode].access.data + (sizeof(stdRef) * 6));
-
-        memcpy(nodeList[currentNode].access.data + ((sizeof(stdRef) * 6) + sizeof(uint8_t)), title.c_str(), title.size());
-        nodeList[currentNode].access.data[((sizeof(stdRef) * 6) + sizeof(uint8_t) + title.size())] = '\000';
+        strRef* _title = (decltype(_title))(nodeList[currentNode].access.data + (sizeof(stdRef) * 6) + sizeof(uint8_t));
 
         *px = spx;
         *py = spy;
@@ -1496,6 +1504,7 @@ DEFINE_COMPILATION_BEHAVIOUR(CORE_INIT) {
         *cx = scx;
         *cy = scy;
         *flags = initFlags;
+        *_title = titleString;
 
 
         PRINT_NODEDATA();
@@ -1728,12 +1737,12 @@ DEFINE_COMPILATION_BEHAVIOUR(STAGE_LOAD) {
         ADD_NODE(STAGE_LOAD);
 
         EVAL_SYMBOL();
-        std::string stageName = fileRead;
-        nodeList[currentNode].access.size = stageName.size() + 1;
-        nodeList[currentNode].access.data = (char*)malloc(nodeList[currentNode].access.size);
+        auto filename = EVAL_PREF();
+        CHECK_REF(filename);
 
-        memcpy(nodeList[currentNode].access.data, stageName.c_str(), stageName.size());
-        nodeList[currentNode].access.data[stageName.size()] = '\000';
+        strRef* _file = (decltype(_file))(nodeList[currentNode].access.data);
+
+        *_file = filename;
 
         PRINT_NODEDATA();
         return 0;
@@ -1873,6 +1882,8 @@ DEFINE_COMPILATION_BEHAVIOUR(MUSIC_CLEAR) {
 
 
 DEFINE_COMPILATION_BEHAVIOUR(MUSIC_LOAD) {
+        ADD_NODE(MUSIC_LOAD);
+
 
         EVAL_SYMBOL();
         auto output_i = EVAL_PREF();
@@ -1880,25 +1891,15 @@ DEFINE_COMPILATION_BEHAVIOUR(MUSIC_LOAD) {
 
 
         EVAL_SYMBOL();
-        std::string audioFile = fileRead;
+        auto filename = EVAL_PREF();
+        CHECK_REF(filename);
 
-        if(audioFile.size() > UINT8_MAX - sizeof(nthp::script::instructions::stdRef)) {
-		PRINT_COMPILER_ERROR("File path name in MUSIC_LOAD at [%zu] too large. Must be less than [%u] characters.", currentNode, UINT8_MAX - sizeof(nthp::script::instructions::stdRef));
-		return 1;
-	}
-
-        ADD_NODE(MUSIC_LOAD);
-        nodeList[currentNode].access.size = sizeof(stdRef) + audioFile.size() + 1;
-        nodeList[currentNode].access.data = (char*)(malloc(nodeList[currentNode].access.size));
 
         stdRef* output = (stdRef*)(nodeList[currentNode].access.data);
-
-        memcpy(nodeList[currentNode].access.data + sizeof(stdRef), audioFile.c_str(), audioFile.size());
-        nodeList[currentNode].access.data[nodeList[currentNode].access.size - 1] = '\000';
+        strRef* _filename = (strRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
 
         *output = output_i;
-        output->value = nthp::getFixedInteger(output->value);
-
+        *_filename = filename;
 
         PRINT_NODEDATA();
         return 0;
@@ -1906,6 +1907,7 @@ DEFINE_COMPILATION_BEHAVIOUR(MUSIC_LOAD) {
 
 
 DEFINE_COMPILATION_BEHAVIOUR(SOUND_LOAD) {
+        ADD_NODE(SOUND_LOAD);
 
         EVAL_SYMBOL();
         auto output_i = EVAL_PREF();
@@ -1913,25 +1915,15 @@ DEFINE_COMPILATION_BEHAVIOUR(SOUND_LOAD) {
 
 
         EVAL_SYMBOL();
-        std::string audioFile = fileRead;
+        auto filename = EVAL_PREF();
+        CHECK_REF(filename);
 
-        if(audioFile.size() > UINT8_MAX - sizeof(nthp::script::instructions::stdRef)) {
-		PRINT_COMPILER_ERROR("File path name in SOUND_LOAD at [%zu] too large. Must be less than [%u] characters.", currentNode, UINT8_MAX - sizeof(nthp::script::instructions::stdRef));
-		return 1;
-	}
-
-        ADD_NODE(SOUND_LOAD);
-        nodeList[currentNode].access.size = sizeof(stdRef) + audioFile.size() + 1;
-        nodeList[currentNode].access.data = (char*)(malloc(nodeList[currentNode].access.size));
 
         stdRef* output = (stdRef*)(nodeList[currentNode].access.data);
-
-        memcpy(nodeList[currentNode].access.data + sizeof(stdRef), audioFile.c_str(), audioFile.size());
-        nodeList[currentNode].access.data[nodeList[currentNode].access.size - 1] = '\000';
+        strRef* _filename = (strRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
 
         *output = output_i;
-        output->value = nthp::getFixedInteger(output->value);
-
+        *_filename = filename;
 
         PRINT_NODEDATA();
         return 0;
@@ -1994,129 +1986,51 @@ DEFINE_COMPILATION_BEHAVIOUR(MUSIC_RESUME) {
         return 0;
 }
 
-
-DEFINE_COMPILATION_BEHAVIOUR(CACHE_DEFINE) {
-        ADD_NODE(CACHE_DEFINE);
+DEFINE_COMPILATION_BEHAVIOUR(DFILE_READ) {
+        ADD_NODE(DFILE_READ);
 
         EVAL_SYMBOL();
-        auto size = EVAL_PREF();
-        CHECK_REF(size);
+        auto target = EVAL_PREF();
+        CHECK_REF(target);
 
-        stdRef* _size = (stdRef*)(nodeList[currentNode].access.data);
+        EVAL_SYMBOL();
+        auto filename = EVAL_PREF();
+        CHECK_REF(filename);
 
-        *_size = size;
+
+        ptrRef* _target = (strRef*)(nodeList[currentNode].access.data);
+        strRef* _filename = (strRef*)(nodeList[currentNode].access.data + sizeof(ptrRef));
+
+        *_target = target;
+        *_filename = filename;
 
         PRINT_NODEDATA();
         return 0;
 }
 
-DEFINE_COMPILATION_BEHAVIOUR(CACHE_RESIZE) {
-        ADD_NODE(CACHE_RESIZE);
+DEFINE_COMPILATION_BEHAVIOUR(DFILE_WRITE) {
+        ADD_NODE(DFILE_WRITE);
 
         EVAL_SYMBOL();
-        auto size = EVAL_PREF();
-        CHECK_REF(size);
+        auto target = EVAL_PREF();
+        CHECK_REF(target);
 
-        stdRef* _size = (stdRef*)(nodeList[currentNode].access.data);
+        EVAL_SYMBOL();
+        auto filename = EVAL_PREF();
+        CHECK_REF(filename);
 
-        *_size = size;
 
+        ptrRef* _target = (strRef*)(nodeList[currentNode].access.data);
+        strRef* _filename = (strRef*)(nodeList[currentNode].access.data + sizeof(ptrRef));
+
+        *_target = target;
+        *_filename = filename;
+
+        
         PRINT_NODEDATA();
         return 0;
 }
 
-DEFINE_COMPILATION_BEHAVIOUR(CACHE_OPEN) {
-        ADD_NODE(CACHE_OPEN);
-        EVAL_SYMBOL();
-
-
-        nodeList[currentNode].access.size = fileRead.size() + 1;
-        nodeList[currentNode].access.data = (char*)malloc(nodeList[currentNode].access.size);
-
-        memcpy(nodeList[currentNode].access.data, fileRead.c_str(), fileRead.size());
-        nodeList[currentNode].access.data[nodeList[currentNode].access.size - 1] = '\000';
-
-
-        PRINT_NODEDATA();
-        return 0;
-}
-
-
-DEFINE_COMPILATION_BEHAVIOUR(CACHE_CLEAR) {
-        ADD_NODE(CACHE_CLEAR);
-
-        PRINT_NODEDATA();
-        return 0;
-}
-
-
-DEFINE_COMPILATION_BEHAVIOUR(CACHE_WRITE) {
-        ADD_NODE(CACHE_WRITE);
-
-        EVAL_SYMBOL();
-        auto cache_target = EVAL_PREF();
-        CHECK_REF(cache_target);
-
-        EVAL_SYMBOL();
-        auto value = EVAL_PREF();
-        CHECK_REF(value);
-
-
-        stdRef* _cache_target = (stdRef*)(nodeList[currentNode].access.data);
-        stdRef* _value = (stdRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
-
-        *_cache_target = cache_target;
-        *_value = value;
-
-
-        PRINT_NODEDATA();
-        return 0;        
-}
-
-
-DEFINE_COMPILATION_BEHAVIOUR(CACHE_READ) {
-        ADD_NODE(CACHE_READ);
-
-        EVAL_SYMBOL();
-        auto cache_target = EVAL_PREF();
-        CHECK_REF(cache_target);
-
-
-        EVAL_SYMBOL();
-        auto var_target = EVAL_PREF();
-        CHECK_REF(var_target);
-
-        if(!PR_METADATA_GET(var_target, nthp::script::flagBits::IS_REFERENCE)) {
-                PRINT_COMPILER_ERROR("Argument 2 CACHE_READ; Must be a reference.\n");
-                return 1;
-        }
-
-        stdRef* _cache_target = (stdRef*)(nodeList[currentNode].access.data);
-        ptrRef* _var_target = (ptrRef*)(nodeList[currentNode].access.data + sizeof(stdRef));
-
-
-        *_cache_target = cache_target;
-        *_var_target = var_target;
-        PRINT_NODEDATA();
-        return 0;
-}
-
-
-DEFINE_COMPILATION_BEHAVIOUR(CACHE_SAVE) {
-        ADD_NODE(CACHE_SAVE);
-        EVAL_SYMBOL();
-
-
-        nodeList[currentNode].access.size = fileRead.size() + 1;
-        nodeList[currentNode].access.data = (char*)malloc(nodeList[currentNode].access.size);
-
-        memcpy(nodeList[currentNode].access.data, fileRead.c_str(), fileRead.size());
-        nodeList[currentNode].access.data[nodeList[currentNode].access.size - 1] = '\000';
-
-
-        PRINT_NODEDATA();
-        return 0;
-}
 
 
 DEFINE_COMPILATION_BEHAVIOUR(PRINT) {
@@ -2133,6 +2047,61 @@ DEFINE_COMPILATION_BEHAVIOUR(PRINT) {
         return 0;
 }
 
+
+DEFINE_COMPILATION_BEHAVIOUR(STRING) {
+        ADD_NODE(STRING);
+
+        EVAL_SYMBOL();
+        std::string name = fileRead;
+
+        auto pos = file.tellg();
+        file.close();
+        file.open(currentFile, std::ios::in | std::ios::binary);
+        file.seekg(pos);
+
+        char buf[256]; // Max string length because of Node size being 8-bits.
+        int count = 0;
+
+        char file_read = 0;
+
+        do { file.get(file_read); } while(file_read != '\"'); // Look for the first quote.
+        file.get(file_read);
+        do {
+                buf[count] = file_read;
+                ++count;
+                file.get(file_read);
+                
+                if(count > 255) {
+                        PRINT_COMPILER_ERROR("STRING out of bounds. MAX_STR=255\n");
+                        return 1;
+                }
+        } while(file_read != '\"');
+        buf[count] = '\0';
+
+        pos = file.tellg();
+
+
+        file.close();
+        file.open(currentFile, std::ios::in);
+        file.seekg(pos);
+
+
+        nodeList[currentNode].access.size = count + 1;
+        nodeList[currentNode].access.data = (char*)malloc(nodeList[currentNode].access.size);
+        memcpy(nodeList[currentNode].access.data, buf, count + 1);
+
+
+        nthp::script::CompilerInstance::STR_DEF def;
+        def.objectPosition = currentNode;
+        def.name = name;
+
+        strList.push_back(def);
+
+        PRINT_COMPILER("New STRING defined at [%u]; (%s)\n", def.objectPosition, buf);
+
+        PRINT_NODEDATA();
+        return 0;
+}
 
 
 // COMPILER INSTANCE BEHAVIOUR GOES HERE                ||
@@ -2157,6 +2126,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
         }
         labelList.clear();
         gotoList.clear();
+        stringList.clear();
 
 
         nthp::script::cleanNodeSet(nodeList);
@@ -2185,7 +2155,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
         bool evaluateMacro = false;
 
 
-        #define COMPILE(instruction) if( instruction ( nodeList, file, fileRead, currentFile, constantList, macroList, globalList, labelList, gotoList, ifLocations, endLocations, skipList, currentMacroPosition, targetMacro, evaluateMacro, buildSystemContext) ) return 1
+        #define COMPILE(instruction) if( instruction ( nodeList, file, fileRead, currentFile, constantList, macroList, globalList, labelList, gotoList, stringList, ifLocations, endLocations, skipList, currentMacroPosition, targetMacro, evaluateMacro, buildSystemContext) ) return 1
         #define CHECK_COMP(instruction) if(fileRead == #instruction) { COMPILE(instruction); continue; }
 
         bool operationOngoing = true;
@@ -2561,15 +2531,12 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                 CHECK_COMP(MUSIC_PAUSE);
                 CHECK_COMP(MUSIC_RESUME);
 
-                CHECK_COMP(CACHE_DEFINE);
-                CHECK_COMP(CACHE_RESIZE);
-                CHECK_COMP(CACHE_OPEN);
-                CHECK_COMP(CACHE_CLEAR);
-                CHECK_COMP(CACHE_WRITE);
-                CHECK_COMP(CACHE_READ);
-                CHECK_COMP(CACHE_SAVE);
+                CHECK_COMP(DFILE_READ);
+                CHECK_COMP(DFILE_WRITE);
+                
 
                 CHECK_COMP(PRINT);
+                CHECK_COMP(STRING);
 
         } // Main loop
 

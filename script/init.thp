@@ -1,15 +1,16 @@
 
 
+STRING windowTitle      "testTitleBaby!!"
+STRING palette          "resource/genericPalette.pal"
 
 MACRO initFlags {
-/		x		y		tx		ty		cx		cy		fs		sr		title	/
-		920		518		8000	8000	0		0		0		0		test
+/	x		y		tx		ty		cx		cy		fs		sr		title	/
+        920		518		8000	        8000	        0		0		0		0		~windowTitle
 }
-
 
 CORE_INIT @initFlags
 
-SET_ACTIVE_PALETTE resource/genericPalette.pal
+SET_ACTIVE_PALETTE ~palette
 CORE_SETMAXFPS 60
 
 PRIVATE testPrivate

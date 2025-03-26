@@ -117,6 +117,7 @@ namespace script {
                 IS_REFERENCE,
                 IS_NEGATED,
                 IS_PTR,          // IS_PTR is checked FIRST!
+                IS_NODE_STRING_PTR,
                 IS_VALID
         } flagBits;
 

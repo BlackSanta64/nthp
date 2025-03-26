@@ -119,23 +119,19 @@ namespace ID {
                 MUSIC_STOP,\
                 MUSIC_PAUSE,\
                 MUSIC_RESUME,\
-                CACHE_DEFINE,\
-                CACHE_RESIZE,\
-                CACHE_OPEN,\
-                CACHE_CLEAR,\
-                CACHE_WRITE,\
-                CACHE_READ,\
-                CACHE_SAVE,\
-                PRINT\
+                DFILE_READ,\
+                DFILE_WRITE,\
+                PRINT,\
+                STRING\
         )
 
         INSTRUCTION_LIST( INSTRUCTION_TOKENS(), numberOfInstructions);
 }
 
 #define GET_INSTRUCTION_ID(instruction) nthp::script::instructions::ID::instruction
-typedef P_Reference<nthp::script::stdVarWidth> stdRef;
-typedef stdRef ptrRef; // Just for readability
-typedef P_Reference<uint32_t> setRef;
+typedef P_Reference<nthp::script::stdVarWidth> stdRef;  // The standard value type; Can be a reference to memory or a constant, 'metadata' bits can be set for type description.
+typedef stdRef ptrRef;                                  // ptrRef endpoints are evaluated as ptr_descriptors
+typedef stdRef strRef;                                  // strRef endpoints are the same as stdRef, but instead point to a STRING node.
 
 
 // Sizes must have the same name as the ENUM entry in 'ID'.
@@ -186,8 +182,8 @@ namespace Size {
 
 		TEXTURE_DEFINE = sizeof(stdRef),
 		TEXTURE_CLEAR = 0,
-		TEXTURE_LOAD = DYNAMIC_SIZE, 
-		SET_ACTIVE_PALETTE = DYNAMIC_SIZE, 
+		TEXTURE_LOAD = sizeof(stdRef) + sizeof(strRef), 
+		SET_ACTIVE_PALETTE = sizeof(strRef), 
 
 
                 FRAME_DEFINE = sizeof(stdRef),
@@ -209,7 +205,7 @@ namespace Size {
                 ENT_CHECKCOLLISION = sizeof(stdRef) + sizeof(stdRef) + sizeof(ptrRef),
 
 
-                CORE_INIT = DYNAMIC_SIZE,
+                CORE_INIT = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(uint8_t) + sizeof(strRef),
                 CORE_QRENDER = sizeof(stdRef),
                 CORE_ABS_QRENDER = sizeof(stdRef),
                 CORE_CLEAR = 0,
@@ -224,7 +220,7 @@ namespace Size {
                 ACTION_DEFINE = sizeof(stdRef),
                 ACTION_CLEAR = 0, //
                 ACTION_BIND =  sizeof(stdRef) + sizeof(uint32_t) + sizeof(int32_t), // actionIndex, varIndex, key
-                STAGE_LOAD = DYNAMIC_SIZE,
+                STAGE_LOAD = sizeof(strRef),
 
                 POLL_ENT_POSITION = sizeof(stdRef),
                 POLL_ENT_HITBOX = sizeof(stdRef),
@@ -238,23 +234,19 @@ namespace Size {
                 SOUND_CLEAR = 0,
                 MUSIC_DEFINE = sizeof(stdRef),
                 MUSIC_CLEAR = 0,
-                MUSIC_LOAD = DYNAMIC_SIZE,
-                SOUND_LOAD = DYNAMIC_SIZE,
+                MUSIC_LOAD = sizeof(stdRef) + sizeof(strRef),
+                SOUND_LOAD = sizeof(stdRef) + sizeof(strRef),
                 SOUND_PLAY = sizeof(stdRef),
                 MUSIC_START = sizeof(stdRef),
                 MUSIC_STOP = 0,
                 MUSIC_PAUSE = 0,
                 MUSIC_RESUME = 0,
 
-                CACHE_DEFINE = sizeof(stdRef),
-                CACHE_RESIZE = sizeof(stdRef),
-                CACHE_OPEN = DYNAMIC_SIZE,
-                CACHE_CLEAR = 0,
-                CACHE_WRITE = sizeof(stdRef) + sizeof(stdRef),
-                CACHE_READ = sizeof(stdRef) + sizeof(ptrRef),
-                CACHE_SAVE = DYNAMIC_SIZE,
+                DFILE_READ = sizeof(ptrRef) + sizeof(strRef),
+                DFILE_WRITE = sizeof(ptrRef) + sizeof(strRef),
 
-                PRINT = sizeof(stdRef)
+                PRINT = sizeof(stdRef),
+                STRING = DYNAMIC_SIZE
         );
 }
 
