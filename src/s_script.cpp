@@ -479,6 +479,24 @@ DEFINE_EXECUTION_BEHAVIOUR(FREE) {
         return 0;
 }
 
+DEFINE_EXECUTION_BEHAVIOUR(COPY) {
+        ptrRef src = *(ptrRef*)(data->nodeSet[data->currentNode].access.data);
+        stdRef size = *(ptrRef*)(data->nodeSet[data->currentNode].access.data + sizeof(ptrRef));
+        ptrRef dst = *(ptrRef*)(data->nodeSet[data->currentNode].access.data + sizeof(ptrRef) + sizeof(stdRef));
+
+        nthp::script::stdVarWidth* r_src = nullptr;
+        {                                       // Fucky shit you have to do when evaluating 2 ptrrefs.
+                EVAL_PTRREF(src);
+                r_src = target_dsc;
+        }
+        EVAL_STDREF(size);
+        EVAL_PTRREF(dst);
+
+        memcpy(target_dsc, r_src, nthp::fixedToInt(size.value) * sizeof(nthp::script::stdVarWidth));
+
+        return 0;
+}
+
 DEFINE_EXECUTION_BEHAVIOUR(NEXT) {
         ptrRef ptr = *(ptrRef*)(data->nodeSet[data->currentNode].access.data);
         
@@ -550,7 +568,6 @@ DEFINE_EXECUTION_BEHAVIOUR(SET_ACTIVE_PALETTE) {
         strRef paletteFile = *(strRef*)(data->nodeSet[data->currentNode].access.data);
 
         auto filename = EVAL_STRREF(paletteFile);
-        printf("[%s]\n", filename);
 
         nthp::script::activePalette.importPaletteFromFile(filename);
 

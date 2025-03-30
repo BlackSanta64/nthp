@@ -1,27 +1,23 @@
 DEPEND #CONTEXT_MAINPROG
 
-PRIVATE testValuePrivate
-PRIVATE fileImport
-
-SET &testValuePrivate 100
-ALLOC 10 &testValuePrivate
-SET $testValuePrivate 800.554
-
-STRING dataFile "data.cache"
-
-DFILE_WRITE $testValuePrivate ~dataFile
-
-
-DFILE_READ &fileImport ~dataFile
-
-
-FREE $fileImport
-
+PRIVATE size_x
+PRIVATE size_y
 
 LABEL 1
+        POLL #e_testEntity POS
+        SUB $mousepos_x $r_poll1 &size_x
+        SUB $mousepos_y $r_poll2 &size_y
+
+        ENT_SETRENDERSIZE #e_testEntity $size_x $size_y
+
+        IF $mouse1
+                ENT_SETPOS #e_testEntity $mousepos_x $mousepos_y
+                SET &mouse1 0
+        END
+
 
 	CORE_CLEAR
-
+        CORE_QRENDER #e_testEntity
 	CORE_DISPLAY
 
 

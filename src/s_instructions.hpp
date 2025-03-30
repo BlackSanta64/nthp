@@ -64,6 +64,7 @@ namespace ID {
                 SET,\
                 ALLOC,\
                 FREE,\
+                COPY,\
                 NEXT,\
                 PREV,\
                 INDEX,\
@@ -175,6 +176,7 @@ namespace Size {
 
                 SET = sizeof(ptrRef) + sizeof(stdRef),
                 ALLOC = sizeof(stdRef) + sizeof(ptrRef),
+                COPY = sizeof(ptrRef) + sizeof(stdRef) + sizeof(ptrRef),
                 FREE = sizeof(ptrRef),
                 NEXT = sizeof(ptrRef),
                 PREV = sizeof(ptrRef),

@@ -86,9 +86,6 @@ namespace script {
 
                         nthp::script::scriptTriggerComplex currentTriggerConfig; // Just some data on the current stage.
 
-                        nthp::script::stdVarWidth* cache;
-                        size_t cacheSize;
-
                         nthp::script::BlockMemoryEntry* blockData;
                         size_t blockDataSize;
 

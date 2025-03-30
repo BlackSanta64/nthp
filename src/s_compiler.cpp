@@ -935,6 +935,34 @@ DEFINE_COMPILATION_BEHAVIOUR(FREE) {
         return 0;
 }
 
+DEFINE_COMPILATION_BEHAVIOUR(COPY) {
+        ADD_NODE(COPY);
+
+        EVAL_SYMBOL();
+        auto src = EVAL_PREF();
+        CHECK_REF(src);
+
+        EVAL_SYMBOL();
+        auto size = EVAL_PREF();
+        CHECK_REF(size);
+
+        EVAL_SYMBOL();
+        auto dst = EVAL_PREF();
+        CHECK_REF(dst);
+
+        ptrRef* _src = (ptrRef*)(nodeList[currentNode].access.data);
+        stdRef* _size = (stdRef*)(nodeList[currentNode].access.data + sizeof(ptrRef));
+        ptrRef* _dst = (ptrRef*)(nodeList[currentNode].access.data + sizeof(ptrRef) + sizeof(stdRef));
+
+        *_src = src;
+        *_size = size;
+        *_dst = dst;
+
+
+        PRINT_NODEDATA();
+        return 0;
+}
+
 
 DEFINE_COMPILATION_BEHAVIOUR(NEXT) {
         ADD_NODE(NEXT);
@@ -2464,6 +2492,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                 CHECK_COMP(SET);
                 CHECK_COMP(ALLOC);
+                CHECK_COMP(COPY);
                 CHECK_COMP(FREE);
                 CHECK_COMP(NEXT);
                 CHECK_COMP(PREV);

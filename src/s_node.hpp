@@ -85,7 +85,7 @@ namespace script {
 
         namespace internal_constants {
                 constexpr FIXED_TYPE blockMemoryBitAllocation = FIXED_POINT_WIDTH / 2;
-                constexpr FIXED_TYPE blockMemoryDataMask = (1 << blockMemoryBitAllocation) - 1; // Lower-order bit mask
+                constexpr FIXED_TYPE blockMemoryDataMask = (((FIXED_TYPE)1) << blockMemoryBitAllocation) - ((FIXED_TYPE)1); // Lower-order bit mask
                 constexpr FIXED_TYPE blockMemoryBlockMask = ~(blockMemoryDataMask);             // Higher-order bit mask
         }
 
@@ -94,19 +94,16 @@ namespace script {
                 FIXED_TYPE address      : nthp::script::internal_constants::blockMemoryBitAllocation;
         } PtrDescriptor_st;
 
-        static inline FIXED_TYPE constructPtrDescriptor(FIXED_TYPE block, FIXED_TYPE address) {
+        constexpr FIXED_TYPE constructPtrDescriptor(FIXED_TYPE block, FIXED_TYPE address) {
                 using namespace nthp::script::internal_constants;
                 const FIXED_TYPE result = ((block << blockMemoryBitAllocation) & blockMemoryBlockMask) | (address & blockMemoryDataMask);
 
                 return result;
         }
 
-        inline PtrDescriptor_st parsePtrDescriptor(FIXED_TYPE bin) {
+        constexpr PtrDescriptor_st parsePtrDescriptor(FIXED_TYPE bin) {
                 using namespace nthp::script::internal_constants;
-                
-                PtrDescriptor_st ret;
-                ret.block =     (bin >> blockMemoryBitAllocation);
-                ret.address =   (bin & blockMemoryDataMask);
+                const PtrDescriptor_st ret = {(bin >> blockMemoryBitAllocation), (bin & blockMemoryDataMask)};
 
                 return ret;
         }
@@ -116,7 +113,7 @@ namespace script {
         typedef enum __P_REF_FLAGS_BITS {
                 IS_REFERENCE,
                 IS_NEGATED,
-                IS_PTR,          // IS_PTR is checked FIRST!
+                IS_PTR,          
                 IS_NODE_STRING_PTR,
                 IS_VALID
         } flagBits;

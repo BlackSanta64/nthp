@@ -547,26 +547,6 @@ int headless_runtime() {
                                         g_access.unlock();
                                         continue;
                                 }
-                                if(args[0] == "getcache" || args[0] == "gc") {
-                                        if(!suspendExecution) {
-                                                PM_PRINT_ERROR("Process must be suspended (break, b) to access cache memory.\n");
-                                                continue;
-                                        }
-
-                                        g_access.lock();
-                                        if(currentStage.data.cacheSize <= 0) {
-                                                PM_PRINT("Cache not allocated.\n");
-                                                continue;
-                                        }
-                                        PM_PRINT("\tCache data;;\n");
-                                        for(size_t i = 0; i < currentStage.data.cacheSize; ++i) {
-                                                PM_PRINT("I %zu = %lf\n", i, nthp::fixedToDouble(currentStage.data.cache[i]));
-                                        }
-                                        PM_PRINT("done.\n");
-
-                                        g_access.unlock();
-                                        continue;
-                                }
                                 if(args[0] == "getblock" || args[0] == "gb") {
                                         if(!suspendExecution) {
                                                 PM_PRINT_ERROR("Process must be suspended (break, b) to access block memory.\n");
