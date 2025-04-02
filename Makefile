@@ -25,11 +25,11 @@ endif
 
 CFLAGS = -lSDL2 -lSDL2_mixer $(SDL_imageLibInclude) -D LINUX -D USE_SDLIMG=$(USE_SDLIMAGE)
 DEBUG_CFLAGS = -g -lSDL2 -lSDL2_mixer $(SDL_imageLibInclude) -D LINUX -D DEBUG -DUSE_SDLIMG=$(USE_SDLIMAGE)
-libTargets = global_defs.o core.o position.o palette.o rawsurface.o softwaretexture.o e_entity.o e_collision.o st_compress.o s_compiler.o s_script.o gtexture.o s_stage.o t_font.o
-debug_libTargets = global_defs_d.o core_d.o position_d.o palette_d.o rawsurface_d.o softwaretexture_d.o e_entity_d.o e_collision_d.o st_compress_d.o s_compiler_d.o s_script_d.o gtexture_d.o s_stage_d.o t_font_d.o
+libTargets = global_defs.o core.o position.o palette.o rawsurface.o softwaretexture.o e_entity.o e_collision.o st_compress.o s_compiler.o s_script.o gtexture.o t_font.o s_linker.o s_runtime.o
+debug_libTargets = global_defs_d.o core_d.o position_d.o palette_d.o rawsurface_d.o softwaretexture_d.o e_entity_d.o e_collision_d.o st_compress_d.o s_compiler_d.o s_script_d.o gtexture_d.o t_font_d.o s_linker_d.o s_runtime_d.o
 
 
-lib_srcSymbols = $(SRCDIR)global_defs.cpp $(SRCDIR)core.cpp $(SRCDIR)position.cpp $(SRCDIR)palette.cpp $(SRCDIR)rawsurface.cpp $(SRCDIR)softwaretexture.cpp $(SRCDIR)e_entity.cpp $(SRCDIR)e_collision.cpp $(SRCDIR)st_compress.cpp $(SRCDIR)s_compiler.cpp $(SRCDIR)s_script.cpp $(SRCDIR)gtexture.cpp $(SRCDIR)s_stage.cpp $(SRCDIR)t_font.cpp
+lib_srcSymbols = $(SRCDIR)global_defs.cpp $(SRCDIR)core.cpp $(SRCDIR)position.cpp $(SRCDIR)palette.cpp $(SRCDIR)rawsurface.cpp $(SRCDIR)softwaretexture.cpp $(SRCDIR)e_entity.cpp $(SRCDIR)e_collision.cpp $(SRCDIR)st_compress.cpp $(SRCDIR)s_compiler.cpp $(SRCDIR)s_script.cpp $(SRCDIR)gtexture.cpp $(SRCDIR)t_font.cpp $(SRCDIR)s_linker.cpp $(SRCDIR)s_runtime.cpp
 
 
 
@@ -95,12 +95,14 @@ gtexture.o: $(SRCDIR)gtexture.hpp $(SRCDIR)gtexture.cpp
 	$(CC) $(CFLAGS) -c $(SRCDIR)gtexture.cpp -o gtexture.o
 
 
-s_stage.o: $(SRCDIR)s_stage.hpp $(SRCDIR)s_stage.cpp
-	$(CC) $(CFLAGS) -c $(SRCDIR)s_stage.cpp -o s_stage.o
-
 t_font.o: $(SRCDIR)t_font.hpp $(SRCDIR)t_font.cpp
 	$(CC) $(CFLAGS) -c $(SRCDIR)t_font.cpp -o t_font.o
 
+s_linker.o: $(SRCDIR)s_linker.hpp $(SRCDIR)s_linker.cpp
+	$(CC) $(CFLAGS) -c $(SRCDIR)s_linker.cpp -o s_linker.o
+
+s_runtime.o: $(SRCDIR)s_runtime.hpp $(SRCDIR)s_runtime.cpp
+	$(CC) $(CFLAGS) -c $(SRCDIR)s_runtime.cpp -o s_runtime.o
 # DEBUG DEPENDENCIES GO HERE VVV
 
 
@@ -150,11 +152,16 @@ gtexture_d.o: $(SRCDIR)gtexture.hpp $(SRCDIR)gtexture.cpp
 	$(CC) $(DEBUG_CFLAGS) -c $(SRCDIR)gtexture.cpp -o gtexture_d.o
 
 
-s_stage_d.o: $(SRCDIR)s_stage.hpp $(SRCDIR)s_stage.cpp
-	$(CC) $(DEBUG_CFLAGS) -c $(SRCDIR)s_stage.cpp -o s_stage_d.o
-
 t_font_d.o: $(SRCDIR)t_font.hpp $(SRCDIR)t_font.cpp
 	$(CC) $(DEBUG_CFLAGS) -c $(SRCDIR)t_font.cpp -o t_font_d.o
+
+s_linker_d.o: $(SRCDIR)s_linker.hpp $(SRCDIR)s_linker.cpp
+	$(CC) $(DEBUG_CFLAGS) -c $(SRCDIR)s_linker.cpp -o s_linker_d.o
+
+s_runtime_d.o: $(SRCDIR)s_runtime.hpp $(SRCDIR)s_runtime.cpp
+	$(CC) $(DEBUG_CFLAGS) -c $(SRCDIR)s_runtime.cpp -o s_runtime_d.o
+
+
 
 
 # PM DEPENDENCIES GO HERE ||

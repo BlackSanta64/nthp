@@ -2137,7 +2137,7 @@ DEFINE_COMPILATION_BEHAVIOUR(STRING) {
 
 
 
-int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, const char* outputFile, bool buildSystemContext, const bool ignoreInstructionData) {
+int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, const char* outputFile, bool buildSystemContext, uint8_t executionFlags, const bool ignoreInstructionData) {
         NOVERB_PRINT_COMPILER("\n\tCompiling Source File [%s]...\n\n", inputFile);
         
         std::fstream file(inputFile, std::ios::in);
@@ -2575,7 +2575,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
         if(!ignoreInstructionData) {
 
                 if(ifLocations.size() != endLocations.size()) {
-                        PRINT_COMPILER_ERROR("Post-Mortem failure; Unequal IF and END statements.\n");
+                        PRINT_COMPILER_ERROR("Unequal IF and END statements.\n");
                         return 1;
                 }
         
@@ -2715,7 +2715,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                 //      - Label List
 
                 if(nodeList.size() > 0) {
-                        nodeList[0].access.size = sizeof(uint32_t) + sizeof(uint32_t) + (sizeof(uint32_t) * labelList.size() * 2);
+                        nodeList[0].access.size = sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint8_t) + (sizeof(uint32_t) * labelList.size() * 2);
                         nodeList[0].access.data = (char*)malloc(nodeList[0].access.size);
 
                         if(nodeList[0].access.data == NULL) {
@@ -2723,12 +2723,14 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                         }
 
                         uint32_t* globalmem = (decltype(globalmem))(nodeList[0].access.data);
-                        uint32_t* labelstart = (decltype(labelstart))(nodeList[0].access.data + (sizeof(uint32_t) + sizeof(uint32_t)));
-                        uint32_t* labelSize = (decltype(labelstart))(nodeList[0].access.data + (sizeof(uint32_t)));
+                        uint32_t* labelSize = (decltype(labelSize))(nodeList[0].access.data + (sizeof(uint32_t)));
+                        uint8_t* executionType = (decltype(executionType))(nodeList[0].access.data + (sizeof(uint32_t) + sizeof(uint32_t)));
+                        uint32_t* labelstart = (decltype(labelstart))(nodeList[0].access.data + (sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint8_t)));
                         *labelSize = labelList.size();
 
 
                         *globalmem = (uint32_t)globalAlloc;
+                        *executionType = executionFlags;
 
                         // Writes label data to header. For use in JUMP.
                         for(size_t i = 0; i < labelList.size(); ++i) {
@@ -2790,94 +2792,19 @@ int nthp::script::CompilerInstance::exportToFile(const char* outputFile, std::ve
 
 
 
-int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFile, const char* output, bool forceBuild, const bool ignoreInstructionData) {
+int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFile, std::vector<std::string>* targetList, bool forceBuild, const bool ignoreInstructionData) {
         std::fstream file(stageConfigFile, std::ios::in);
         if(file.fail()) {
                 PRINT_COMPILER_ERROR("Failed to compile StageConfig [%s]; File not found.\n", stageConfigFile);
                 return 1;
         }
 
-        std::string targetOutput = "prog";
-        if(output != NULL) targetOutput = output; // Assigned target override if not null.
 
         std::string fileRead;
         bool operationComplete = false;
-        std::vector<nthp::script::stage::scriptConfig> triggerList;
-        nthp::script::stage::scriptConfig script;
 
         while(!operationComplete) {
                 file >> fileRead;
-
-                if(fileRead == "SCRIPT_CONFIG") {
-
-                        do {
-                                file >> fileRead;
-
-                                if(fileRead == "GPR") {
-                                        file >> fileRead;
-                                        try {
-                                                script.trig.GPR = std::stoul(fileRead);
-                                        }
-                                        catch(std::invalid_argument) {
-                                                PRINT_COMPILER_ERROR("Invalid GPR Argument.\n");
-                                                return 1;
-                                        }
-                                        continue;
-                                }
-                                if(fileRead == "TYPE") {
-                                        file >> fileRead;
-                                        if(fileRead == "T_INIT") {
-                                                script.trig.ID = TRIG_INIT;
-                                                continue;
-                                        }
-                                        if(fileRead == "T_EXIT"){
-                                                script.trig.ID = TRIG_EXIT;
-                                                continue;
-                                        }
-                                        if(fileRead == "T_TICK"){
-                                                script.trig.ID = TRIG_TICK;
-                                                continue;
-                                        }
-                                        if(fileRead == "T_LOGIC"){
-                                                script.trig.ID = TRIG_LOGIC;
-                                                continue;
-                                        }
-                                        if(fileRead == "T_HIDDEN"){
-                                                script.trig.ID = TRIG_HIDDEN;
-                                                continue;
-                                        }
-                                }
-                                if(fileRead == "MEMORY") {
-                                        file >> fileRead;
-                                        try {
-                                                script.trig.MEM = std::stoul(fileRead);
-                                        }
-                                        catch(std::invalid_argument) {
-                                                PRINT_COMPILER_ERROR("Invalid MEM Argument.\n");
-                                                return 1;
-                                        }
-                                        continue;
-                                }
-
-                                if(fileRead == "FILE") {
-                                        file >> fileRead;
-                                        script.scriptFile = fileRead;
-
-                                }
-
-                        } while(fileRead != "END");
-
-                        triggerList.push_back(script);
-
-                } // if(fileRead == "SCRIPT_CONFIG")
-
-                if(fileRead == "TARGET") {
-                        file >> fileRead;
-                        targetOutput = fileRead;
-
-                        PRINT_COMPILER("Output target override; target set to [%s].\n", fileRead.c_str());
-                        continue;
-                }
 
 
                 if(fileRead == "BUILD_SYSTEM") {
@@ -2887,42 +2814,61 @@ int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFi
                         
 
                         // Add constant runtime globals.
-                        addGlobalDef("mousepos_x", "predefined");
-                        addGlobalDef("mousepos_y", "predefined");
-                        addGlobalDef("deltaTime", "predefined");
-                        addGlobalDef("mouse1", "predefined");
-                        addGlobalDef("mouse2", "predefined");
-                        addGlobalDef("mouse3", "predefined");
-                        addGlobalDef("r_poll1", "predefined");
-                        addGlobalDef("r_poll2", "predefined");
-                        addGlobalDef("r_poll3", "predefined");
-                        addGlobalDef("r_poll4", "predefined");
+                        addGlobalDef("mousepos_x",      "predefined");
+                        addGlobalDef("mousepos_y",      "predefined");
+                        addGlobalDef("deltaTime",       "predefined");
+                        addGlobalDef("mouse1",          "predefined");
+                        addGlobalDef("mouse2",          "predefined");
+                        addGlobalDef("mouse3",          "predefined");
+                        addGlobalDef("r_poll1",         "predefined");
+                        addGlobalDef("r_poll2",         "predefined");
+                        addGlobalDef("r_poll3",         "predefined");
+                        addGlobalDef("r_poll4",         "predefined");
 
 
                         while(!file.eof()) {
                                 file >> fileRead;
                                 if(fileRead == "END") { break; }
 
-                                std::string output;
-                                file >> output;
+                                {
+                                        std::string output;
+                                        file >> output;
 
-                                // Ignore output file of compilation; no instructions to write.
-                                if(ignoreInstructionData) {
-                                        if(compileSourceFile(fileRead.c_str(), NULL, true, ignoreInstructionData)) {
-                                                PRINT_DEBUG_ERROR("Compiler failure in source file [%s]; aborting.\n", fileRead.c_str());
-                                                return 1;
-                                        }
-                                }
-                                else {
-                                        if(compileSourceFile(fileRead.c_str(), output.c_str(), true, false)) {
-                                                if(forceBuild) {
-                                                        PRINT_DEBUG_WARNING("Compiler failure in source file [%s]; forcing continue...\n", fileRead.c_str());
-                                                }
-                                                else {
+                                        std::string type;
+                                        file >> type;
+
+                                        uint8_t execFlags = 0;
+
+                                        do {
+                                                if(type == "T_INIT") {  execFlags |= (1 << nthp::script::CompilerInstance::TriggerBits::T_INIT);}
+                                                if(type == "T_TICK") {  execFlags |= (1 << nthp::script::CompilerInstance::TriggerBits::T_TICK); }
+                                                if(type == "T_EXIT") {  execFlags |= (1 << nthp::script::CompilerInstance::TriggerBits::T_EXIT);}
+                                                if(type == "T_HIDDEN") { execFlags |= (1 << nthp::script::CompilerInstance::TriggerBits::T_HIDDEN);}
+                                        } while(0);
+
+                                        
+
+                                        // Ignore output file of compilation; no instructions to write.
+                                        if(ignoreInstructionData) {
+                                                if(compileSourceFile(fileRead.c_str(), NULL, true, execFlags, ignoreInstructionData)) {
                                                         PRINT_DEBUG_ERROR("Compiler failure in source file [%s]; aborting.\n", fileRead.c_str());
                                                         return 1;
                                                 }
                                         }
+                                        else {
+                                                if(compileSourceFile(fileRead.c_str(), output.c_str(), true, execFlags, false)) {
+                                                        if(forceBuild) {
+                                                                PRINT_DEBUG_WARNING("Compiler failure in source file [%s]; forcing continue...\n", fileRead.c_str());
+                                                        }
+                                                        else {
+                                                                PRINT_DEBUG_ERROR("Compiler failure in source file [%s]; aborting.\n", fileRead.c_str());
+                                                                return 1;
+                                                        }
+                                                }
+                                                PRINT_COMPILER("Target Script execflags = [%02zX]\n", execFlags);
+                                        }
+
+                                        if(targetList != NULL) targetList->push_back(output);
                                 }
                         }
                         
@@ -2936,34 +2882,8 @@ int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFi
         } // while(!operationComplete)
 
         file.close();
-        if(output == NULL && ignoreInstructionData) {
-                return 0;
-        }
 
-        file.open(targetOutput, std::ios::out | std::ios::binary);
-        stageOutputTarget = targetOutput;
-        
-        nthp::script::stage::trigger_w primTrig = 0;
-        uint8_t fileLength = 0;
-        for(size_t i = 0; i < triggerList.size(); ++i) {
-                primTrig = 0;
-                fileLength = 0;
-                TRIGGER_SETID(primTrig, triggerList[i].trig.ID);
-                TRIGGER_SETGPR(primTrig, triggerList[i].trig.GPR);
-                TRIGGER_SETMEM(primTrig, triggerList[i].trig.MEM);
-                fileLength = triggerList[i].scriptFile.size();
 
-                file.write((char*)&primTrig, sizeof(primTrig));
-                file.write((char*)&fileLength, sizeof(fileLength));
-                file.write((char*)triggerList[i].scriptFile.c_str(), fileLength);
-
-        }
-
-        primTrig = 0;
-        TRIGGER_SETID(primTrig, TRIG_END);
-        file.write((char*)&primTrig, sizeof(primTrig));
-
-        file.close();
         return 0;
 
 }

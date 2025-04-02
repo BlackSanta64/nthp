@@ -6,11 +6,12 @@
 #include "softwaretexture.hpp"
 #include "e_entity.hpp"
 #include "st_compress.hpp"
-#include "s_compiler.hpp"
+#include "s_linker.hpp"
+#include "s_runtime.hpp"
 
 
 nthp::EngineCore nthp::core;
-nthp::script::stage::Stage currentStage;
+nthp::script::Runtime mainRuntime;
 
 
 int nthp::runtimeBehaviour(int argv, char** argc) {
@@ -23,43 +24,25 @@ int nthp::runtimeBehaviour(int argv, char** argc) {
        //NTHP_GEN_DEBUG_INIT(fopen("debug.log", "w+"));
 #endif
         { // The entire engine debug context.
-                {
-                        std::string init = "prog";
-                        if(argv > 1) {
-                                std::string outputName = argc[1];
-                                if(outputName == "-jit") {
-                                        outputName = argc[2];
-                                        outputName += ".cstg";
-                                        nthp::script::CompilerInstance comp;
-                                        comp.compileStageConfig(argc[2], outputName.c_str(), false, false);
-                                }
-                                init = outputName;
-                        }
-
-                        memcpy(nthp::script::stageMemory, init.c_str(), init.size());
-                        nthp::script::stageMemory[init.size()] = '\000';
-
-                }
+               
                 auto frameStart = SDL_GetTicks();
 
 
                 // Anyone would agree an infinite loop here is acceptable.
                 while(true) {
-                        if(currentStage.loadStage(nthp::script::stageMemory)) return -1;
-                        memset(nthp::script::stageMemory, 0, STAGEMEM_MAX);
+                        mainRuntime.importExecutable("m_prog.p");
 
                         // Init phase.
-                        if(currentStage.init()) return -1;
+                        if(mainRuntime.execInit()) return -1;
   
                         
-                        while(nthp::core.isRunning() && (!currentStage.data.changeStage)) {
+                        while(nthp::core.isRunning() && (!mainRuntime.data.changeStage)) {
                                 frameStart = SDL_GetTicks();
 
-                                currentStage.handleEvents();
+                                mainRuntime.handleEvents();
 
                                 // Tick phase.
-                                currentStage.tick();
-                                currentStage.logic();
+                                mainRuntime.execTick();
 
 
                                 nthp::deltaTime = nthp::intToFixed(SDL_GetTicks() - frameStart);
@@ -68,25 +51,15 @@ int nthp::runtimeBehaviour(int argv, char** argc) {
                                         SDL_Delay(nthp::fixedToInt(nthp::frameDelay - nthp::deltaTime));
                                         nthp::deltaTime = nthp::frameDelay;
                                 }
-                                currentStage.data.globalVarSet[DELTATIME_GLOBAL_INDEX] = nthp::deltaTime;
+                                mainRuntime.data.globalVarSet[nthp::script::predefined_globals::DELTATIME_GLOBAL_INDEX] = nthp::deltaTime;
                         }
 
 
 
                         // Exit Phase
-                        if(currentStage.exit()) return -1;
+                        if(mainRuntime.execExit()) return -1;
 
-                        // If CHANGESTAGE is false after the exit phase, then the core must've been stopped,
-                        // so exit the program. Otherwise, redo the init phase with the new stage. 
-                        if(currentStage.data.changeStage) {
-                                currentStage.data.changeStage = false;
-                                // StageMemory has been set to the new filename.
-                                
-                                continue;
-                        }
-                        else {
-                                break;
-                        }
+                        break;
                 }
                 
         }

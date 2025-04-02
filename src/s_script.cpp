@@ -67,10 +67,14 @@ inline char* ____eval_str(ptrRef& ref, nthp::script::Script::ScriptDataSet* data
 
 
 DEFINE_EXECUTION_BEHAVIOUR(EXIT) {
+        data->isSuspended = true;
+
         return 0;
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(HEADER) {
+        data->currentScriptHeaderLocation = data->currentNode;
+
         return 0;
 }
 
@@ -80,7 +84,7 @@ DEFINE_EXECUTION_BEHAVIOUR(LABEL) {
 
 // Fastest instruction jumping.
 DEFINE_EXECUTION_BEHAVIOUR(GOTO) {
-        data->currentNode = (*(uint32_t*)data->nodeSet[data->currentNode].access.data);
+        data->currentNode = (*(uint32_t*)data->nodeSet[data->currentNode].access.data) + data->currentScriptHeaderLocation;
         --data->currentNode;
 
         return 0;
@@ -94,7 +98,7 @@ DEFINE_EXECUTION_BEHAVIOUR(JUMP) {
 
         for(uint32_t i = 0; i < data->currentLabelBlockSize; ++i) {
                 if(data->currentLabelBlock[i + i] == static_label) {
-                        data->currentNode = data->currentLabelBlock[i + i + 1];
+                        data->currentNode = data->currentLabelBlock[i + i + 1] + data->currentScriptHeaderLocation;
                         break;
                 }
         }
@@ -287,7 +291,7 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_IF_TRUE) {
         if(nthp::fixedToInt(opA.value)) return 0;
         if(elseIndex) { data->currentNode = elseIndex; return 0; }
         
-        data->currentNode = endIndex;
+        data->currentNode = endIndex + data->currentScriptHeaderLocation;
 
         return 0;
 }
@@ -305,7 +309,7 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_EQU) {
         if(opA.value == opB.value) return 0;
         if(elseIndex) { data->currentNode = elseIndex; return 0; }
 
-        data->currentNode = endIndex;
+        data->currentNode = endIndex + data->currentScriptHeaderLocation;
 
         return 0;
 }
@@ -322,7 +326,7 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_NOT) {
         if(opA.value != opB.value) return 0;
         if(elseIndex) { data->currentNode = elseIndex; return 0; }
 
-        data->currentNode = endIndex;
+        data->currentNode = endIndex + data->currentScriptHeaderLocation;
 
         return 0;
 }
@@ -339,7 +343,7 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_GRT) {
         if(opA.value > opB.value) return 0;
         if(elseIndex) { data->currentNode = elseIndex; return 0; }
 
-        data->currentNode = endIndex;
+        data->currentNode = endIndex + data->currentScriptHeaderLocation;
 
         return 0;
 }
@@ -356,7 +360,7 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_LST) {
         if(opA.value < opB.value) return 0;
         if(elseIndex) { data->currentNode = elseIndex; return 0; }
 
-        data->currentNode = endIndex;
+        data->currentNode = endIndex + data->currentScriptHeaderLocation;
 
         return 0;
 }
@@ -373,7 +377,7 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_GRTE) {
         if(opA.value >= opB.value) return 0;
         if(elseIndex) { data->currentNode = elseIndex; return 0; }
 
-        data->currentNode = endIndex;
+        data->currentNode = endIndex + data->currentScriptHeaderLocation;
 
         return 0;
 }
@@ -391,7 +395,7 @@ DEFINE_EXECUTION_BEHAVIOUR(LOGIC_LSTE) {
         if(opA.value <= opB.value) return 0;
         if(elseIndex) { data->currentNode = elseIndex; return 0; }
 
-        data->currentNode = endIndex;
+        data->currentNode = endIndex + data->currentScriptHeaderLocation;
 
         return 0;
 }
@@ -973,8 +977,8 @@ DEFINE_EXECUTION_BEHAVIOUR(POLL_ENT_POSITION) {
 
         const auto pos = data->entityBlock[nthp::fixedToInt(target.value)].getPosition();
 
-        data->globalVarSet[RPOLL1_GLOBAL_INDEX] = pos.x;
-        data->globalVarSet[RPOLL2_GLOBAL_INDEX] = pos.y;
+        data->globalVarSet[nthp::script::predefined_globals::RPOLL1_GLOBAL_INDEX] = pos.x;
+        data->globalVarSet[nthp::script::predefined_globals::RPOLL2_GLOBAL_INDEX] = pos.y;
 
         return 0;
 }
@@ -985,7 +989,7 @@ DEFINE_EXECUTION_BEHAVIOUR(POLL_ENT_CURRENTFRAME) {
 
         const auto cf = data->entityBlock[nthp::fixedToInt(target.value)].getCurrentFrameIndex();
         
-        data->globalVarSet[RPOLL1_GLOBAL_INDEX] = nthp::intToFixed(cf);
+        data->globalVarSet[nthp::script::predefined_globals::RPOLL1_GLOBAL_INDEX] = nthp::intToFixed(cf);
 
         return 0;
 }
@@ -996,10 +1000,10 @@ DEFINE_EXECUTION_BEHAVIOUR(POLL_ENT_HITBOX) {
 
         const auto box = data->entityBlock[nthp::fixedToInt(target.value)].getHitbox();
 
-        data->globalVarSet[RPOLL1_GLOBAL_INDEX] = box.x;
-        data->globalVarSet[RPOLL2_GLOBAL_INDEX] = box.y;
-        data->globalVarSet[RPOLL3_GLOBAL_INDEX] = box.w;
-        data->globalVarSet[RPOLL4_GLOBAL_INDEX] = box.h;
+        data->globalVarSet[nthp::script::predefined_globals::RPOLL1_GLOBAL_INDEX] = box.x;
+        data->globalVarSet[nthp::script::predefined_globals::RPOLL2_GLOBAL_INDEX] = box.y;
+        data->globalVarSet[nthp::script::predefined_globals::RPOLL3_GLOBAL_INDEX] = box.w;
+        data->globalVarSet[nthp::script::predefined_globals::RPOLL4_GLOBAL_INDEX] = box.h;
 
         return 0;
 }
@@ -1011,8 +1015,8 @@ DEFINE_EXECUTION_BEHAVIOUR(POLL_ENT_RENDERSIZE) {
 
         const auto rs = data->entityBlock[target.value].getRenderSize();
 
-        data->globalVarSet[RPOLL1_GLOBAL_INDEX] = rs.x;
-        data->globalVarSet[RPOLL2_GLOBAL_INDEX] = rs.y;
+        data->globalVarSet[nthp::script::predefined_globals::RPOLL1_GLOBAL_INDEX] = rs.x;
+        data->globalVarSet[nthp::script::predefined_globals::RPOLL2_GLOBAL_INDEX] = rs.y;
 
         return 0;
 }
@@ -1274,61 +1278,38 @@ nthp::script::Script::Script() {
         localLabelBlockSize = 0;
 }
 
-nthp::script::Script::Script(const char* filename, ScriptDataSet* dataSet) {
+nthp::script::Script::Script(ScriptDataSet* dataSet, uint32_t headerLocation) {
         localCurrentNode = 0;
         localLabelBlock = nullptr;
         localLabelBlockSize = 0;
 
 
-        import(filename, dataSet);
+        import(dataSet, headerLocation);
 }
 
 
-int nthp::script::Script::import(const char* filename, ScriptDataSet* dataSet) {
+int nthp::script::Script::import(ScriptDataSet* const dataSet, const uint32_t headerLocation) {
         if(dataSet == NULL) {
-                dataSet = new nthp::script::Script::ScriptDataSet;
-                memset(dataSet, 0, sizeof(nthp::script::Script::ScriptDataSet));
+                data = new nthp::script::Script::ScriptDataSet;
+                memset(data, 0, sizeof(nthp::script::Script::ScriptDataSet));
                 inStageContext = false;
         }
         else {
                 inStageContext = true;
         }
 
-        std::fstream file(filename, std::ios::in | std::ios::binary);
-        data = dataSet;
 
-        if(file.fail()) {
-                PRINT_DEBUG_ERROR("Unable to load Script file [%s]; File not found.\n");
-                
+        data = dataSet;
+        script_begin = headerLocation;
+        if(!(data->nodeSet[headerLocation].access.ID == GET_INSTRUCTION_ID(HEADER))) {
+                PRINT_DEBUG_ERROR("Provided script origin does not correspond to valid header node.\n");
                 return 1;
         }
-
-
-        nthp::script::Node read;
         
-        {
-                NOVERB_PRINT_DEBUG("Importing Script [%s] ::..\n", filename);
-                for(size_t i = 0; read.access.ID != GET_INSTRUCTION_ID(EXIT); ++i) {
-
-                        file.read((char*)&read, sizeof(nthp::script::Node::n_file_t));
-                        nodeSet.push_back(read);
-                        NOVERB_PRINT_DEBUG("\t[%zu] ID:%u Size:%u\n", i, read.access.ID, read.access.size);
-                        
-                        if(nodeSet.back().access.size != 0) {
-                                nodeSet.back().access.data = (char*)malloc(nodeSet.back().access.size);
-                                file.read(nodeSet.back().access.data, nodeSet.back().access.size);
-                        }
-
-                        else nodeSet.back().access.data = nullptr;
-
-                }
-        }
-
-        data->globalMemBudget += *(uint32_t*)(nodeSet[0].access.data);
-
         // Note this is a pointer to the region that stores labels.
-        localLabelBlock = (uint32_t*)(nodeSet[0].access.data + (sizeof(uint32_t) + sizeof(uint32_t)));
-        localLabelBlockSize = *(uint32_t*)(nodeSet[0].access.data + (sizeof(uint32_t)));
+        localLabelBlock = (uint32_t*)(data->nodeSet[headerLocation].access.data + (sizeof(uint32_t) + sizeof(uint32_t)));
+        localLabelBlockSize = *(uint32_t*)(data->nodeSet[headerLocation].access.data + (sizeof(uint32_t)));
+        localCurrentNode = headerLocation;
 
 
         return 0;
@@ -1350,7 +1331,7 @@ int nthp::script::Script::execute() {
         data->currentLabelBlock = localLabelBlock;
         data->currentLabelBlockSize = localLabelBlockSize;
         data->currentNode = localCurrentNode;
-        data->nodeSet = nodeSet.data();
+        data->currentScriptHeaderLocation = script_begin;
 
         #ifdef DEBUG
 
@@ -1381,7 +1362,7 @@ int nthp::script::Script::execute() {
 
         #endif
 
-        while((data->currentNode < nodeSet.size()) && 
+        while((data->currentNode < data->nodeSetSize) && 
                 (data->isSuspended == false)) {
 #ifdef DEBUG
                         debug_access.lock();
@@ -1412,18 +1393,18 @@ int nthp::script::Script::execute() {
                         }
                         debug_access.unlock();
 #endif
-
-                if(exec_func[nodeSet[data->currentNode].access.ID](data)) return 1;
+                if(exec_func[data->nodeSet[data->currentNode].access.ID](data)) return 1;
                 ++data->currentNode;
         }
-        if(data->currentNode == nodeSet.size()) data->currentNode = 0;
+
+        if(data->nodeSet[data->currentNode - 1].access.ID == GET_INSTRUCTION_ID(EXIT)) { localCurrentNode = script_begin; }
+        else localCurrentNode = data->currentNode;
 
 #ifdef DEBUG
         SKIP_EXECUTION: // Using goto. Hail to the king, baby.
 #endif
 
         
-        localCurrentNode = data->currentNode;
 
         return 0;
 }
@@ -1445,11 +1426,7 @@ nthp::script::Script::~Script() {
         // nodes. I write this because I made that mistake on Oct. 15, 2024.
 
         if(!inStageContext) {
-                delete data;
+                nthp::script::Script::cleanDataSet(data);
         }
 
-
-        for(size_t i = 0; i < nodeSet.size(); ++i) {
-                if(nodeSet[i].access.size > 0) free(nodeSet[i].access.data);
-        }
 }

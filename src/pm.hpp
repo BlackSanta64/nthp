@@ -1,8 +1,8 @@
 #pragma once
 
-#include "s_compiler.hpp"
+#include "s_linker.hpp"
 #include "s_script.hpp"
-#include "s_stage.hpp"
+#include "s_runtime.hpp"
 #include <sstream>
 #include <thread>
 #include <mutex>

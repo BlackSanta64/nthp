@@ -1,8 +1,6 @@
 #pragma once
 
 #include "s_instructions.hpp"
-#include "s_stage.hpp"
-
 
 #ifdef DEBUG 
 
@@ -78,13 +76,13 @@ namespace nthp {
 
                 // Takes source script as input, writes compiled script to output.
                 // output file can be NULL, where the compiler won't write anything.
-                int compileSourceFile(const char* inputFile, const char* outputFile, bool buildSystemContext, const bool ignoreInstructionData);
+                int compileSourceFile(const char* inputFile, const char* outputFile, bool buildSystemContext, uint8_t executionFlags, const bool ignoreInstructionData);
                 
                 // Writes stored Node data to the target output file.
                 // Is called by 'compileSourceFile' if the 'outputfile' is non-NULL.
                 int exportToFile(const char* outputFile, std::vector<nthp::script::Node>* nodeList, bool buildSystemContext);
 
-                int compileStageConfig(const char* stageConfigFile, const char* output, bool forceBuild, const bool ignoreInstructionData);
+                int compileStageConfig(const char* stageConfigFile, std::vector<std::string>* targetFiles, bool forceBuild, const bool ignoreInstructionData);
 
                 std::vector<nthp::script::CompilerInstance::CONST_DEF>  constantList;
                 std::vector<nthp::script::CompilerInstance::MACRO_DEF>  macroList;
@@ -113,6 +111,23 @@ namespace nthp {
                 }
 
                 const std::string getStageOutputTarget() { return stageOutputTarget; }
+
+                // Up to 8 bits can be used for execution data.
+                        typedef enum {
+                                T_NONE,         // #0
+                                T_INIT,         // #1
+                                T_TICK,         // #2
+                                T_EXIT,         // #3
+                                T_HIDDEN        // #4
+                        } TriggerBits;
+
+                static inline uint8_t getScriptTriggerFlags(const nthp::script::Node& node) {
+                        return *(uint8_t*)(node.access.data + (sizeof(uint32_t) + sizeof(uint32_t)));
+                }
+                static inline uint32_t getScriptGlobalRequest(const nthp::script::Node& node) {
+                        return *(uint32_t*)(node.access.data);
+                }
+
 
                 ~CompilerInstance();
                 private:

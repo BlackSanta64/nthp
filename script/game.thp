@@ -3,6 +3,15 @@ DEPEND #CONTEXT_MAINPROG
 PRIVATE size_x
 PRIVATE size_y
 
+PRIVATE testArray1
+PRIVATE testArray2
+PRIVATE testArray3
+
+ALLOC 22 &testArray1
+ALLOC 24 &testArray2
+ALLOC 26 &testArray3
+
+
 LABEL 1
         POLL #e_testEntity POS
         SUB $mousepos_x $r_poll1 &size_x

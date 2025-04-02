@@ -1,22 +1,26 @@
 #pragma once
 #include "s_node.hpp"
 
-typedef enum {
-        MOUSEPOS_X_GLOBAL_INDEX,
-        MOUSEPOS_Y_GLOBAL_INDEX,
-        DELTATIME_GLOBAL_INDEX,
-        MOUSE1_GLOBAL_INDEX,
-        MOUSE2_GLOBAL_INDEX,
-        MOUSE3_GLOBAL_INDEX,
-        RPOLL1_GLOBAL_INDEX,
-        RPOLL2_GLOBAL_INDEX,
-        RPOLL3_GLOBAL_INDEX,
-        RPOLL4_GLOBAL_INDEX,
 
-        COUNT_PREDEFINED_GLOBALS
-} predefined_globals;
 
-namespace nthp { namespace script { namespace instructions {
+namespace nthp { namespace script { 
+        
+        typedef enum {
+                MOUSEPOS_X_GLOBAL_INDEX,
+                MOUSEPOS_Y_GLOBAL_INDEX,
+                DELTATIME_GLOBAL_INDEX,
+                MOUSE1_GLOBAL_INDEX,
+                MOUSE2_GLOBAL_INDEX,
+                MOUSE3_GLOBAL_INDEX,
+                RPOLL1_GLOBAL_INDEX,
+                RPOLL2_GLOBAL_INDEX,
+                RPOLL3_GLOBAL_INDEX,
+                RPOLL4_GLOBAL_INDEX,
+        
+                COUNT_PREDEFINED_GLOBALS
+        } predefined_globals;
+        
+        namespace instructions {
 
 
 #define INSTRUCTION_LIST(...) typedef enum __inst {\

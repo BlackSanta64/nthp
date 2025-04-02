@@ -9,7 +9,7 @@
 // GUI.
 
 nthp::EngineCore nthp::core;
-nthp::script::stage::Stage currentStage;
+nthp::script::Runtime mainRuntime;
 nthp::script::CompilerInstance symbolData;
 std::string testTarget;
 
@@ -37,7 +37,7 @@ int nthp::debuggerBehaviour(std::string target, FILE* debugOutputTarget) {
 
                 // Anyone would agree an infinite loop here is acceptable.
                 while(true) {
-                        if(currentStage.loadStage(target.c_str())) return 1;
+                        if(mainRuntime.importExecutable(target.c_str())) return 1;
                         memset(nthp::script::stageMemory, 0, STAGEMEM_MAX);
 
                         // Init phase.
@@ -45,26 +45,26 @@ int nthp::debuggerBehaviour(std::string target, FILE* debugOutputTarget) {
                
                     
 
-                        if(currentStage.init()) return 1;
+                        if(mainRuntime.execInit()) return 1;
                         g_access.lock();
 
                         nthp::script::debug::debugInstructionCall.x = nthp::script::debug::DEBUG_CALLS::BREAK;
+                        nthp::script::debug::suspendExecution = true;
                         PM_PRINT("Ready. Waiting for continue (c)...\n");
 
                         g_access.unlock();
 
                         
-                        while((nthp::core.isRunning()) && (!currentStage.data.changeStage) && debuggingActiveProcess) {
+                        while((nthp::core.isRunning()) && (!mainRuntime.data.changeStage) && debuggingActiveProcess) {
                                 frameStart = SDL_GetTicks();
                                 SDL_Delay(1);
                                 
-                                currentStage.handleEvents();
+                                mainRuntime.handleEvents();
 
 
                                 
-                                        // Tick phase.
-                                currentStage.tick();
-                                currentStage.logic();
+                                // Tick phase.
+                                mainRuntime.execTick();
 
                                 deltaTime = nthp::intToFixed(SDL_GetTicks() - frameStart);
                         
@@ -74,7 +74,7 @@ int nthp::debuggerBehaviour(std::string target, FILE* debugOutputTarget) {
                                 }
                                 
                                 g_access.lock();
-                                        currentStage.data.globalVarSet[DELTATIME_GLOBAL_INDEX] = nthp::deltaTime;
+                                        mainRuntime.data.globalVarSet[nthp::script::predefined_globals::DELTATIME_GLOBAL_INDEX] = nthp::deltaTime;
                                 g_access.unlock();
                         }
 
@@ -82,12 +82,12 @@ int nthp::debuggerBehaviour(std::string target, FILE* debugOutputTarget) {
                         PRINT_DEBUG("Beginning EXIT phase...\n");
 
                         
-                        if(currentStage.exit()) return 1;
+                        if(mainRuntime.execExit()) return 1;
 
                         // If CHANGESTAGE is false after the exit phase, then the core must've been stopped,
                         // so exit the program. Otherwise, redo the init phase with the new stage. 
-                        if(currentStage.data.changeStage && debuggingActiveProcess) {
-                                currentStage.data.changeStage = false;
+                        if(mainRuntime.data.changeStage && debuggingActiveProcess) {
+                                mainRuntime.data.changeStage = false;
                                 // StageMemory has been set to the new filename.
                                 continue;
                         }
@@ -101,7 +101,7 @@ int nthp::debuggerBehaviour(std::string target, FILE* debugOutputTarget) {
         }
         g_access.lock();
 
-        currentStage.clean();
+        mainRuntime.clean();
         nthp::core.cleanup();
 
 
@@ -236,7 +236,7 @@ int headless_runtime() {
 						continue;
 					}
 					
-					if(!cc.compileSourceFile(args[2].c_str(), args[3].c_str(), false, false)) {
+					if(!cc.compileSourceFile(args[2].c_str(), args[3].c_str(), false, (1 << nthp::script::CompilerInstance::TriggerBits::T_TICK), false)) {
 					        PM_PRINT("Script, Done. %s > %s\n", args[2].c_str(), args[3].c_str());
                                         }
                                         else {
@@ -247,13 +247,13 @@ int headless_runtime() {
 				if(args[1] == "stg") {
                                         bool forceBuild = false;
                                         int sizeTarget = 0;
-					if(args.size() < 4) {
-						PM_PRINT_ERROR("No output file specified.\n");
+					if(args.size() < 3) {
+						PM_PRINT_ERROR("No file specified.\n");
 						continue;
 					}
                                         if(args[2] == "-f") { forceBuild = true; sizeTarget = 1; }
-					if(!cc.compileStageConfig(args[2 + sizeTarget].c_str(), args[3 + sizeTarget].c_str(), forceBuild, false)) {
-					        PM_PRINT("Stage, Done. %s > %s\n", args[2 + sizeTarget].c_str(), args[3 + sizeTarget].c_str());
+					if(!cc.compileStageConfig(args[2 + sizeTarget].c_str(), NULL, forceBuild, false)) {
+					        PM_PRINT("Stage, Done. %s complete.\n", args[2 + sizeTarget].c_str());
                                         }
                                         else {
                                                 PM_PRINT_ERROR("Failure in CompilerInstance [%p].\n", &cc);
@@ -264,6 +264,38 @@ int headless_runtime() {
 				PM_PRINT_ERROR("No compilation behaviour specified. Aborting.\n");
 				continue;
 			}
+                        if(args[0] == "link" || args[0] == "lk") {
+                                nthp::script::LinkerInstance linker;
+                                std::vector<std::string> targetFiles;
+
+                                for(size_t i = 0; i < args.size() - 2; ++i) {
+                                        targetFiles.push_back(args[i + 1]);
+                                }
+                                linker.linkFiles(targetFiles, args.back().c_str());
+                                continue;
+                        }
+                        if(args[0] == "build" || args[0] == "bd") {
+                                if(args.size() < 3) { PM_PRINT("Build failure; syntax error. bd [buildsystem] [outputExecutable]\n"); continue; }
+
+                                nthp::script::CompilerInstance cc;
+                                nthp::script::LinkerInstance linker;
+                                std::vector<std::string> outputFiles;
+
+                                PM_PRINT("Compiling source files...\n");
+                                if(!cc.compileStageConfig(args[1].c_str(), &outputFiles, false, false)) {
+                                        PM_PRINT("Stage, Done. %s complete.\n", args[1].c_str());
+                                }
+                                else {
+                                        PM_PRINT_ERROR("Failure in CompilerInstance [%p].\n", &cc);
+                                        continue;
+                                }
+
+                                PM_PRINT("done. Linking output...\n");
+                                linker.linkFiles(outputFiles, args[2].c_str());
+                                PM_PRINT("Program successfully compiled and linked; output executable = [%s].\n", args[2].c_str());
+
+                                continue;
+                        }
                         if(args[0] == "debug") {
                                 if(!inHeadlessMode) {
                                         if(args.size() > 1) {
@@ -295,28 +327,6 @@ int headless_runtime() {
 
                                 configTestingTarget = args[1];
                                 PM_PRINT("Set debug target config to [%s].\n", configTestingTarget.c_str());
-                                continue;
-
-                        }
-
-                        if(args[0] == "test") {
-
-                                if(debuggingActiveProcess) { PM_PRINT("Target currently running; close current session before starting a new one.\n"); continue; }
-
-                                nthp::script::CompilerInstance comp;
-                                if(comp.compileStageConfig(configTestingTarget.c_str(), NULL, false, false)) {
-                                        PM_PRINT_ERROR("Critical failure in config [%s]; see debug log.\n", configTestingTarget.c_str());
-                                        continue;
-                                }
-
-                                PM_PRINT("Testing [%s]...\n", configTestingTarget.c_str());
-                                { testTarget = comp.getStageOutputTarget(); }
-                                g_access.lock();
-
-                                        debuggingActiveProcess = true;
-                                        PM_PRINT("Now debugging target [%s].\n", testTarget.c_str());
-
-                                g_access.unlock();
                                 continue;
 
                         }
@@ -401,7 +411,7 @@ int headless_runtime() {
 
                                         nthp::script::debug::debugInstructionCall.x = nthp::script::debug::BREAK;
                                         suspendExecution = true;
-                                        PM_PRINT("Breakpoint read at instruction [%zu]; HEAD at [%zu], waiting for continue.\n", currentStage.data.currentNode, currentStage.data.currentNode);
+                                        PM_PRINT("Breakpoint read at instruction [%zu]; HEAD at [%zu], waiting for continue.\n", mainRuntime.data.currentNode, mainRuntime.data.currentNode);
 
                                         g_access.unlock();
                                         continue;
@@ -412,7 +422,7 @@ int headless_runtime() {
 
                                         nthp::script::debug::debugInstructionCall.x = nthp::script::debug::CONTINUE;
                                         suspendExecution = false;
-                                        PM_PRINT("Continuing from instruction [%zu]; HEAD at [%zu].\n", currentStage.data.currentNode, currentStage.data.currentNode);
+                                        PM_PRINT("Continuing from instruction [%zu]; HEAD at [%zu].\n", mainRuntime.data.currentNode, mainRuntime.data.currentNode);
 
                                         g_access.unlock();
                                         continue;
@@ -426,7 +436,7 @@ int headless_runtime() {
                                 if(args[0] == "import") {
                                         if(args.size() < 3) { PM_PRINT("Invalid arguments. syn; import src/stg sourcefile/stageconfig"); continue; }
                                         if(args[1] == "src") {
-                                                if(symbolData.compileSourceFile(args[2].c_str(), NULL, false, true)) {
+                                                if(symbolData.compileSourceFile(args[2].c_str(), NULL, false, 0, true)) {
                                                         PM_PRINT_ERROR("Failed to import symbols from file [%s].\n", args[2].c_str());
                                                         continue;
                                                 }
@@ -476,7 +486,7 @@ int headless_runtime() {
                                         
 
                                         nthp::script::debug::debugInstructionCall.x = nthp::script::debug::STEP;
-                                        PM_PRINT("Stepping to next instruction [%zu], [%zu] -> [%zu]\n", currentStage.data.currentNode + 1, currentStage.data.currentNode, currentStage.data.currentNode + 1);
+                                        PM_PRINT("Stepping to next instruction [%zu], [%zu] -> [%zu]\n", mainRuntime.data.currentNode + 1, mainRuntime.data.currentNode, mainRuntime.data.currentNode + 1);
 
                                         g_access.unlock();
                                         continue;
@@ -496,12 +506,12 @@ int headless_runtime() {
                                                 printSymbols = true;
                                         }
 
-                                        for(size_t i = 0; i < currentStage.data.globalMemBudget; ++i) {
+                                        for(size_t i = 0; i < mainRuntime.data.globalMemBudget; ++i) {
                                                 index = i;
                                                 std::cout << "\t[" << i; 
                                                 
                                                 if(printSymbols) { std::cout << ", [>" << symbolData.globalList[i].varName; index = symbolData.globalList[i].relativeIndex; }
-                                                std::cout << "] " << currentStage.data.globalVarSet + index << "; = [" << nthp::fixedToDouble(currentStage.data.globalVarSet[index]) << "] ]\n";
+                                                std::cout << "] " << mainRuntime.data.globalVarSet + index << "; = [" << nthp::fixedToDouble(mainRuntime.data.globalVarSet[index]) << "] ]\n";
                                         }
 
                                         g_access.unlock();
@@ -524,14 +534,14 @@ int headless_runtime() {
                                         
                                         try {
                                                 if(isIndex) {
-                                                        currentStage.data.globalVarSet[std::stoul(args[1])] = nthp::doubleToFixed(std::stod(args[2]));
+                                                        mainRuntime.data.globalVarSet[std::stoul(args[1])] = nthp::doubleToFixed(std::stod(args[2]));
                                                 }
                                                 else {
                                                         std::string reference = args[1];
                                                         reference.erase(reference.begin());
                                                         for(size_t i = 0; i < symbolData.globalList.size(); ++i) {
                                                                 if(reference == symbolData.globalList[i].varName) {
-                                                                        currentStage.data.globalVarSet[symbolData.globalList[i].relativeIndex] = nthp::doubleToFixed(std::stod(args[2]));
+                                                                        mainRuntime.data.globalVarSet[symbolData.globalList[i].relativeIndex] = nthp::doubleToFixed(std::stod(args[2]));
                                                                         break;
                                                                 }
                                                         }
@@ -558,9 +568,9 @@ int headless_runtime() {
 
                                                 PM_PRINT("List of Allocated Block data:\nChoose block \"gb [blockID]\"::\n");
                                                 uint8_t b = 0;
-                                                for(size_t i = 0; i < currentStage.data.blockDataSize; ++i) {
-                                                        b = currentStage.data.blockData[i].isFree;
-                                                        PM_PRINT("ID: %zu at [%p]. Contains [%zu] address space (Vacancy:%d).\n", i, currentStage.data.blockData[i].data, currentStage.data.blockData[i].size, b);
+                                                for(size_t i = 0; i < mainRuntime.data.blockDataSize; ++i) {
+                                                        b = mainRuntime.data.blockData[i].isFree;
+                                                        PM_PRINT("ID: %zu at [%p]. Contains [%zu] address space (Vacancy:%d).\n", i, mainRuntime.data.blockData[i].data, mainRuntime.data.blockData[i].size, b);
                                                 }
 
                                                 g_access.unlock();
@@ -577,16 +587,16 @@ int headless_runtime() {
 
                                         g_access.lock();
 
-                                        if(index > currentStage.data.blockDataSize) {
+                                        if(index > mainRuntime.data.blockDataSize) {
                                                 PM_PRINT_ERROR("Invalid Argument; invalid blockID\n");
                                                 g_access.unlock();
                                                 continue;
                                         }
-                                        PM_PRINT("Reading Memory from block %zu [%p]...\n", index, currentStage.data.blockData + index);
-                                        for(size_t i = 0; i < currentStage.data.blockData[index].size; ++i) {
-                                                PM_PRINT("[%04zX] = %lf,\n", i, nthp::fixedToDouble(currentStage.data.blockData[index].data[i]));
+                                        PM_PRINT("Reading Memory from block %zu [%p]...\n", index, mainRuntime.data.blockData + index);
+                                        for(size_t i = 0; i < mainRuntime.data.blockData[index].size; ++i) {
+                                                PM_PRINT("[%04zX] = %lf,\n", i, nthp::fixedToDouble(mainRuntime.data.blockData[index].data[i]));
                                         }
-                                        PM_PRINT("\tRead %zu entries.\n", currentStage.data.blockData[index].size);
+                                        PM_PRINT("\tRead %zu entries.\n", mainRuntime.data.blockData[index].size);
 
                                         g_access.unlock();
                                         continue;
@@ -610,10 +620,10 @@ int headless_runtime() {
 
                                         g_access.lock();
 
-                                        if(block < currentStage.data.blockDataSize) {
-                                                if(address < currentStage.data.blockData[block].size) {
-                                                        currentStage.data.blockData[block].data[address] = value;
-                                                        PM_PRINT("Write success; ID: %d at [%p], address %d; = %lf\n",block, currentStage.data.blockData + block, address, nthp::fixedToDouble(value));
+                                        if(block < mainRuntime.data.blockDataSize) {
+                                                if(address < mainRuntime.data.blockData[block].size) {
+                                                        mainRuntime.data.blockData[block].data[address] = value;
+                                                        PM_PRINT("Write success; ID: %d at [%p], address %d; = %lf\n",block, mainRuntime.data.blockData + block, address, nthp::fixedToDouble(value));
                                                         
                                                         g_access.unlock();
                                                         continue;

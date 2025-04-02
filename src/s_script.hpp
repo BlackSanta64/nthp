@@ -39,7 +39,6 @@ namespace script {
                 typedef enum {
                         INIT,
                         TICK,
-                        LOGIC,
                         EXIT
                 } EXEC_PHASE;
         #endif
@@ -64,10 +63,13 @@ namespace script {
                         uint32_t* currentLabelBlock;
                         uint32_t currentLabelBlockSize;
 
+                        uint32_t currentScriptHeaderLocation;
+
                         // Compiler-Evaluated.
                         //////////////////////////
                         nthp::script::Node* nodeSet;
                         size_t currentNode;
+                        size_t nodeSetSize;
 
 
                         nthp::script::stdVarWidth* globalVarSet;
@@ -98,16 +100,41 @@ namespace script {
 
                         bool isSuspended, changeStage; // Stage stuff.
 
-                };
+        };
+                static inline void cleanDataSet(ScriptDataSet* data) {
+                        if(data->textureBlockSize > 0) delete[] data->textureBlock;
+                        if(data->entityBlockSize > 0) delete[] data->entityBlock;
+                        if(data->frameBlockSize > 0) delete[] data->frameBlock;
+                        if(data->globalMemBudget > 0) delete[] data->globalVarSet;
+                        if(data->actionListSize > 0) delete[] data->actionList;
+                        if(data->blockDataSize > 0) {
+                                for(size_t i = 0; i < data->blockDataSize; ++i) {
+                                        if(!(data->blockData[i].isFree)) free(data->blockData[i].data);
+                                }
+                
+                                free(data->blockData);
+                        }
+
+                        if(data->nodeSetSize > 0) {
+                                for(size_t i = 0; i < data->nodeSetSize; ++i) {
+                                        if(data->nodeSet[i].access.size) { free(data->nodeSet[i].access.data); }
+                                }
+
+                                delete[] data->nodeSet;
+                        }
+
+
+                        memset(data, 0, sizeof(ScriptDataSet));
+                }
 
 
 
 
 
                 Script();
-                Script(const char* filename, ScriptDataSet* dataSet);
+                Script(ScriptDataSet* dataSet, uint32_t headerLocation);
 
-                int import(const char* filename, ScriptDataSet* dataSet);
+                int import(ScriptDataSet* dataSet, uint32_t headerLocation);
 
                 int execute();
                 int execute(uint32_t entryPoint);
@@ -126,7 +153,7 @@ namespace script {
                 uint32_t localLabelBlockSize;
 
                 size_t localCurrentNode;
-                std::vector<nthp::script::Node> nodeSet;
+                uint32_t script_begin; // Points to the header of the corresponding linked object.
 
                 bool inStageContext;
         };
