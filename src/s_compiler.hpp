@@ -63,8 +63,17 @@ namespace nthp {
                 };
 
                 struct STR_DEF {
-                        uint32_t objectPosition;
                         std::string name;
+                        uint32_t objectPosition;
+                };
+
+                // Contrary to how it may seem based on the name, a FUNC is just a cross-script label that's evaluated by the
+                // LINKER, not the compiler. FUNC_START instructions are placed before a function, and the order in which they appear in
+                // the linked executable is how they are defined. FUNC_CALL instructions (with "/funcname") will match the named function, provided
+                // the FUNC compiler symbol is made available in a different source file with IMPORT. FUNCs cannot be referenced OOO.
+                struct FUNC_DEF {
+                        std::string name;
+                        uint32_t func_start;
                 };
 
 
@@ -88,6 +97,7 @@ namespace nthp {
                 std::vector<nthp::script::CompilerInstance::MACRO_DEF>  macroList;
                 std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>    globalList;
                 std::vector<nthp::script::CompilerInstance::STR_DEF> stringList;
+                std::vector<nthp::script::CompilerInstance::FUNC_DEF> funcList;
 
                 static inline void undefConstant(const char* constName, std::vector<nthp::script::CompilerInstance::CONST_DEF>& constantList) {
                         size_t i = 0;

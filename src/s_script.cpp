@@ -43,7 +43,7 @@ inline void ____eval_std(stdRef& ref, nthp::script::Script::ScriptDataSet* data)
 
 inline char* ____eval_str(ptrRef& ref, nthp::script::Script::ScriptDataSet* data) {
         if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_NODE_STRING_PTR)) {
-                return data->nodeSet[nthp::fixedToInt(ref.value)].access.data;
+                return data->nodeSet[nthp::fixedToInt(ref.value) + data->currentScriptHeaderLocation].access.data;
         }
         EVAL_STDREF(ref);
 
@@ -112,14 +112,13 @@ DEFINE_EXECUTION_BEHAVIOUR(SUSPEND) {
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(RETURN) {
-        stdRef index = *(stdRef*)data->nodeSet[data->currentNode].access.data;
+        --data->stackPointer;
+        const nthp::script::Script::ReturnStackEntry ret = data->returnStack[data->stackPointer];
 
-        EVAL_STDREF(index);
+        data->currentScriptHeaderLocation = ret.sourceHeaderLocation;
+        data->currentNode = ret.sourceDestination;
 
-
-
-        data->currentNode = nthp::fixedToInt(index.value) - 1;
-
+        --data->currentNode;
         return 0;
 }
 
@@ -626,18 +625,6 @@ DEFINE_EXECUTION_BEHAVIOUR(FRAME_SET) {
         return 0;
 }
 
-
-
-DEFINE_EXECUTION_BEHAVIOUR(GETGPR) {
-        ptrRef into = *(ptrRef*)(data->nodeSet[data->currentNode].access.data);
-        EVAL_PTRREF(into);
-
-
-        *target_dsc = nthp::intToFixed(data->currentTriggerConfig.GPR);
-
-
-        return 0;
-}
 
 DEFINE_EXECUTION_BEHAVIOUR(SM_WRITE) {
         stdRef to = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
@@ -1254,6 +1241,26 @@ DEFINE_EXECUTION_BEHAVIOUR(PRINT) {
 
 
 DEFINE_EXECUTION_BEHAVIOUR(STRING) {
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(FUNC_START) {
+
+        return 0;
+}
+
+DEFINE_EXECUTION_BEHAVIOUR(FUNC_CALL) {
+        uint32_t location = *(uint32_t*)(data->nodeSet[data->currentNode].access.data);
+
+        nthp::script::Script::ReturnStackEntry newEntry;
+        newEntry.sourceDestination = data->currentNode + 1;
+        newEntry.sourceHeaderLocation = data->currentScriptHeaderLocation;
+
+        data->returnStack[data->stackPointer] = newEntry;
+        ++(data->stackPointer);
+
+        data->currentNode = location;
+
         return 0;
 }
 

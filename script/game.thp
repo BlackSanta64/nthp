@@ -1,5 +1,6 @@
 DEPEND #CONTEXT_MAINPROG
 
+
 PRIVATE size_x
 PRIVATE size_y
 
@@ -10,6 +11,8 @@ PRIVATE testArray3
 ALLOC 22 &testArray1
 ALLOC 24 &testArray2
 ALLOC 26 &testArray3
+
+
 
 
 LABEL 1
@@ -24,6 +27,8 @@ LABEL 1
                 SET &mouse1 0
         END
 
+
+        @f_testFunc ( 1000 )
 
 	CORE_CLEAR
         CORE_QRENDER #e_testEntity

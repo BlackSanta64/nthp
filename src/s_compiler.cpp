@@ -525,12 +525,6 @@ DEFINE_COMPILATION_BEHAVIOUR(JUMP) {
 DEFINE_COMPILATION_BEHAVIOUR(RETURN) {
         ADD_NODE(RETURN);
 
-        EVAL_SYMBOL();
-        auto static_ref = EVAL_PREF();
-        CHECK_REF(static_ref);
-
-        stdRef* instruction = decltype(instruction)(nodeList[currentNode].access.data);
-        *instruction = static_ref;
 
         PRINT_NODEDATA();
         return 0;
@@ -1148,21 +1142,6 @@ DEFINE_COMPILATION_BEHAVIOUR(FRAME_SET) {
         *h = sh;
         *textureIndex = stextureIndex;
 
-        PRINT_NODEDATA();
-        return 0;
-}
-
-
-DEFINE_COMPILATION_BEHAVIOUR(GETGPR) {
-        ADD_NODE(GETGPR);
-
-        EVAL_SYMBOL();
-        auto write_to = EVAL_PREF();
-        CHECK_REF(write_to);
-
-        ptrRef* output = (ptrRef*)(nodeList[currentNode].access.data);
-        
-        *output = write_to;
         PRINT_NODEDATA();
         return 0;
 }
@@ -2182,6 +2161,8 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
         size_t targetMacro = 0;
         bool evaluateMacro = false;
 
+        bool waitingForFuncScopeReturn = false;
+
 
         #define COMPILE(instruction) if( instruction ( nodeList, file, fileRead, currentFile, constantList, macroList, globalList, labelList, gotoList, stringList, ifLocations, endLocations, skipList, currentMacroPosition, targetMacro, evaluateMacro, buildSystemContext) ) return 1
         #define CHECK_COMP(instruction) if(fileRead == #instruction) { COMPILE(instruction); continue; }
@@ -2208,7 +2189,55 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                        continue;
                 }
                 PRINT_DEBUG("Eval. Symbol; [%s] from [%s]\n", fileRead.c_str(), currentFile.c_str());
+
+                // Symbol for a FUNC_CALL
+                if(fileRead[0] == '=') {
+                        fileRead.erase(fileRead.begin());
+
+                        bool matchedFunc = false;
+                        for(size_t i = 0; i < funcList.size(); ++i) {
+                                if(fileRead == funcList[i].name) {
+                                        ADD_NODE(FUNC_CALL);
+
+                                        uint32_t* ID = (uint32_t*)nodeList[currentNode].access.data;
+                                        *ID = i;
+                                        matchedFunc = true;
+
+                                        break;
+                                }
+                        }
+
+                        if(!matchedFunc) {
+                                PRINT_COMPILER_ERROR("Unable to match FUNC_CALL [%s]; FUNC not found.\n", fileRead);
+                                return 1;
+                        }
+
+                        continue;
+                }
                 
+                if(fileRead == "FUNC") {
+                        EVAL_SYMBOL();
+
+                        PRINT_COMPILER("Defining new FUNC [%s]...\n", fileRead.c_str());
+
+                        FUNC_DEF newFunc;
+                        newFunc.name = fileRead;
+                        newFunc.func_start = nodeList.size();
+                        PRINT_COMPILER("Defined func_%s at [%u].\n", fileRead.c_str(), newFunc.func_start);
+
+                        funcList.push_back(newFunc);
+
+                        ADD_NODE(FUNC_START);
+                        uint32_t* ID = (uint32_t*)nodeList[currentNode].access.data;
+                        *ID = funcList.size() - 1;
+
+                        PRINT_NODEDATA();
+
+                        EVAL_SYMBOL();
+                        if(fileRead == "{") {
+                                waitingForFuncScopeReturn = true;
+                        }
+                }
 
 
                 if(fileRead == "EXIT") {
@@ -2407,7 +2436,15 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                         continue;
                 }
-                
+
+                if(fileRead == "}") {
+                        if(waitingForFuncScopeReturn) {
+                                waitingForFuncScopeReturn = false;
+
+                                ADD_NODE(RETURN);
+                                continue;
+                        }
+                }
 
                 if(fileRead == "DEPEND") {
                         file >> fileRead;
@@ -2508,7 +2545,6 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                 CHECK_COMP(FRAME_CLEAR);
                 CHECK_COMP(FRAME_SET);
 
-                CHECK_COMP(GETGPR);
                 CHECK_COMP(SM_WRITE);
                 CHECK_COMP(SM_READ);
 

@@ -29,9 +29,15 @@ namespace script {
 
         inline void cleanNodeSet(std::vector<Node>& set) {
                 for(size_t i = 0; i < set.size(); ++i) {
-                        free(set[i].access.data);
+                        if(set[i].access.size) free(set[i].access.data);
                 }
                 set.clear();
+        }
+        inline void cleanNodeSet(nthp::script::Node* set, size_t size) {
+                for(size_t i = 0; i < size; ++i) {
+                        if(set[i].access.size) free(set[i].access.data);
+                }
+                delete[] set;
         }
 
         

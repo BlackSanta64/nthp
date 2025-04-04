@@ -57,6 +57,11 @@ namespace script {
                         int boundKey;
                 };
 
+                struct ReturnStackEntry {
+                        uint32_t sourceHeaderLocation;
+                        uint32_t sourceDestination;
+                };
+
         struct ScriptDataSet {
                         uint32_t globalMemBudget;
 
@@ -86,13 +91,14 @@ namespace script {
                         nthp::texture::Frame* frameBlock; // Context frame data.
                         size_t frameBlockSize;
 
-                        nthp::script::scriptTriggerComplex currentTriggerConfig; // Just some data on the current stage.
-
                         nthp::script::BlockMemoryEntry* blockData;
                         size_t blockDataSize;
 
                         Action* actionList; // Tracks keypresses; created with ACTION_DEFINE and ACTION_BIND to configure.
                         size_t  actionListSize;
+
+                        ReturnStackEntry returnStack[256];
+                        uint8_t stackPointer;
 
                         unsigned short penColor; // stores a color as an index to the palette to draw primitives with the DRAW instruction.
 

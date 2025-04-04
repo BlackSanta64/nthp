@@ -79,7 +79,6 @@ namespace ID {
                 FRAME_DEFINE,\
                 FRAME_CLEAR,\
                 FRAME_SET,\
-                GETGPR,\
                 SM_READ,\
                 SM_WRITE,\
                 ENT_DEFINE,\
@@ -127,7 +126,9 @@ namespace ID {
                 DFILE_READ,\
                 DFILE_WRITE,\
                 PRINT,\
-                STRING\
+                STRING,\
+                FUNC_START,\
+                FUNC_CALL\
         )
 
         INSTRUCTION_LIST( INSTRUCTION_TOKENS(), numberOfInstructions);
@@ -150,7 +151,7 @@ namespace Size {
                 GOTO = sizeof(uint32_t),
                 JUMP = sizeof(stdRef),
                 SUSPEND = 0,
-                RETURN = sizeof(stdRef),
+                RETURN = 0,
                 GETINDEX = sizeof(ptrRef),
 
                 INC = sizeof(ptrRef),
@@ -195,7 +196,6 @@ namespace Size {
                 FRAME_DEFINE = sizeof(stdRef),
                 FRAME_CLEAR = 0,
                 FRAME_SET = sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef) + sizeof(stdRef),
-                GETGPR = sizeof(ptrRef),
                 SM_WRITE = sizeof(stdRef) + sizeof(stdRef),
                 SM_READ = sizeof(stdRef) + sizeof(ptrRef),
 
@@ -252,7 +252,10 @@ namespace Size {
                 DFILE_WRITE = sizeof(ptrRef) + sizeof(strRef),
 
                 PRINT = sizeof(stdRef),
-                STRING = DYNAMIC_SIZE
+                STRING = DYNAMIC_SIZE,
+
+                FUNC_START = sizeof(uint32_t), // Func ID, to be identified by the linker.
+                FUNC_CALL = sizeof(uint32_t) // Func ID, to be matched to a FUNC_START by the linker.
         );
 }
 

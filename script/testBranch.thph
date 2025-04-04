@@ -1,0 +1,14 @@
+
+PRIVATE testValuePrivate
+SET &testValuePrivate 80
+
+FUNC testFunc {
+        SET &testValuePrivate 200
+}
+
+MACRO f_testFunc {
+        =testFunc
+}
+
+
+EXIT

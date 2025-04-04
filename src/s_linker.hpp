@@ -32,7 +32,7 @@ namespace nthp {
                         };
 
 
-
+                        ~LinkerInstance();
                 private:
                         std::vector<nthp::script::Node>* scriptData;
                         std::vector<std::string> targetFiles;
