@@ -268,10 +268,14 @@ int headless_runtime() {
                                 nthp::script::LinkerInstance linker;
                                 std::vector<std::string> targetFiles;
 
+                                PM_PRINT("Linking files...\n");
                                 for(size_t i = 0; i < args.size() - 2; ++i) {
+                                        PM_PRINT("%s, ", args[i + 1].c_str());
                                         targetFiles.push_back(args[i + 1]);
                                 }
                                 linker.linkFiles(targetFiles, args.back().c_str());
+
+                                PM_PRINT("\ndone. output executable = [%s].\n", args.back().c_str());
                                 continue;
                         }
                         if(args[0] == "build" || args[0] == "bd") {
@@ -298,6 +302,11 @@ int headless_runtime() {
                         }
                         if(args[0] == "debug") {
                                 if(!inHeadlessMode) {
+                                        if(debuggingActiveProcess) {
+                                                PM_PRINT_ERROR("Target currently in active debugging session; unable to start.\n");
+                                                continue;
+                                        }
+
                                         if(args.size() > 1) {
                                                 testTarget = args[1];
                                         }
@@ -329,6 +338,44 @@ int headless_runtime() {
                                 PM_PRINT("Set debug target config to [%s].\n", configTestingTarget.c_str());
                                 continue;
 
+                        }
+
+                        if(args[0] == "test") {
+                                if(debuggingActiveProcess) {
+                                        PM_PRINT_ERROR("Target currently in active debugging session; unable to start.\n");
+                                        continue;
+                                }
+
+                                nthp::script::LinkerInstance linker;
+                                std::vector<std::string> outputFiles;
+
+                                PM_PRINT("Compiling source files...\n");
+                                if(!symbolData.compileStageConfig(configTestingTarget.c_str(), &outputFiles, false, false)) {
+                                        PM_PRINT("Stage, Done. %s complete.\n", configTestingTarget.c_str());
+                                }
+                                else {
+                                        PM_PRINT_ERROR("Failure in CompilerInstance [%p].\n", &symbolData);
+                                        continue;
+                                }
+
+                                PM_PRINT("done. Linking output...\n");
+                                std::string session_output = "m_" + configTestingTarget + ".p";
+
+                                linker.linkFiles(outputFiles, session_output.c_str());
+                                PM_PRINT("Program successfully compiled and linked; output executable = [%s].\n", session_output.c_str());
+
+
+                                
+
+                                g_access.lock();
+
+                                testTarget = session_output;
+                                debuggingActiveProcess = true;
+                                PM_PRINT("Now debugging target [%s].\n", session_output.c_str());
+
+                                g_access.unlock();
+
+                                continue;
                         }
 
 
@@ -434,21 +481,14 @@ int headless_runtime() {
                                 // i.e. reads symbols for debugging. Note that a different stage file can be used for symbols
                                 // than the current debug target. Why you'd want to do that I have no idea.
                                 if(args[0] == "import") {
-                                        if(args.size() < 3) { PM_PRINT("Invalid arguments. syn; import src/stg sourcefile/stageconfig"); continue; }
-                                        if(args[1] == "src") {
-                                                if(symbolData.compileSourceFile(args[2].c_str(), NULL, false, 0, true)) {
-                                                        PM_PRINT_ERROR("Failed to import symbols from file [%s].\n", args[2].c_str());
-                                                        continue;
-                                                }
-                                                PM_PRINT("Imported [%zu] symbols from source file [%s].\n", symbolData.globalList.size() + symbolData.macroList.size() + symbolData.constantList.size(), args[2].c_str());
+                                        if(args.size() < 2) { PM_PRINT("Invalid arguments. syn; import sourcefile/stageconfig"); continue; }
+                                        
+                                        if(symbolData.compileStageConfig(args[1].c_str(), NULL, false, true)) {
+                                                PM_PRINT_ERROR("Failed to import symbols from file [%s].\n", args[1].c_str());
+                                                continue;
                                         }
-                                        if(args[1] == "stg") {
-                                                if(symbolData.compileStageConfig(args[2].c_str(), NULL, false, true)) {
-                                                        PM_PRINT_ERROR("Failed to import symbols from file [%s].\n", args[2].c_str());
-                                                        continue;
-                                                }
-                                                PM_PRINT("Imported [%zu] symbols from stage file [%s].\n", symbolData.globalList.size() + symbolData.macroList.size() + symbolData.constantList.size(), args[2].c_str());
-                                        }
+                                        PM_PRINT("Imported [%zu] symbols from stage file [%s].\n", symbolData.globalList.size() + symbolData.macroList.size() + symbolData.constantList.size(), args[1].c_str());
+                                        
                                         continue;
                                 }
 

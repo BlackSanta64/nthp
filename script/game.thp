@@ -4,14 +4,12 @@ DEPEND #CONTEXT_MAINPROG
 PRIVATE size_x
 PRIVATE size_y
 
-PRIVATE testArray1
-PRIVATE testArray2
-PRIVATE testArray3
+PRIVATE newStage
+STRING stageOutput "testStage.bin"
 
-ALLOC 22 &testArray1
-ALLOC 24 &testArray2
-ALLOC 26 &testArray3
 
+@f_createStage ( &newStage )
+@f_addElement ( 0 200 60 60 )
 
 
 
@@ -27,8 +25,19 @@ LABEL 1
                 SET &mouse1 0
         END
 
+        IF $mouse2
+                POLL #e_testEntity POS
+                @f_addElement ( $r_poll1 $r_poll2 $mousepos_x $mousepos_y )
+                SET &mouse2 0
+        END
 
-        @f_testFunc ( 1000 )
+        IF $mouse3
+                @f_getWorkingStage ( &newStage )
+                @f_exportStage ( $newStage ~stageOutput )
+                SET &mouse3 0
+        END
+
+
 
 	CORE_CLEAR
         CORE_QRENDER #e_testEntity

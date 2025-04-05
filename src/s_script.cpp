@@ -8,18 +8,18 @@ nthp::texture::Palette nthp::script::activePalette;
 
 
 inline void ____eval_std(stdRef& ref, nthp::script::Script::ScriptDataSet* data) {
-                if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {
-                        ref.value = data->globalVarSet[nthp::fixedToInt(ref.value)];
+        if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_REFERENCE)) {
+                ref.value = data->globalVarSet[nthp::fixedToInt(ref.value)];
 
-                        // This is okay because the compiler simplifies ptr_descriptor call dereferences.
-                        // Technically *&var is syntaxically correct and will evaluate correctly, but will take much longer.
-                        // The compiler therefore simplifies constant ptr_descriptor dereferences to a simple reference '$'.
-                        if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_PTR)) {
-                                const auto ptr = nthp::script::parsePtrDescriptor(ref.value);
-                                if(ptr.block) {
-                                        ref.value = data->blockData[ptr.block - 1].data[ptr.address];
-                                        return;
-                                }
+                // This is okay because the compiler simplifies ptr_descriptor call dereferences.
+                // Technically *&var is syntaxically correct and will evaluate correctly, but will take much longer.
+                // The compiler therefore simplifies constant ptr_descriptor dereferences to a simple reference '$'.
+                if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_PTR)) {
+                        const auto ptr = nthp::script::parsePtrDescriptor(ref.value);
+                        if(ptr.block) {
+                                ref.value = data->blockData[ptr.block - 1].data[ptr.address];
+                                return;
+                        }
                         ref.value = data->globalVarSet[ptr.address];
                 }
                         

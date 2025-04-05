@@ -1,12 +1,7 @@
 BUILD_SYSTEM
-        script/testBranch.thph script/testBranch.thpcs T_HIDDEN
-	script/init.thp script/init.thpcs T_INIT
-	script/game.thp script/game.thpcs T_TICK
+        script/stageLib.thph script/stageLib.thpcs      T_HIDDEN
+	script/init.thp script/init.thpcs               T_INIT
+	script/game.thp script/game.thpcs               T_TICK
 END
-
-TARGET prog
-
-
-
 
 EXIT

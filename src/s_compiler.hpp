@@ -35,7 +35,8 @@ namespace nthp {
                 struct GLOBAL_DEF {
                         std::string varName;
                         uint32_t relativeIndex;
-                        bool isPrivate; // TODO.
+
+                        bool isPrivate;
                         std::string definedIn;
                 };
 
