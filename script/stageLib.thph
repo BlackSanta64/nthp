@@ -2,6 +2,14 @@ IMPORT script/globals.b
 
 CONST __initial_stage_size 5
 
+STRUCT stageObject {
+        x
+        y
+        w
+        h
+}
+
+
 PRIVATE p_activeStage
 PRIVATE p_copyContainer
 PRIVATE ps_stageSize
@@ -41,14 +49,12 @@ FUNC s_addElement {
         MUL *ps_stageSize 4 &mathReg2
         INC &mathReg2
 
+        ASSIGN stageObject p_copyContainer
         INDEX &p_copyContainer $mathReg2
-                SET $p_copyContainer #new_x
-                        NEXT &p_copyContainer
-                SET $p_copyContainer #new_y
-                        NEXT &p_copyContainer
-                SET $p_copyContainer #new_w
-                        NEXT &p_copyContainer
-                SET $p_copyContainer #new_h
+                SET $p_copyContainer.x #new_x
+                SET $p_copyContainer.y #new_y
+                SET $p_copyContainer.w #new_w
+                SET $p_copyContainer.h #new_h
 
         / Once copied, reset everything. /
 

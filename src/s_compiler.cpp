@@ -2461,7 +2461,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                                 while(fileRead != "}") {
                                         structList.back().members.push_back(fileRead);
-                                        PRINT_COMPILER("\tAdded entry [%s] at [%zu],\n", fileRead.c_str(), structList.back().members.size() - 1);
+                                        PRINT_COMPILER("\tAdded entry [%s] at [%02zX],\n", fileRead.c_str(), structList.back().members.size() - 1);
                                         EVAL_SYMBOL();
                                 }
 

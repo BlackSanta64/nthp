@@ -5,7 +5,7 @@ namespace nthp {
 
 
         // Definition of fixed-point decimal numbers.
-        // Why I decided to use fixed-point: It seemed kinda fun.
+        // It seemed kinda fun to try using them.
 
         // Fixed Point Scale represents the fixed-exponent of fixed point numbers
         // (fixed_t) as a power of 2 (SCALE_FACTOR = 1 / (2 ^ FIXED_POINT_SCALE)). Considering
@@ -17,7 +17,7 @@ namespace nthp {
 
 #ifndef FIXED_POINT_SCALE
                 // The fixed-point scale factor as a whole-number power of 2
-#define         FIXED_POINT_SCALE       10
+#define         FIXED_POINT_SCALE       16
 
 #endif
 
@@ -39,7 +39,7 @@ namespace nthp {
 
 // Ugly, but there's no better way to do it. All you have to do now is change the
 // two macros above, and the whole fixed-point system should scale accordingly. Assumes
-// 32-bits if no or an invalid width is defined.
+// 32-bits if none, or an invalid width, is defined.
 #if FIXED_POINT_WIDTH == 64
                                 #define FIXED_TYPE               int64_t
                                 #define UPCAST_TYPE              ____NOTYPE
@@ -123,7 +123,7 @@ namespace nthp {
         // but the accuracy increases. The accuracy is automatically adjusted by the preprocessor
         // on compile time. An invalid range (over SCALE / 2) will be overwritten for maximum range
         // (and by extension minimal accuracy).
-        #define FAST_PRODUCT_RANGE              (0)
+        #define FAST_PRODUCT_RANGE              (6)
 #endif
 
 
@@ -133,7 +133,7 @@ namespace nthp {
         // but the accuracy increases. The accuracy is automatically adjusted by the preprocessor
         // on compile time. An invalid range (over FIXED_POINT_SCALE) will be overwritten for maximum range
         // (and by extension minimal accuracy).
-        #define FAST_QUOTIENT_RANGE             (0)
+        #define FAST_QUOTIENT_RANGE             (13)
 
 #endif
 
@@ -190,7 +190,7 @@ namespace nthp {
         // These operations work with any width of fixed-point, but a tradeoff between accuracy and range must be made.
         // Although fast, these operations may not be the most reliable in all situations. If using a width under 64-bits,
         // the "cast" operations become available (see c_fixedProduct() and c_fixedQuotient for more).
-        constexpr fixed_t f_fixedQuotient(fixed_t a, fixed_t b)         { return (((a) << FAST_QUOTIENT_ACCURACY) / (b) << FAST_QUOTIENT_RANGE); }
+        constexpr fixed_t f_fixedQuotient(fixed_t a, fixed_t b)         { return ((((a) << FAST_QUOTIENT_ACCURACY) / (b)) << FAST_QUOTIENT_RANGE); }
 
 
         constexpr fixed_t unsafe_fixedQuotient(fixed_t a, fixed_t b)    { return (((a) << FIXED_POINT_SCALE) / b); }

@@ -130,6 +130,7 @@ void nthp::RenderRuleSet::updateScaleFactor() {
 
 	scaleFactor.x = nthp::doubleToFixed(xs);
 	scaleFactor.y = nthp::doubleToFixed(ys);
+        PRINT_DEBUG("Recalculated scale factor ; ScaleX=%lf ScaleY=%lf\n", nthp::fixedToDouble(scaleFactor.x), nthp::fixedToDouble(scaleFactor.y));
 }
 
 // Low accuracy, faster calculation. Useful for continuous camera scaling.

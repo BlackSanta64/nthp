@@ -139,8 +139,8 @@ namespace nthp {
 
 
 
-        // Funny, lightweight (useless) dynamic storage class. This is genuinely
-        // more consistent than std::array no joke (not skill issue). The 
+        // Light dynamic storage class. Didn't want to use std::array for reasons
+        // I can't rememeber. Probably something stupid.
         template<class T>
         class sArray {
         public:
