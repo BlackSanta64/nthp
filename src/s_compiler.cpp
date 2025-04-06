@@ -213,27 +213,47 @@ int EvaluateMacro(std::fstream& file, std::string& expression, std::vector<nthp:
 // Generic for reading from source file. Checks for MACRO or CONST refs, and evaluates
 // MACRO substitutions. Sets 'expression' to whatever the next valid symbol is; regardless if it's from a MACRO or the source file.
 int EvaluateSymbol(std::fstream& file, std::string& expression, std::vector<nthp::script::CompilerInstance::CONST_DEF>& constList, std::vector<nthp::script::CompilerInstance::MACRO_DEF>& macroList, size_t& currentMacroPosition, size_t& targetMacro, bool& evaluatingMacro) {
-        if(evaluatingMacro) {
-                ++currentMacroPosition;
+        bool waitForCommentEnd = false;
+        do {
+                if(evaluatingMacro) {
+                        ++currentMacroPosition;
 
 
-                if(currentMacroPosition == macroList[targetMacro].macroData.size()) {
-                        evaluatingMacro = false;
-                        NOVERB_PRINT_COMPILER("\tCompleted expansion of macro [%s].\n", macroList[targetMacro].macroName.c_str());
-                        destroyArgumentConsts(constList);
+                        if(currentMacroPosition == macroList[targetMacro].macroData.size()) {
+                                evaluatingMacro = false;
+                                NOVERB_PRINT_COMPILER("\tCompleted expansion of macro [%s].\n", macroList[targetMacro].macroName.c_str());
+                                destroyArgumentConsts(constList);
+                        }
+                        else {
+                                expression = macroList[targetMacro].macroData[currentMacroPosition];
+                                if(EvaluateConst(expression, constList)) return 1;
+                                
+
+                                return 0;
+                        }
                 }
-                else {
-                        expression = macroList[targetMacro].macroData[currentMacroPosition];
-                        if(EvaluateConst(expression, constList)) return 1;
-                        
 
-                        return 0;
+                (file) >> (expression);
+
+                if(expression == "/") {
+                        if(waitForCommentEnd) {
+                                waitForCommentEnd = false; // Eval one last time to ensure the next valid symbol is always returned.
+                                continue;
+                        }
+
+                        waitForCommentEnd = true;
+                        continue;
                 }
-        }
 
-        (file) >> (expression);
-        if(EvaluateConst(expression, constList)) return 1;
-        if(EvaluateMacro(file, expression, macroList, constList, currentMacroPosition, targetMacro, evaluatingMacro)) return 1;
+                if(waitForCommentEnd) continue;
+
+                if(EvaluateConst(expression, constList)) return 1;
+                if(EvaluateMacro(file, expression, macroList, constList, currentMacroPosition, targetMacro, evaluatingMacro)) return 1;
+
+                break;
+                
+        } while(true);
+
         return 0;
 }
 
@@ -2375,10 +2395,6 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                         EVAL_SYMBOL();
                 }
 
-                if(fileRead == "/") { // Keep cycling arguments until another / is read (for comments)
-                       do { EVAL_SYMBOL(); } while(fileRead != "/");
-                       continue;
-                }
                 PRINT_DEBUG("Eval. Symbol; [%s] from [%s]\n", fileRead.c_str(), currentFile.c_str());
 
                 // Symbol for a FUNC_CALL

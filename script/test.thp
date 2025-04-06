@@ -1,0 +1,66 @@
+/ STRING windowTitle      "testTitleBaby!!"
+STRING palette          "resource/genericPalette.pal"
+STRING wallTexture      "resource/wall.cst"
+
+MACRO initFlags {
+/	x		y		tx		ty		cx		cy		fs		sr		title	/
+        800		800		2000	        2000	        0		0		0		0		~windowTitle
+}
+
+CORE_INIT @initFlags
+
+SET_ACTIVE_PALETTE ~palette
+CORE_SETMAXFPS 15
+
+STRUCT testStruct {
+        Food_times
+        Not_great
+        TestAcccess
+        x
+        y
+        w
+        h
+        MORE_TESTING!!!!
+}
+
+PRIVATE testWrite
+NEW testStruct 3 &testWrite
+
+SET $testWrite.Food_times 150
+SET $testWrite.Not_great 200
+SET $testWrite.TestAcccess 250
+
+PRINT *testWrite.Food_times
+PRINT *testWrite.Not_great
+PRINT *testWrite.TestAcccess
+PRINT >testStruct
+
+MUL >testStruct 10 &mathReg0
+PRINT $mathReg0
+
+
+TEXTURE_DEFINE 1
+CONST t_wall 0
+TEXTURE_LOAD #t_wall ~wallTexture
+
+
+FRAME_DEFINE 1
+CONST f0_wall 0
+FRAME_SET #f0_wall 0 0 100 76 #t_wall
+
+ENT_DEFINE 1
+CONST e_testEntity 0
+ENT_SETFRAMERANGE #e_testEntity 0 1
+ENT_SETRENDERSIZE #e_testEntity 60 60
+ENT_SETPOS #e_testEntity 0 0
+ENT_SETCURRENTFRAME #e_testEntity 0
+ENT_SETHITBOXOFFSET #e_testEntity 0 0
+
+
+CONST CONTEXT_MAINPROG __DEFINED
+
+EXIT
+
+/
+
+EXIT
