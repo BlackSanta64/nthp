@@ -38,6 +38,9 @@ namespace nthp {
 
                         bool isPrivate;
                         std::string definedIn;
+
+                        bool isStruct;
+                        size_t structID;
                 };
 
                 // Compiler-Only; Represents a macro-like substitution.
@@ -68,10 +71,22 @@ namespace nthp {
                         uint32_t objectPosition;
                 };
 
+                // Structure for declaring complex variables (STRUCT). Defines a VAR (PRIVATE or otherwise) structure map,
+                // allowing constant offsets from ptr_descriptors to be written to without INDEX, NEXT, or PREV. The structure's
+                // origin is the set address value of the assigned VARs ptr_descriptor. The exact size (or multiples) of a STRUCT def
+                // can be allocted with NEW (NEW [structname] [count] [&targetToPopulate]). Already existing VARs can be assigned
+                // a struct type with ASSIGN (ASSIGN [structname] [target]), this does not change its value. Note that no prefix is used when referencing the VAR;
+                // this means only defined VARs (GLOBAL list) can be assigned as structure types. ASSIGN and UNASSIGN are NOT instructions;
+                // no readable script data is generated from their use. NEW is translated into an ALLOC instruction.
+                struct STRUCT_DEF {
+                        std::string name;
+                        std::vector<std::string> members;
+                };
+
                 // Contrary to how it may seem based on the name, a FUNC is just a cross-script label that's evaluated by the
                 // LINKER, not the compiler. FUNC_START instructions are placed before a function, and the order in which they appear in
-                // the linked executable is how they are defined. FUNC_CALL instructions (with "/funcname") will match the named function, provided
-                // the FUNC compiler symbol is made available in a different source file with IMPORT. FUNCs cannot be referenced OOO.
+                // the linked executable is how they are defined. FUNC_CALL instructions (with "%funcname") will match the named function, provided
+                // the FUNC compiler symbol is made available in a different source file (either by BUILD_SYSTEM or IMPORT). FUNCs cannot be referenced OOO.
                 struct FUNC_DEF {
                         std::string name;
                         uint32_t func_start;
@@ -97,8 +112,9 @@ namespace nthp {
                 std::vector<nthp::script::CompilerInstance::CONST_DEF>  constantList;
                 std::vector<nthp::script::CompilerInstance::MACRO_DEF>  macroList;
                 std::vector<nthp::script::CompilerInstance::GLOBAL_DEF>    globalList;
-                std::vector<nthp::script::CompilerInstance::STR_DEF> stringList;
+                std::vector<nthp::script::CompilerInstance::STR_DEF> strList;
                 std::vector<nthp::script::CompilerInstance::FUNC_DEF> funcList;
+                std::vector<nthp::script::CompilerInstance::STRUCT_DEF> structList;
 
                 static inline void undefConstant(const char* constName, std::vector<nthp::script::CompilerInstance::CONST_DEF>& constantList) {
                         size_t i = 0;
@@ -139,6 +155,15 @@ namespace nthp {
                         return *(uint32_t*)(node.access.data);
                 }
 
+                inline void cleanSymbolData() {
+                        globalList.clear(); 
+                        macroList.clear();
+                        constantList.clear();
+                        labelList.clear();
+                        gotoList.clear();
+                        strList.clear();
+                        structList.clear();
+                }
 
                 ~CompilerInstance();
                 private:
@@ -160,8 +185,11 @@ namespace nthp {
                                 GLOBAL_DEF def;
                                 def.relativeIndex = globalList.size();
                                 def.varName = name;
+
                                 def.isPrivate = false;
                                 def.definedIn = definedInFile;
+
+                                def.isStruct = false;
 
                                 globalList.push_back(def);
                         }
@@ -172,6 +200,8 @@ namespace nthp {
 
                                 def.isPrivate = true;
                                 def.definedIn = definedInFile;
+
+                                def.isStruct = false;
 
                                 globalList.push_back(def);
                         }

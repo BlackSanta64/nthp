@@ -17,7 +17,7 @@ inline void ____eval_std(stdRef& ref, nthp::script::Script::ScriptDataSet* data)
                 if(PR_METADATA_GET(ref, nthp::script::flagBits::IS_PTR)) {
                         const auto ptr = nthp::script::parsePtrDescriptor(ref.value);
                         if(ptr.block) {
-                                ref.value = data->blockData[ptr.block - 1].data[ptr.address];
+                                ref.value = data->blockData[ptr.block - 1].data[ptr.address + ref.offset];
                                 return;
                         }
                         ref.value = data->globalVarSet[ptr.address];
@@ -36,7 +36,7 @@ inline void ____eval_std(stdRef& ref, nthp::script::Script::ScriptDataSet* data)
         do {\
                 EVAL_STDREF(ref);\
                 const auto ptr_dsc = nthp::script::parsePtrDescriptor(ref.value);\
-                if(ptr_dsc.block) { target_dsc = (data->blockData[ptr_dsc.block - 1].data + ptr_dsc.address); break; }\
+                if(ptr_dsc.block) { target_dsc = (data->blockData[ptr_dsc.block - 1].data + ptr_dsc.address + ref.offset); break; }\
                 target_dsc = (data->globalVarSet + ptr_dsc.address);\
         }\
         while(0)
@@ -464,6 +464,20 @@ DEFINE_EXECUTION_BEHAVIOUR(ALLOC) {
         return 0;
 }
 
+DEFINE_EXECUTION_BEHAVIOUR(NEW) {
+        stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
+        ptrRef ptrOutput = *(ptrRef*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef));
+        const uint32_t entrySize = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(stdRef) + sizeof(ptrRef));
+
+        EVAL_STDREF(size);
+        EVAL_PTRREF(ptrOutput);
+
+        nthp_internal_alloc(data, target_dsc, nthp::intToFixed(nthp::fixedToInt(size.value) * entrySize));
+
+        return 0;
+}
+
+
 DEFINE_EXECUTION_BEHAVIOUR(FREE) {
         ptrRef ptr = *(ptrRef*)(data->nodeSet[data->currentNode].access.data);
 
@@ -791,7 +805,7 @@ DEFINE_EXECUTION_BEHAVIOUR(CORE_INIT) {
         stdRef ty = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 3));
         stdRef cx = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 4));
         stdRef cy = *(stdRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 5));
-        uint8_t flags = *(uint8_t*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 6));
+        const uint8_t flags = *(uint8_t*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 6));
         strRef title = *(strRef*)(data->nodeSet[data->currentNode].access.data + (sizeof(stdRef) * 6) + sizeof(uint8_t));
 
         EVAL_STDREF(px);

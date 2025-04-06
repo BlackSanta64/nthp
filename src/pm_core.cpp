@@ -103,7 +103,7 @@ int nthp::debuggerBehaviour(std::string target, FILE* debugOutputTarget) {
 
         mainRuntime.clean();
         nthp::core.cleanup();
-
+        symbolData.cleanSymbolData();
 
         g_access.unlock();
         

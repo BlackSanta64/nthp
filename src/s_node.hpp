@@ -56,7 +56,8 @@ namespace script {
         struct P_Reference {
                 T value;
                 uint8_t metadata = 0; // See below
-
+                uint8_t offset = 0;
+                
                 // Using some shift/mask/cast shit instead of bit-field for P_Reference
                 // metadata. Bit-fields do not mix with files.
 

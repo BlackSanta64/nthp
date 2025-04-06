@@ -14,6 +14,32 @@ CORE_INIT @initFlags
 SET_ACTIVE_PALETTE ~palette
 CORE_SETMAXFPS 15
 
+STRUCT testStruct {
+        Food_times
+        Not_great
+        TestAcccess
+        x
+        y
+        w
+        h
+        MORE_TESTING!!!!
+}
+
+PRIVATE testWrite
+NEW testStruct 3 &testWrite
+
+SET $testWrite.Food_times 150
+SET $testWrite.Not_great 200
+SET $testWrite.TestAcccess 250
+
+PRINT *testWrite.Food_times
+PRINT *testWrite.Not_great
+PRINT *testWrite.TestAcccess
+PRINT >testStruct
+
+MUL >testStruct 10 &mathReg0
+PRINT $mathReg0
+
 
 TEXTURE_DEFINE 1
 CONST t_wall 0

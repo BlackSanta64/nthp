@@ -67,6 +67,7 @@ namespace ID {
                 SKIP_END,\
                 SET,\
                 ALLOC,\
+                NEW,\
                 FREE,\
                 COPY,\
                 NEXT,\
@@ -181,6 +182,7 @@ namespace Size {
 
                 SET = sizeof(ptrRef) + sizeof(stdRef),
                 ALLOC = sizeof(stdRef) + sizeof(ptrRef),
+                NEW = sizeof(stdRef) + sizeof(ptrRef) + sizeof(uint32_t),
                 COPY = sizeof(ptrRef) + sizeof(stdRef) + sizeof(ptrRef),
                 FREE = sizeof(ptrRef),
                 NEXT = sizeof(ptrRef),
