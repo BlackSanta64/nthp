@@ -194,7 +194,7 @@ int singleThread_debugger() {
 
 
 int headless_runtime() {
-        PM_PRINT("Pm.exe (C) 2024 Jonathan Hawes;\nNTHP Game Engine project manager v." NTHP_VERSION "\nType 'help' for instructions.\n\n");
+        PM_PRINT("Pm.exe;\nNTHP Game Engine project manager v." NTHP_VERSION "\nType 'help' for instructions.\n\n");
 	std::vector<std::string> args;
 	std::mutex g_access;
 
