@@ -1440,7 +1440,9 @@ int nthp::script::Script::execute() {
                                 
                                 case(nthp::script::debug::STEP):
                                         // Executes the next instruction, and breaks the next tick.
-                                        nthp::script::debug::debugInstructionCall.x = nthp::script::debug::BREAK;
+                                        nthp::script::debug::suspendExecution = true;
+                                        nthp::script::debug::debugInstructionCall.x = -1;
+                                        data->isSuspended = true;
                                         break;
                                 default:
                                         break;
