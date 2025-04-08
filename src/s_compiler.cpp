@@ -2408,30 +2408,7 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                 PRINT_DEBUG("Eval. Symbol; [%s] from [%s]\n", fileRead.c_str(), currentFile.c_str());
 
-                // Symbol for a FUNC_CALL
-                if(fileRead[0] == '%') {
-                        fileRead.erase(fileRead.begin());
-
-                        bool matchedFunc = false;
-                        for(size_t i = 0; i < funcList.size(); ++i) {
-                                if(fileRead == funcList[i].name) {
-                                        ADD_NODE(FUNC_CALL);
-
-                                        uint32_t* ID = (uint32_t*)nodeList[currentNode].access.data;
-                                        *ID = i;
-                                        matchedFunc = true;
-
-                                        break;
-                                }
-                        }
-
-                        if(!matchedFunc) {
-                                PRINT_COMPILER_ERROR("Unable to match FUNC_CALL [%s]; FUNC not found.\n", fileRead);
-                                return 1;
-                        }
-
-                        continue;
-                }
+                
                 
                 if(fileRead == "FUNC") {
                         EVAL_SYMBOL();
@@ -2445,15 +2422,18 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
                         funcList.push_back(newFunc);
 
-                        ADD_NODE(FUNC_START);
-                        uint32_t* ID = (uint32_t*)nodeList[currentNode].access.data;
-                        *ID = funcList.size() - 1;
+                        if(!ignoreInstructionData) {
+                                ADD_NODE(FUNC_START);
+                                uint32_t* ID = (uint32_t*)nodeList[currentNode].access.data;
+                                *ID = funcList.size() - 1;
 
-                        PRINT_NODEDATA();
+                                PRINT_NODEDATA();
+                                
 
-                        EVAL_SYMBOL();
-                        if(fileRead == "{") {
-                                waitingForFuncScopeReturn = true;
+                                EVAL_SYMBOL();
+                                if(fileRead == "{") {
+                                        waitingForFuncScopeReturn = true;
+                                }
                         }
                 }
 
@@ -2794,6 +2774,31 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
                         if(callStack.back().importing) continue;
                 }
                 
+                // Symbol for a FUNC_CALL
+                if(fileRead[0] == '%') {
+                        fileRead.erase(fileRead.begin());
+
+                        bool matchedFunc = false;
+                        for(size_t i = 0; i < funcList.size(); ++i) {
+                                if(fileRead == funcList[i].name) {
+                                        ADD_NODE(FUNC_CALL);
+
+                                        uint32_t* ID = (uint32_t*)nodeList[currentNode].access.data;
+                                        *ID = i;
+                                        matchedFunc = true;
+
+                                        break;
+                                }
+                        }
+
+                        if(!matchedFunc) {
+                                PRINT_COMPILER_ERROR("Unable to match FUNC_CALL [%s]; FUNC not found.\n", fileRead);
+                                return 1;
+                        }
+
+                        continue;
+                }
+
 
                 CHECK_COMP(LABEL);
                 CHECK_COMP(GOTO);

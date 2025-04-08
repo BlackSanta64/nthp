@@ -1459,6 +1459,7 @@ int nthp::script::Script::execute() {
 
 #ifdef DEBUG
         SKIP_EXECUTION: // Using goto. Hail to the king, baby.
+        debug_access.unlock();
 #endif
 
         
