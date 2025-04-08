@@ -11,6 +11,7 @@ namespace nthp {
         class gEntity {
         public:
                 gEntity();
+                inline void init();
 
                 virtual const nthp::RenderPacket getUpdateRenderPacket(nthp::RenderRuleSet* context) final;
                 virtual const nthp::RenderPacket abs_getRenderPacket(nthp::RenderRuleSet* context) final;
@@ -34,7 +35,7 @@ namespace nthp {
 		void setHitboxOffset(nthp::vectFixed offset);
 		inline nthp::vectFixed getHitboxOffset() { return hbOffset; }
 
-
+                inline void clean();
                 ~gEntity();
         protected:
                 

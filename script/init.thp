@@ -9,7 +9,6 @@ MACRO initFlags {
         960		540		100	        100	        0		0		0		0		~windowTitle
 }
 
-PRINT ~windowTitle
 
 CORE_INIT @initFlags
 

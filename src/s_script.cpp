@@ -670,17 +670,38 @@ DEFINE_EXECUTION_BEHAVIOUR(ENT_DEFINE) {
         stdRef size = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
 
         EVAL_STDREF(size);
-        if(data->entityBlockSize > 0) delete[] data->entityBlock;
+        const auto c_size = nthp::fixedToInt(size.value);
+        if(data->entityBlockSize > 0) {
+                const auto old_size = data->entityBlockSize;
 
-        data->entityBlock = new nthp::entity::gEntity[nthp::fixedToInt(size.value)];
-        data->entityBlockSize = nthp::fixedToInt(size.value);
+                nthp::entity::gEntity* temp = (nthp::entity::gEntity*)realloc(data->entityBlock, c_size * sizeof(nthp::entity::gEntity));
+                if(temp != NULL) { PRINT_DEBUG_ERROR("Unable to resize entity block.\n"); return 1; }
+                data->entityBlock = temp;
+                data->entityBlockSize = c_size;
+
+                for(size_t i = old_size; i < c_size; ++i) data->entityBlock[i].init(); // Init the new entities!
+
+                return 0;
+        }
+        
+        data->entityBlock = (nthp::entity::gEntity*)malloc(c_size * sizeof(nthp::entity::gEntity));
+        if(data->entityBlock) data->entityBlockSize = c_size;
+        else { return 1; }
+
+        for(size_t i = 0; i < data->entityBlockSize; ++i) data->entityBlock[i].init();
 
 
         return 0;
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(ENT_CLEAR) {
-        if(data->entityBlockSize > 0) delete[] data->entityBlock;
+        if(data->entityBlockSize > 0) {
+                for(size_t i = 0; i < data->entityBlockSize; ++i) { 
+                        data->entityBlock[i].clean();
+                }
+
+                free(data->entityBlock);
+        }
         data->entityBlockSize = 0;
 
         return 0;
@@ -1247,7 +1268,7 @@ DEFINE_EXECUTION_BEHAVIOUR(PRINT_REF) {
 
         EVAL_STDREF(output);
 
-        GENERIC_PRINT("%lf\n", nthp::fixedToDouble(output.value));
+        GENERIC_PRINT("[t %u] %lf\n", SDL_GetTicks(), nthp::fixedToDouble(output.value));
 #endif
 
         return 0;

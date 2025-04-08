@@ -2,11 +2,18 @@
 
 
 nthp::entity::gEntity::gEntity() {
+        init();
+}
+
+inline void nthp::entity::gEntity::init() {
         frameData = nullptr;
         frameSize = 0;
         frameDataNative = false;
 
         currentFrame = 0;
+        renderSize = nthp::vectFixed(0,0);
+        wPosition = nthp::worldPosition(0,0);
+        hbOffset = nthp::vectFixed(0,0);
 }
 
 
@@ -30,7 +37,7 @@ const nthp::RenderPacket nthp::entity::gEntity::getUpdateRenderPacket(nthp::Rend
 
 // Gets the entity RenderPacket
 const nthp::RenderPacket nthp::entity::gEntity::abs_getRenderPacket(nthp::RenderRuleSet* context) {
-        auto pxlPos = nthp::generatePixelPosition(wPosition, context);
+        const auto pxlPos = nthp::generatePixelPosition(wPosition, context);
         nthp::RenderPacket::C_OPERATE state = nthp::RenderPacket::C_OPERATE::ABSOLUTE;
 
         if(frameData[currentFrame].texture == NULL)
@@ -92,11 +99,13 @@ void nthp::entity::gEntity::setHitboxOffset(nthp::vectFixed offset) {
 
 
 
-
-
-
-nthp::entity::gEntity::~gEntity() {
+inline void nthp::entity::gEntity::clean() {
         if(frameDataNative) {
                 free(frameData);
         }
+}
+
+
+nthp::entity::gEntity::~gEntity() {
+        clean();
 }
