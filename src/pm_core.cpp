@@ -103,7 +103,7 @@ int nthp::debuggerBehaviour(std::string target, FILE* debugOutputTarget) {
 
         mainRuntime.clean();
         nthp::core.cleanup();
-        symbolData.cleanSymbolData();
+        symbolData.clean();
 
         g_access.unlock();
         
@@ -345,12 +345,12 @@ int headless_runtime() {
                                         PM_PRINT_ERROR("Target currently in active debugging session; unable to start.\n");
                                         continue;
                                 }
-
+                                nthp::script::CompilerInstance cc;
                                 nthp::script::LinkerInstance linker;
                                 std::vector<std::string> outputFiles;
 
                                 PM_PRINT("Compiling source files...\n");
-                                if(!symbolData.compileStageConfig(configTestingTarget.c_str(), &outputFiles, false, false)) {
+                                if(!cc.compileStageConfig(configTestingTarget.c_str(), &outputFiles, false, false)) {
                                         PM_PRINT("Stage, Done. %s complete.\n", configTestingTarget.c_str());
                                 }
                                 else {
@@ -359,13 +359,15 @@ int headless_runtime() {
                                 }
 
                                 PM_PRINT("done. Linking output...\n");
+                                
                                 std::string session_output = "m_" + configTestingTarget + ".p";
-
                                 linker.linkFiles(outputFiles, session_output.c_str());
                                 PM_PRINT("Program successfully compiled and linked; output executable = [%s].\n", session_output.c_str());
 
 
-                                
+                                if(symbolData.compileStageConfig(configTestingTarget.c_str(), NULL, false, true)) {
+                                        PRINT_COMPILER_WARNING("Failed to import symbols from config. Try again with \"import\" or make due without.\n");
+                                }
 
                                 g_access.lock();
 

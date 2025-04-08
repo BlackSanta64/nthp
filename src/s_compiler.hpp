@@ -93,12 +93,6 @@ namespace nthp {
                 };
 
 
-                inline nthp::script::Node* getCompiledNodes()   { return compiledNodes; }
-                inline const size_t getNodeSize()               { return nodeBlockSize; }
-
-
-                CompilerInstance()                              { compiledNodes = NULL; nodeBlockSize = 0; }
-
                 // Takes source script as input, writes compiled script to output.
                 // output file can be NULL, where the compiler won't write anything.
                 int compileSourceFile(const char* inputFile, const char* outputFile, bool buildSystemContext, uint8_t executionFlags, const bool ignoreInstructionData);
@@ -165,12 +159,13 @@ namespace nthp {
                         structList.clear();
                 }
 
+                void clean() {
+                        cleanSymbolData();
+                        nthp::script::cleanNodeSet(nodeList);
+                }
+
                 ~CompilerInstance();
                 private:
-
-                        nthp::script::Node* compiledNodes;
-                        size_t nodeBlockSize;
-
                         std::string stageOutputTarget;
 
 

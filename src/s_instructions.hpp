@@ -126,7 +126,8 @@ namespace ID {
                 MUSIC_RESUME,\
                 DFILE_READ,\
                 DFILE_WRITE,\
-                PRINT,\
+                PRINT_REF,\
+                PRINT_STRING,\
                 STRING,\
                 FUNC_START,\
                 FUNC_CALL\
@@ -253,7 +254,8 @@ namespace Size {
                 DFILE_READ = sizeof(ptrRef) + sizeof(strRef),
                 DFILE_WRITE = sizeof(ptrRef) + sizeof(strRef),
 
-                PRINT = sizeof(stdRef),
+                PRINT_REF = sizeof(stdRef),
+                PRINT_STRING = sizeof(strRef),
                 STRING = DYNAMIC_SIZE,
 
                 FUNC_START = sizeof(uint32_t), // Func ID, to be identified by the linker.

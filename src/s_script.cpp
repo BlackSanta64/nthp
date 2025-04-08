@@ -1241,7 +1241,7 @@ DEFINE_EXECUTION_BEHAVIOUR(DFILE_WRITE) {
 }
 
 
-DEFINE_EXECUTION_BEHAVIOUR(PRINT) {
+DEFINE_EXECUTION_BEHAVIOUR(PRINT_REF) {
 #ifdef DEBUG
         stdRef output = *(stdRef*)(data->nodeSet[data->currentNode].access.data);
 
@@ -1253,8 +1253,19 @@ DEFINE_EXECUTION_BEHAVIOUR(PRINT) {
         return 0;
 }
 
+DEFINE_EXECUTION_BEHAVIOUR(PRINT_STRING) {
+#ifdef DEBUG
+        strRef output = *(strRef*)(data->nodeSet[data->currentNode].access.data);
+
+        auto message = EVAL_STRREF(output);
+
+        GENERIC_PRINT("[t %u] %s\n", SDL_GetTicks(), message);
+#endif
+        return 0;
+}
 
 DEFINE_EXECUTION_BEHAVIOUR(STRING) {
+
         return 0;
 }
 

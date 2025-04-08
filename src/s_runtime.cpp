@@ -94,7 +94,8 @@ int nthp::script::Runtime::importExecutable(const char* filename) {
                 PRINT_DEBUG_ERROR("Unable to allocate global memory.\n");
                 return 1;
         }
-
+        
+        PRINT_DEBUG("Reserved [%u] entries in GLOBAL list.\n", data.globalMemBudget);
         memset((data.globalVarSet), 0, sizeof(nthp::script::stdVarWidth) * data.globalMemBudget);
 
         return 0;

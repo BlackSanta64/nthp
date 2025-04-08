@@ -15,7 +15,7 @@ PRIVATE p_copyContainer
 PRIVATE ps_stageSize
 PRIVATE p_extern
 
-
+STRING pokeTest "POKE! Failure Testing."
 
 FUNC s_createStage {
         ALLOC #__initial_stage_size $argReg0
@@ -34,13 +34,16 @@ FUNC s_addElement {
         CONST new_w $argReg2
         CONST new_h $argReg3
 
-
         SET &mathReg1 *ps_stageSize
         INC &mathReg1
         MUL $mathReg1 4 &mathReg0
         INC &mathReg0
 
+
+
         ALLOC $mathReg0 &p_copyContainer
+        PRINT ~pokeTest
+        
         MUL *ps_stageSize 4 &mathReg0
         INC &mathReg0
 

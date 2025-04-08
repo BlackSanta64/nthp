@@ -24,13 +24,14 @@ LABEL 1
                 ENT_SETPOS #e_testEntity $mousepos_x $mousepos_y
                 SET &mouse1 0
         END
-
+        
         IF $mouse2
                 POLL #e_testEntity POS
                 @f_addElement ( $r_poll1 $r_poll2 $mousepos_x $mousepos_y )
                 SET &mouse2 0
         END
 
+        
         IF $mouse3
                 @f_getWorkingStage ( &newStage )
                 @f_exportStage ( $newStage ~stageOutput )

@@ -307,8 +307,8 @@ nthp::script::instructions::stdRef EvaluateReference(std::string expression, std
                                 }
                         }
 
-                        // Assume it is a reference then, if no STRING node is matched.
-                        
+                        PRINT_COMPILER_ERROR("Unable to match STRING node to strRef; STRING not found.\n");
+                        return ref;
                 }
 
                 if(expression[0] == '*') {
@@ -2251,12 +2251,23 @@ DEFINE_COMPILATION_BEHAVIOUR(DFILE_WRITE) {
 
 
 DEFINE_COMPILATION_BEHAVIOUR(PRINT) {
-        ADD_NODE(PRINT);
-
 
         EVAL_SYMBOL();
         auto output = EVAL_PREF();
         CHECK_REF(output);
+
+        if(PR_METADATA_GET(output, nthp::script::flagBits::IS_NODE_STRING_PTR)) {
+                ADD_NODE(PRINT_STRING);
+
+                strRef* out = (strRef*)(nodeList[currentNode].access.data);
+                *out = output;
+
+                PRINT_NODEDATA();
+                return 0;
+        }
+
+        ADD_NODE(PRINT_REF);
+
 
         stdRef* out = (stdRef*)(nodeList[currentNode].access.data);
         *out = output;
@@ -3059,17 +3070,6 @@ int nthp::script::CompilerInstance::compileSourceFile(const char* inputFile, con
 
 
 
-                if(!buildSystemContext) {
-                        PRINT_COMPILER("Allocating and Copying node data to safe container...");
-                        nodeBlockSize = nodeList.size();
-                        compiledNodes = (decltype(compiledNodes))malloc(NodeSize * nodeBlockSize);
-
-                        memcpy(compiledNodes, nodeList.data(), NodeSize * nodeBlockSize);
-                        nodeList.clear(); // Destroys node headers, but data is untouched and copied to the raw memory above.
-
-                        NOVERB_PRINT_COMPILER("\t\nAllocated & copied [%zu] bytes at [%p].\n", NodeSize * nodeBlockSize, compiledNodes);
-                }
-
                 if(outputFile != NULL) {
                         if(buildSystemContext)
                                 return exportToFile(outputFile, &nodeList, buildSystemContext);
@@ -3091,8 +3091,8 @@ int nthp::script::CompilerInstance::exportToFile(const char* outputFile, std::ve
                 return 1;
         }
 
-        nthp::script::Node* target = compiledNodes;
-        size_t cont_size = nodeBlockSize;
+        nthp::script::Node* target = nodeList->data();
+        size_t cont_size = nodeList->size();
         if(nodeList != NULL) {
                 target = nodeList->data();
                 cont_size = nodeList->size();
@@ -3212,22 +3212,5 @@ int nthp::script::CompilerInstance::compileStageConfig(const char* stageConfigFi
 
 
 nthp::script::CompilerInstance::~CompilerInstance() {
-        // Node tokens are copied into script objects when loaded;
-        // the stored symbols of the compiler is purely for debugging.
-        // Free to destroy.
-        nthp::script::cleanNodeSet(nodeList);
-        cleanSymbolData();
-
-        if(nodeBlockSize > 0) {
-                for(size_t i = 0; i < nodeBlockSize; ++i) {
-                        if(compiledNodes[i].access.size > 0)
-                                free(compiledNodes[i].access.data);
-                }
-                
-                
-                free(compiledNodes);
-                
-        }
-
-        
+        clean();
 }
