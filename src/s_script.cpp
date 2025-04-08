@@ -1270,12 +1270,14 @@ DEFINE_EXECUTION_BEHAVIOUR(STRING) {
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(FUNC_START) {
+        const uint32_t headerLocation = *(uint32_t*)(data->nodeSet[data->currentNode].access.data + sizeof(uint32_t));
+        data->currentScriptHeaderLocation = headerLocation;
 
         return 0;
 }
 
 DEFINE_EXECUTION_BEHAVIOUR(FUNC_CALL) {
-        uint32_t location = *(uint32_t*)(data->nodeSet[data->currentNode].access.data);
+        const uint32_t location = *(uint32_t*)(data->nodeSet[data->currentNode].access.data);
 
         nthp::script::Script::ReturnStackEntry newEntry;
         newEntry.sourceDestination = data->currentNode + 1;
@@ -1284,7 +1286,7 @@ DEFINE_EXECUTION_BEHAVIOUR(FUNC_CALL) {
         data->returnStack[data->stackPointer] = newEntry;
         ++(data->stackPointer);
 
-        data->currentNode = location;
+        data->currentNode = location; // No -1 here; that is evaluated in the linker!
 
         return 0;
 }

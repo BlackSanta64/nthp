@@ -80,6 +80,18 @@ int nthp::script::LinkerInstance::linkFiles(std::vector<std::string>& targets, c
         
         NOVERB_PRINT_DEBUG("Done.\n");
 
+        // Find and match headers for each FUNC!
+        for(uint32_t i = 0; i < header.totalNodeCount; ++i) {
+                if(tempStorage[i].access.ID == GET_INSTRUCTION_ID(FUNC_START)) {
+                        uint32_t* headerLocation = (uint32_t*)(tempStorage[i].access.data + sizeof(uint32_t));
+
+                        uint32_t finder = i;
+                        for(; tempStorage[finder].access.ID != GET_INSTRUCTION_ID(HEADER); --finder); // Nice one-liner to find the corresponding header.
+
+                        *headerLocation = finder;
+                }
+        }
+
 
         // Match FUNC defs! There is DEFINITELY a better to do this, but I don't feel like
         // it.
@@ -93,10 +105,14 @@ int nthp::script::LinkerInstance::linkFiles(std::vector<std::string>& targets, c
                                         uint32_t* callID = (uint32_t*)(tempStorage[i].access.data);
                                         uint32_t* startID = (uint32_t*)(tempStorage[j].access.data);
 
+
+
                                 
                                         if((*callID) == (*startID)) {
                                                 // Matched! Set the absolute position (j) in callID!
-                                                *callID = j;
+                                                // The -1 allows the FUNC_START node to be executed, which sets up
+                                                // the new header location.
+                                                *callID = j - 1;
                                                 break;
                                         }
                                 }

@@ -258,7 +258,7 @@ namespace Size {
                 PRINT_STRING = sizeof(strRef),
                 STRING = DYNAMIC_SIZE,
 
-                FUNC_START = sizeof(uint32_t), // Func ID, to be identified by the linker.
+                FUNC_START = sizeof(uint32_t) + sizeof(uint32_t), // Func ID, to be identified by the linker, followed by local header location.
                 FUNC_CALL = sizeof(uint32_t) // Func ID, to be matched to a FUNC_START by the linker.
         );
 }
